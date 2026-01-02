@@ -18,7 +18,7 @@ const StyledTextField = styled(TextField)({
     minHeight: '21px',
     boxSizing: 'border-box',
     '&::-webkit-outer-spin-button, &::-webkit-inner-spin-button': {
-      '-webkit-appearance': 'none',
+      WebkitAppearance: 'none',
       margin: 0
     }
   },

@@ -16,7 +16,5 @@ const root = createRoot(rootElement)
 // prodüksiyon ortamında oluşmaz. Çift render davranışlarını görmek istemiyorsanız,
 // StrictMode'u geçici olarak kaldırabilirsiniz (<App /> şeklinde).
 root.render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+  <App />
 )
