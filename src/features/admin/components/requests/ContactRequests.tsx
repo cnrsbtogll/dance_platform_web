@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  orderBy, 
-  Timestamp, 
-  deleteDoc, 
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+  orderBy,
+  Timestamp,
+  deleteDoc,
   getDoc,
   serverTimestamp
 } from 'firebase/firestore';
@@ -44,23 +44,23 @@ function ContactRequestsManagement(): JSX.Element {
   const fetchContactRequests = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const contactRequestsRef = collection(db, 'contactRequests');
       let q;
-      
+
       if (selectedStatus === 'all') {
         q = query(contactRequestsRef, orderBy('createdAt', 'desc'));
       } else {
         q = query(
-          contactRequestsRef, 
+          contactRequestsRef,
           where('status', '==', selectedStatus),
           orderBy('createdAt', 'desc')
         );
       }
-      
+
       const querySnapshot = await getDocs(q);
-      
+
       const requests: ContactRequest[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -77,7 +77,7 @@ function ContactRequestsManagement(): JSX.Element {
           updatedAt: data.updatedAt
         });
       });
-      
+
       setContactRequests(requests);
     } catch (err) {
       console.error('İletişim talepleri yüklenirken hata oluştu:', err);
@@ -90,23 +90,23 @@ function ContactRequestsManagement(): JSX.Element {
   // İletişim talebinin durumunu güncelle
   const updateRequestStatus = async (requestId: string, newStatus: 'accepted' | 'rejected') => {
     setProcessingId(requestId);
-    
+
     try {
       const requestRef = doc(db, 'contactRequests', requestId);
       const requestSnap = await getDoc(requestRef);
-      
+
       if (requestSnap.exists()) {
         // Talebin durumunu güncelle
         await updateDoc(requestRef, {
           status: newStatus,
           updatedAt: serverTimestamp()
         });
-        
+
         // UI'ı güncelle
-        setContactRequests(prev => 
-          prev.map(req => 
-            req.id === requestId 
-              ? { ...req, status: newStatus } 
+        setContactRequests(prev =>
+          prev.map(req =>
+            req.id === requestId
+              ? { ...req, status: newStatus }
               : req
           )
         );
@@ -126,12 +126,12 @@ function ContactRequestsManagement(): JSX.Element {
     if (!window.confirm('Bu iletişim talebini silmek istediğinizden emin misiniz?')) {
       return;
     }
-    
+
     setProcessingId(requestId);
-    
+
     try {
       await deleteDoc(doc(db, 'contactRequests', requestId));
-      
+
       // UI'dan kaldır
       setContactRequests(prev => prev.filter(req => req.id !== requestId));
     } catch (err) {
@@ -175,22 +175,29 @@ function ContactRequestsManagement(): JSX.Element {
   };
 
   // Tarih formatı
-  const formatDate = (timestamp: Timestamp) => {
+  const formatDate = (timestamp: any) => {
     if (!timestamp) return 'Bilinmiyor';
-    
-    const date = timestamp.toDate();
-    return new Intl.DateTimeFormat('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+
+    try {
+      // Handle both Firestore Timestamp and regular Date objects
+      const date = timestamp.toDate ? timestamp.toDate() : (timestamp instanceof Date ? timestamp : new Date(timestamp));
+
+      return new Intl.DateTimeFormat('tr-TR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+    } catch (e) {
+      console.error('Tarih formatlama hatası:', e);
+      return 'Geçersiz Tarih';
+    }
   };
 
   return (
     <div>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -213,7 +220,7 @@ function ContactRequestsManagement(): JSX.Element {
               <option value="rejected">Reddedildi</option>
               <option value="cancelled">İptal Edildi</option>
             </select>
-            <button 
+            <button
               onClick={() => fetchContactRequests()}
               className="ml-3 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
             >
@@ -283,10 +290,10 @@ function ContactRequestsManagement(): JSX.Element {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <img 
-                            className="h-10 w-10 rounded-full object-cover" 
-                            src={request.senderPhoto || "/assets/images/profile-placeholder.jpg"} 
-                            alt={request.senderName} 
+                          <img
+                            className="h-10 w-10 rounded-full object-cover"
+                            src={request.senderPhoto || "/assets/images/profile-placeholder.jpg"}
+                            alt={request.senderName}
                             onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                               e.currentTarget.onerror = null;
                               e.currentTarget.src = "/assets/images/profile-placeholder.jpg";
@@ -302,10 +309,10 @@ function ContactRequestsManagement(): JSX.Element {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <img 
-                            className="h-10 w-10 rounded-full object-cover" 
-                            src={request.receiverPhoto || "/assets/images/profile-placeholder.jpg"} 
-                            alt={request.receiverName} 
+                          <img
+                            className="h-10 w-10 rounded-full object-cover"
+                            src={request.receiverPhoto || "/assets/images/profile-placeholder.jpg"}
+                            alt={request.receiverName}
                             onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                               e.currentTarget.onerror = null;
                               e.currentTarget.src = "/assets/images/profile-placeholder.jpg";

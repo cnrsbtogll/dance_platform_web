@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  updateDoc, 
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
   getDoc,
   setDoc,
   deleteDoc,
@@ -50,30 +50,32 @@ function SchoolRequests(): JSX.Element {
   const fetchRequests = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const q = query(
         collection(db, 'schoolRequests'),
         where('status', '==', 'pending')
       );
-      
+
       const querySnapshot = await getDocs(q);
       const requestsData: SchoolRequest[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         requestsData.push({
           id: doc.id,
           ...doc.data()
         } as SchoolRequest);
       });
-      
+
       // Sort by creation date (newest first)
       requestsData.sort((a, b) => {
-        return b.createdAt?.toMillis() - a.createdAt?.toMillis();
+        const dateA = a.createdAt?.toMillis?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+        const dateB = b.createdAt?.toMillis?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+        return dateB - dateA;
       });
-      
+
       setRequests(requestsData);
-      
+
     } catch (err) {
       console.error('Okul talepleri getirilirken hata oluştu:', err);
       setError('Okul talepleri yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.');
@@ -84,29 +86,29 @@ function SchoolRequests(): JSX.Element {
 
   const handleApproveRequest = async (requestId: string, userId: string) => {
     setProcessingId(requestId);
-    
+
     try {
       // 1. Get the request document
       const requestDocRef = doc(db, 'schoolRequests', requestId);
       const requestDoc = await getDoc(requestDocRef);
-      
+
       if (!requestDoc.exists()) {
         throw new Error('Talep bulunamadı');
       }
-      
+
       const requestData = requestDoc.data() as SchoolRequest;
-      
+
       // 2. Get the user document
       const userDocRef = doc(db, 'users', userId);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (!userDoc.exists()) {
         throw new Error('Kullanıcı bulunamadı');
       }
-      
+
       // 3. Update the user document to add the school role
       const userData = userDoc.data();
-      
+
       // Add school-specific data to the user document
       await updateDoc(userDocRef, {
         role: 'school', // Artık array değil, string
@@ -114,7 +116,7 @@ function SchoolRequests(): JSX.Element {
         schoolApprovedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
-      
+
       // 4. Add school to the schools collection
       const schoolData = {
         name: requestData.schoolName,
@@ -134,10 +136,10 @@ function SchoolRequests(): JSX.Element {
         updatedAt: serverTimestamp(),
         status: 'active'
       };
-      
+
       const schoolsCollectionRef = collection(db, 'schools');
       const newSchoolDoc = await addDoc(schoolsCollectionRef, schoolData);
-      
+
       // 5. Update the request status
       await updateDoc(requestDocRef, {
         status: 'approved',
@@ -145,14 +147,14 @@ function SchoolRequests(): JSX.Element {
         approvedBy: 'admin', // Ideally, this would be the admin user ID
         schoolId: newSchoolDoc.id
       });
-      
+
       // 6. Update the local state
-      setRequests(prev => 
+      setRequests(prev =>
         prev.filter(req => req.id !== requestId)
       );
-      
+
       alert('Okul talebi başarıyla onaylandı. Okul, okullar listesine eklendi ve kullanıcı bilgileri güncellendi.');
-      
+
     } catch (err) {
       console.error('Okul talebi onaylanırken hata oluştu:', err);
       alert(`Hata: ${err instanceof Error ? err.message : 'Bilinmeyen bir hata oluştu'}`);
@@ -163,7 +165,7 @@ function SchoolRequests(): JSX.Element {
 
   const handleRejectRequest = async (requestId: string) => {
     setProcessingId(requestId);
-    
+
     try {
       // Update the request status
       const requestDocRef = doc(db, 'schoolRequests', requestId);
@@ -172,14 +174,14 @@ function SchoolRequests(): JSX.Element {
         updatedAt: serverTimestamp(),
         rejectedBy: 'admin' // Ideally, this would be the admin user ID
       });
-      
+
       // Update the local state
-      setRequests(prev => 
+      setRequests(prev =>
         prev.filter(req => req.id !== requestId)
       );
-      
+
       alert('Okul talebi reddedildi.');
-      
+
     } catch (err) {
       console.error('Okul talebi reddedilirken hata oluştu:', err);
       alert('Talebiniz reddedilirken bir hata oluştu. Lütfen tekrar deneyin.');
@@ -205,8 +207,8 @@ function SchoolRequests(): JSX.Element {
     return (
       <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
         <p>{error}</p>
-        <button 
-          onClick={fetchRequests} 
+        <button
+          onClick={fetchRequests}
           className="mt-2 bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-4 rounded"
         >
           Yeniden Dene
@@ -227,7 +229,7 @@ function SchoolRequests(): JSX.Element {
   return (
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
       <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-6">Okul Başvuruları</h2>
-      
+
       <div className="-mx-4 sm:mx-0 overflow-hidden">
         <div className="inline-block min-w-full align-middle">
           <div className="overflow-x-auto border border-gray-200 sm:rounded-lg shadow-sm">
@@ -255,7 +257,7 @@ function SchoolRequests(): JSX.Element {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {requests.map((request) => (
+                {Array.isArray(requests) && requests.map((request) => (
                   <tr key={request.id} className="hover:bg-gray-50">
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-3">
@@ -290,14 +292,18 @@ function SchoolRequests(): JSX.Element {
                     </td>
                     <td className="hidden xl:table-cell px-4 sm:px-6 py-4">
                       <div className="flex flex-wrap gap-1">
-                        {request.danceStyles.map((style, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800"
-                          >
-                            {style}
-                          </span>
-                        ))}
+                        {request.danceStyles && Array.isArray(request.danceStyles) ? (
+                          request.danceStyles.map((style, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800"
+                            >
+                              {style}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-400">Belirtilmemiş</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
@@ -387,14 +393,18 @@ function SchoolRequests(): JSX.Element {
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Dans Stilleri</label>
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {selectedRequest.danceStyles.map((style, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800"
-                            >
-                              {style}
-                            </span>
-                          ))}
+                          {selectedRequest.danceStyles && Array.isArray(selectedRequest.danceStyles) ? (
+                            selectedRequest.danceStyles.map((style, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800"
+                              >
+                                {style}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-gray-400">Belirtilmemiş</span>
+                          )}
                         </div>
                       </div>
                       <div>
@@ -408,7 +418,13 @@ function SchoolRequests(): JSX.Element {
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Başvuru Tarihi</label>
                         <p className="mt-1 text-sm text-gray-900">
-                          {new Date(selectedRequest.createdAt.toDate()).toLocaleDateString('tr-TR')}
+                          {selectedRequest.createdAt ? (
+                            (selectedRequest.createdAt as any).toDate ? (
+                              (selectedRequest.createdAt as any).toDate().toLocaleDateString('tr-TR')
+                            ) : (
+                              new Date(selectedRequest.createdAt as any).toLocaleDateString('tr-TR')
+                            )
+                          ) : '-'}
                         </p>
                       </div>
                     </div>
