@@ -336,7 +336,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/" className="flex items-center group transition-all duration-300 ease-in-out">
+                <Link to="/" className="flex items-center group transition-all duration-300 ease-in-out gap-3">
                   {/* Modern logo without background - enlarged */}
                   <div className="relative h-14 w-14 flex items-center justify-center transform group-hover:scale-110 transition-all duration-300">
                     <img
@@ -345,6 +345,12 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       className="w-full h-full object-contain"
                     />
                   </div>
+                  {/* Logo Name Image */}
+                  <img
+                    src="/logoname.png"
+                    alt="Feriha"
+                    className="h-8 w-auto object-contain"
+                  />
                 </Link>
               </div>
               <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
@@ -393,7 +399,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
                   <Link
                     to="/become-instructor"
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-teal-800 to-cyan-900 hover:from-teal-700 hover:to-cyan-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -406,7 +412,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 {!hasSchoolRole && !hasSchoolAdminRole && (
                   <Link
                     to="/become-school"
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -593,7 +599,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
                   <Link
                     to="/become-instructor"
-                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 focus:outline-none focus:ring-1 focus:ring-rose-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
+                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-teal-800 to-cyan-900 hover:from-teal-700 hover:to-cyan-800 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="flex items-center justify-center">
@@ -625,7 +631,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       });
                       setIsMenuOpen(false);
                     }}
-                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
+                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
                   >
                     <div className="flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

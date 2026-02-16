@@ -18,13 +18,10 @@ const Festivals = () => {
   }, [location]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-rose-50 py-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-rose-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <div className="animate-bounce mb-8">
-            <span className="inline-block text-5xl">🎭</span>
-          </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight py-2 inline-block">
             Dans Festivalleri
           </h1>
           <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
@@ -67,4 +64,4 @@ const Festivals = () => {
   );
 };
 
-export default Festivals; 
+export default Festivals;
