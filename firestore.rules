@@ -1,0 +1,304 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+    
+    // Kullanıcının role'ünü kontrol et
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Kullanıcı instructor mı?
+    function isInstructor() {
+      return request.auth != null && getUserRole() == 'instructor';
+    }
+    
+    // Kullanıcı admin mi?
+    function isAdmin() {
+      return request.auth != null && getUserRole() == 'admin';
+    }
+    
+    // Kullanıcı authenticated mi?
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // ==========================================
+    // COURSES (DERSLER)
+    // ==========================================
+    match /courses/{courseId} {
+      // Herkes okuyabilir (giriş yapmadan da)
+      allow read: if true;
+      
+      // Sadece instructor'lar kendi kurslarını oluşturabilir
+      allow create: if isAuthenticated() && 
+                      isInstructor() && 
+                      request.resource.data.instructorId == request.auth.uid;
+      
+      // Instructor kendi kursunu güncelleyebilir, öğrenci sadece istatistikleri güncelleyebilir
+      allow update: if isAuthenticated() && 
+                      (
+                        (isInstructor() && resource.data.instructorId == request.auth.uid) ||
+                        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantStats', 'updatedAt', 'currentParticipants']))
+                      );
+
+      // Instructor sadece kendi kursunu silebilir
+      allow delete: if isAuthenticated() && 
+                      isInstructor() && 
+                      resource.data.instructorId == request.auth.uid;
+    }
+    
+    // ==========================================
+    // INSTRUCTORS (EĞİTMENLER)
+    // ==========================================
+    match /instructors/{instructorId} {
+      // Herkes okuyabilir
+      allow read: if true;
+      
+      // Sadece kendi instructor profilini oluşturabilir/güncelleyebilir
+      allow create, update: if isAuthenticated() && 
+                              isInstructor() && 
+                              instructorId == request.auth.uid;
+      
+      // Sadece kendi profilini silebilir
+      allow delete: if isAuthenticated() && 
+                      isInstructor() && 
+                      instructorId == request.auth.uid;
+    }
+    
+    // ==========================================
+    // SCHOOLS (OKULLAR)
+    // ==========================================
+    match /schools/{schoolId} {
+      // Herkes okuyabilir
+      allow read: if true;
+      
+      // Sadece authenticated kullanıcılar okul oluşturabilir
+      allow create: if isAuthenticated();
+      
+      // Okul sahibi veya admin güncelleyebilir/silebilir
+      allow update, delete: if isAuthenticated() && 
+                              (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+    
+    // ==========================================
+    // DANCE STYLES
+    // ==========================================
+    match /danceStyles/{styleId} {
+      // Herkes okuyabilir
+      allow read: if true;
+      
+      // Sadece admin ekleyebilir/güncelleyebilir
+      allow write: if isAdmin();
+    }
+    
+    // ==========================================
+    // USERS (KULLANICILAR - Partner listesi için public yapıldı)
+    // ==========================================
+    match /users/{userId} {
+      // Partner listesini görmek için girişe gerek yok
+      allow read: if true;
+      
+      // Sadece kendi profilini oluşturabilir/güncelleyebilir
+      allow create, update: if isAuthenticated() && userId == request.auth.uid;
+      
+      // Sadece admin silebilir
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // FESTIVALS & TICKETS (FESTİVALLER)
+    // ==========================================
+    match /tickets/{ticketId} {
+      // Festivaller listesini görmek için girişe gerek yok
+      allow read: if true;
+      
+      // Kullanıcı kendi ticketını oluşturabilir
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid;
+      
+      // Kullanıcı kendi ticketını güncelleyebilir
+      allow update: if isAuthenticated() && 
+                      resource.data.userId == request.auth.uid;
+      
+      // Sadece admin silebilir
+      allow delete: if isAdmin();
+    }
+
+    match /festivals/{festivalId} {
+      // Herkes okuyabilir
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // ==========================================
+    // NIGHTS (GECELER)
+    // ==========================================
+    match /nights/{nightId} {
+      // Geceler listesini görmek için girişe gerek yok
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // ==========================================
+    // INSTRUCTOR REQUESTS
+    // ==========================================
+    match /instructorRequests/{requestId} {
+      // Kullanıcı kendi isteğini okuyabilir, admin hepsini okuyabilir
+      allow read: if isAuthenticated() && 
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Kullanıcı kendi isteğini oluşturabilir
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid;
+      
+      // Sadece admin güncelleyebilir/silebilir (onay/red için)
+      allow update, delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // SCHOOL REQUESTS
+    // ==========================================
+    match /schoolRequests/{requestId} {
+      allow read: if isAuthenticated() && 
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // BOOKINGS (REZERVASYONLAR)
+    // ==========================================
+    match /bookings/{bookingId} {
+      // Öğrenci kendi rezervasyonunu, eğitmen kendisine yapılan rezervasyonu okuyabilir
+      allow read: if isAuthenticated() && 
+                    (resource.data.studentId == request.auth.uid || 
+                     resource.data.instructorId == request.auth.uid || 
+                     isAdmin());
+      
+      // Öğrenci kendisi için rezervasyon oluşturabilir
+      allow create: if isAuthenticated() && 
+                      request.resource.data.studentId == request.auth.uid;
+      
+      // Eğitmen veya öğrenci rezervasyonu güncelleyebilir (iptal, onay vb.)
+      allow update: if isAuthenticated() && 
+                      (resource.data.studentId == request.auth.uid || 
+                       resource.data.instructorId == request.auth.uid || 
+                       isAdmin());
+      
+      // Admin silebilir veya iptal durumuna çekebilir
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // ATTENDANCE (YOKLAMA)
+    // ==========================================
+    match /attendance/{attendanceId} {
+      // Herkes kendi yoklamasını okuyabilir
+      allow read: if isAuthenticated();
+      
+      // Sadece instructor kendi dersinin yoklamasını yazabilir
+      allow write: if isInstructor();
+    }
+    
+    // ==========================================
+    // MESSAGES (MESAJLAR)
+    // ==========================================
+    match /messages/{messageId} {
+      // Mesajın göndereni veya alıcısı okuyabilir
+      allow read: if isAuthenticated() && 
+                    (resource.data.senderId == request.auth.uid || 
+                     resource.data.receiverId == request.auth.uid);
+      
+      // Authenticated kullanıcılar mesaj gönderebilir
+      allow create: if isAuthenticated() && 
+                      request.resource.data.senderId == request.auth.uid;
+      
+      // Sadece gönderen güncelleyebilir/silebilir
+      allow update, delete: if isAuthenticated() && 
+                               resource.data.senderId == request.auth.uid;
+    }
+    
+    // ==========================================
+    // CONTACT REQUESTS (İLETİŞİM TALEPLERİ)
+    // ==========================================
+    match /contactRequests/{requestId} {
+      // Admin okuyabilir
+      allow read: if isAdmin();
+      
+      // Herkes iletişim formu gönderebilir
+      allow create: if true;
+      
+      // Sadece admin güncelleyebilir/silebilir
+      allow update, delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // PLATFORM ACTIVITIES
+    // ==========================================
+    match /platform_activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // ==========================================
+    // RATINGS (DEĞERLENDİRMELER)
+    // ==========================================
+    match /ratings/{ratingId} {
+      // Herkes okuyabilir
+      allow read: if true;
+      
+      // Sadece giriş yapmış kullanıcılar değerlendirme yapabilir
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid;
+                      
+      // Sadece kullanıcı kendi değerlendirmesini güncelleyebilir veya silebilir
+      allow update, delete: if isAuthenticated() && 
+                               resource.data.userId == request.auth.uid;
+    }
+
+    // ==========================================
+    // USER PROGRESS & ACHIEVEMENTS
+    // ==========================================
+    match /user_progress/{progressId} {
+      // Kullanıcı kendi ilerlemesini okuyabilir
+      allow read: if isAuthenticated() && 
+                    resource.data.userId == request.auth.uid;
+      
+      // Sistem veya instructor yazabilir
+      allow write: if isAuthenticated() && 
+                     (isInstructor() || isAdmin());
+    }
+    
+    match /progress/{progressId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    match /achievements/{achievementId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // ==========================================
+    // PENDING USERS
+    // ==========================================
+    match /pendingUsers/{userId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // ==========================================
+    // FALLBACK RULE - Diğer tüm koleksiyonlar
+    // ==========================================
+    match /{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

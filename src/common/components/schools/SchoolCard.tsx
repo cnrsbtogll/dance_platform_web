@@ -64,7 +64,7 @@ const SchoolCard: React.FC<SchoolCardProps> = ({ school, className = '' }) => {
           </div>
         </div>
         <div className="mt-6">
-          <div className="inline-flex items-center text-indigo-600 font-medium">
+          <div className="inline-flex items-center text-brand-pink font-medium">
             Detayları Görüntüle
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

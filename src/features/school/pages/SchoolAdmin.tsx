@@ -180,7 +180,7 @@ const SchoolAdmin: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[500px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -210,7 +210,7 @@ const SchoolAdmin: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="text-center mb-10"
       >
-        <h1 className="text-3xl sm:text-4xl font-bold mb-4 inline-block relative bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-4 inline-block relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent">
           Dans Okulu Yönetim Paneli
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
@@ -226,7 +226,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('profile')}
               className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${
                 activeTab === 'profile'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -239,7 +239,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('instructors')}
               className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${
                 activeTab === 'instructors'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -252,7 +252,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('courses')}
               className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${
                 activeTab === 'courses'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -265,7 +265,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('students')}
               className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${
                 activeTab === 'students'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -278,7 +278,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('schedule')}
               className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${
                 activeTab === 'schedule'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -291,7 +291,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('attendance')}
               className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${
                 activeTab === 'attendance'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -304,7 +304,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('progress')}
               className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${
                 activeTab === 'progress'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -317,7 +317,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('badges')}
               className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${
                 activeTab === 'badges'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -336,7 +336,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('profile')}
               className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${
                 activeTab === 'profile'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -346,7 +346,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('instructors')}
               className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${
                 activeTab === 'instructors'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -356,7 +356,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('courses')}
               className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${
                 activeTab === 'courses'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -366,7 +366,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('students')}
               className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${
                 activeTab === 'students'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -376,7 +376,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('schedule')}
               className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${
                 activeTab === 'schedule'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -386,7 +386,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('attendance')}
               className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${
                 activeTab === 'attendance'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -396,7 +396,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('progress')}
               className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${
                 activeTab === 'progress'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -406,7 +406,7 @@ const SchoolAdmin: React.FC = () => {
               onClick={() => setActiveTab('badges')}
               className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${
                 activeTab === 'badges'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >

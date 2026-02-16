@@ -78,7 +78,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
         transition={{ duration: 0.5 }}
         className="text-center mb-6 sm:mb-10"
       >
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 inline-block relative bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 inline-block relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent">
           Yönetim Paneli
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
@@ -91,7 +91,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
         <div className="md:hidden border-b border-gray-200 p-4">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
           >
             <span>{
               activeTab === 'kullanicilar' ? 'Tüm Kullanıcılar' :
@@ -115,7 +115,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
               }}
               className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
                 activeTab === 'kullanicilar'
-                  ? 'border-indigo-500 text-indigo-600 bg-indigo-50 md:bg-transparent'
+                  ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -128,7 +128,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
               }}
               className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
                 activeTab === 'kurslar'
-                  ? 'border-indigo-500 text-indigo-600 bg-indigo-50 md:bg-transparent'
+                  ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -141,7 +141,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
               }}
               className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
                 activeTab === 'talepler'
-                  ? 'border-indigo-500 text-indigo-600 bg-indigo-50 md:bg-transparent'
+                  ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -155,7 +155,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 }}
                 className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
                   activeTab === 'ornek-veri'
-                    ? 'border-indigo-500 text-indigo-600 bg-indigo-50 md:bg-transparent'
+                    ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >

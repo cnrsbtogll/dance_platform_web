@@ -4,15 +4,15 @@ import { createTheme } from '@mui/material/styles';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#6a11cb',
-      light: '#8440d4',
-      dark: '#4c0d91',
+      main: '#ED3D81',
+      light: '#f0639a',
+      dark: '#c12d65',
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#2575fc',
-      light: '#5c9cfd',
-      dark: '#1550b0',
+      main: '#3B1F2B',
+      light: '#5a3142',
+      dark: '#25131b',
       contrastText: '#ffffff',
     },
     error: {
@@ -76,9 +76,9 @@ const theme = createTheme({
           },
         },
         containedPrimary: {
-          background: 'linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)',
+          background: 'linear-gradient(135deg, #ED3D81 0%, #E91E63 100%)',
           '&:hover': {
-            background: 'linear-gradient(135deg, #6a11cb 30%, #2575fc 100%)',
+            background: 'linear-gradient(135deg, #ED3D81 30%, #E91E63 100%)',
           },
         },
       },

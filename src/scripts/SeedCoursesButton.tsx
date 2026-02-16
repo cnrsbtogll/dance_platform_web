@@ -41,7 +41,7 @@ const SeedCoursesButton: React.FC<SeedCoursesButtonProps> = ({ courseCount = 20 
         className={`px-4 py-2 rounded font-medium ${
           isLoading 
             ? 'bg-gray-400 cursor-not-allowed' 
-            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+            : 'bg-brand-pink hover:bg-rose-700 text-white'
         }`}
       >
         {isLoading ? (

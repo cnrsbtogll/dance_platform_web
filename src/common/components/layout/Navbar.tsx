@@ -273,10 +273,10 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
     try {
       // Çıkış yapmadan önce iletişim bilgisini temizle
       localStorage.removeItem('contactStatus');
-      
+
       // Diğer sayfalar arası paylaşılan verileri de temizle
       localStorage.removeItem('lastEmailUsed');
-      
+
       await signOut();
       navigate('/'); // Ana sayfaya yönlendir
     } catch (error) {
@@ -337,62 +337,48 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
                 <Link to="/" className="flex items-center group transition-all duration-300 ease-in-out">
-                  {/* Modern gradient logo with dance icon */}
-                  <div className="relative h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md transform group-hover:scale-105 transition-all duration-300">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className="h-5 w-5 text-white" 
-                      viewBox="0 0 24 24" 
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      {/* Stylized dancing figure */}
-                      <path d="M17 4c0 1.105-0.895 2-2 2s-2-0.895-2-2 0.895-2 2-2 2 0.895 2 2z" fill="currentColor" stroke="none" />
-                      <path d="M13 7l-2 5l2 2l4 1l1-4l-2-1l-1-3" />
-                      <path d="M9 12l-2 2l-4 0l0 4l4 0l3 -3" />
-                      <path d="M7 21l2 -5" />
-                      <path d="M15 21l-2 -5" />
-                    </svg>
+                  {/* Modern logo without background - enlarged */}
+                  <div className="relative h-14 w-14 flex items-center justify-center transform group-hover:scale-110 transition-all duration-300">
+                    <img
+                      src="/logo.png"
+                      alt="Feriha Logo"
+                      className="w-full h-full object-contain"
+                    />
                   </div>
-                  {/* Modern site name with gradient text */}
-                  <span className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight group-hover:tracking-wide transition-all duration-300">Dans Platformu</span>
                 </Link>
               </div>
               <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
                 {!hasSchoolRole && !hasInstructorRole && (
                   <>
-                    <Link 
-                      to="/partners" 
-                      className={`${isActive('/partners') 
-                        ? 'border-indigo-500 text-indigo-700 font-medium' 
-                        : 'border-transparent text-gray-500 hover:text-indigo-600 hover:border-indigo-400'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                    <Link
+                      to="/partners"
+                      className={`${isActive('/partners')
+                        ? 'border-brand-pink text-brand-pink font-medium'
+                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Partner Bul
                     </Link>
-                    <Link 
-                      to="/courses" 
-                      className={`${isActive('/courses') 
-                        ? 'border-indigo-500 text-indigo-700 font-medium' 
-                        : 'border-transparent text-gray-500 hover:text-indigo-600 hover:border-indigo-400'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                    <Link
+                      to="/courses"
+                      className={`${isActive('/courses')
+                        ? 'border-brand-pink text-brand-pink font-medium'
+                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Kurs Bul
                     </Link>
-                    <Link 
-                      to="/festivals" 
-                      className={`${isActive('/festivals') 
-                        ? 'border-indigo-500 text-indigo-700 font-medium' 
-                        : 'border-transparent text-gray-500 hover:text-indigo-600 hover:border-indigo-400'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                    <Link
+                      to="/festivals"
+                      className={`${isActive('/festivals')
+                        ? 'border-brand-pink text-brand-pink font-medium'
+                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Festivaller
                     </Link>
-                    <Link 
-                      to="/nights" 
-                      className={`${isActive('/nights') 
-                        ? 'border-indigo-500 text-indigo-700 font-medium' 
-                        : 'border-transparent text-gray-500 hover:text-indigo-600 hover:border-indigo-400'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                    <Link
+                      to="/nights"
+                      className={`${isActive('/nights')
+                        ? 'border-brand-pink text-brand-pink font-medium'
+                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Geceler
                     </Link>
@@ -442,14 +428,14 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   </Link>
                 )}
               </div>
-              
+
               {isAuthenticated ? (
                 <>
                   {/* Admin Panel Butonu */}
                   {hasSuperAdminRole && (
                     <Link
                       to="/admin"
-                      className="mr-3 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                      className="mr-3 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-rose-500 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                     >
                       Admin Panel
                     </Link>
@@ -472,7 +458,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       </div>
                       <button
                         onClick={toggleProfileMenu}
-                        className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
                       >
                         <span className="sr-only">Profil menüsünü aç</span>
                         <img
@@ -489,7 +475,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       </button>
                     </div>
                     {isProfileMenuOpen && (
-                      <div 
+                      <div
                         className="origin-top-right absolute right-0 mt-2 w-48 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 transition-all duration-200"
                       >
                         <div className="rounded-lg bg-white shadow-xs py-1">
@@ -502,7 +488,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                           {hasSuperAdminRole ? (
                             <Link
                               to="/profile?type=admin"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-700 transition-colors duration-150"
                               onClick={() => setIsProfileMenuOpen(false)}
                             >
                               Admin Profilim
@@ -511,13 +497,13 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                             <>
                               <Link
                                 to="/profile"
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-brand-pink transition-colors duration-150"
                                 onClick={() => setIsProfileMenuOpen(false)}
                               >
                                 Profilim
                               </Link>
                               <button
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150"
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-brand-pink transition-colors duration-150"
                                 onClick={() => {
                                   console.log('🎯 İlerleme Durumum butonuna tıklandı:', {
                                     isAuthenticated,
@@ -554,7 +540,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                               handleLogout();
                               setIsProfileMenuOpen(false);
                             }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150"
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-700 transition-colors duration-150"
                           >
                             Çıkış Yap
                           </button>
@@ -568,13 +554,13 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 <div className="space-x-3">
                   <Link
                     to="/signin"
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                   >
                     Giriş Yap
                   </Link>
                   <Link
                     to="/signup"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-rose-500 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                   >
                     Kayıt Ol
                   </Link>
@@ -582,9 +568,9 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
               )}
             </div>
             <div className="-mr-2 flex items-center sm:hidden">
-              <button 
+              <button
                 onClick={toggleMenu}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-indigo-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 transition duration-150 ease-in-out"
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-brand-pink hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-pink transition duration-150 ease-in-out"
               >
                 <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                   {isMenuOpen ? (
@@ -605,7 +591,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
               {/* Her durumda gösterilecek butonlar */}
               <div className="px-4 space-y-2">
                 {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
-                  <Link 
+                  <Link
                     to="/become-instructor"
                     className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 focus:outline-none focus:ring-1 focus:ring-rose-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
@@ -618,10 +604,10 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     </div>
                   </Link>
                 )}
-                
+
                 {/* Dans Okulu Aç butonu - Mobil */}
                 {!hasSchoolRole && !hasSchoolAdminRole && (
-                  <Link 
+                  <Link
                     to="/become-school"
                     onClick={() => {
                       console.log('🎯 Dans Okulu Aç butonuna tıklandı (Mobil):', {
@@ -652,7 +638,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
                 {/* Eğitmen Paneli butonu - Mobil */}
                 {hasInstructorRole && (
-                  <Link 
+                  <Link
                     to="/instructor"
                     onClick={() => setIsMenuOpen(false)}
                     className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
@@ -693,35 +679,35 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       <>
                         <Link
                           to="/partners"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Partner Bul
                         </Link>
                         <Link
                           to="/courses"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Kurs Bul
                         </Link>
                         <Link
                           to="/festivals"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Festivaller
                         </Link>
                         <Link
                           to="/nights"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Geceler
                         </Link>
                       </>
                     )}
-                    
+
                     {/* Ayırıcı çizgi */}
                     <div className="my-4 border-t border-gray-200" />
                     <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -732,7 +718,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     {hasSuperAdminRole && (
                       <Link
                         to="/admin"
-                        className="block px-3 py-1 mt-2 rounded-md text-base font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 transition-colors duration-150"
+                        className="block px-3 py-1 mt-2 rounded-md text-base font-medium text-white bg-gradient-to-r from-rose-600 to-brand-pink hover:from-purple-500 hover:to-brand-pink transition-colors duration-150"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Admin Panel
@@ -747,15 +733,15 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                         Okul Yönetim Paneli
                       </Link>
                     )}
-                    
+
                     {/* Öğrenci Teşvik Butonları - Mobil */}
                     {/* Butonlar kaldırıldı ve her zaman gösterilecek şekilde taşındı */}
-                    
+
                     {/* Profil linki - Mobil versiyon */}
                     {hasSuperAdminRole ? (
                       <Link
                         to="/profile?type=admin"
-                        className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50 transition-colors duration-150"
+                        className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Admin Profilim
@@ -764,13 +750,13 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       <>
                         <Link
                           to="/profile"
-                          className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Profilim
                         </Link>
                         <button
-                          className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50 transition-colors duration-150"
+                          className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => {
                             console.log('🎯 İlerleme Durumum butonuna tıklandı:', {
                               isAuthenticated,
@@ -807,7 +793,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                         handleLogout();
                         setIsMenuOpen(false);
                       }}
-                      className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50 transition-colors duration-150"
+                      className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                     >
                       Çıkış Yap
                     </button>
@@ -816,9 +802,9 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
               ) : (
                 /* Giriş yapmamış kullanıcılar için menü */
                 <div className="pt-1 mt-1 border-t border-gray-200 space-y-2">
-                  <Link 
-                    to="/signin" 
-                    className="block w-full px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
+                  <Link
+                    to="/signin"
+                    className="block w-full px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-brand-pink focus:ring-offset-1 shadow-sm transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="flex items-center justify-center">
@@ -828,9 +814,9 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       Giriş Yap
                     </div>
                   </Link>
-                  <Link 
-                    to="/signup" 
-                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
+                  <Link
+                    to="/signup"
+                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-purple-500 focus:outline-none focus:ring-1 focus:ring-brand-pink focus:ring-offset-1 shadow-sm transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="flex items-center justify-center">

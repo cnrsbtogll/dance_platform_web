@@ -88,14 +88,14 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                       .map(course => (
                         <div 
                           key={course.id} 
-                          className="p-3 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-md transition-colors duration-200"
+                          className="p-3 bg-rose-50 hover:bg-rose-100 border border-rose-100 rounded-md transition-colors duration-200"
                         >
-                          <div className="font-medium text-indigo-700 truncate mb-1">{course.name}</div>
+                          <div className="font-medium text-rose-700 truncate mb-1">{course.name}</div>
                           {course.schedule
                             .filter(s => s.day === day)
                             .map((schedule, index) => (
                               <div key={index} className="flex items-center text-gray-600 text-sm">
-                                <svg className="w-4 h-4 mr-1.5 text-indigo-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 mr-1.5 text-brand-pink flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span className="truncate">{schedule.time}</span>
@@ -128,7 +128,7 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
           {onAddCourse && (
             <button
               onClick={onAddCourse}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

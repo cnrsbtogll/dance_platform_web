@@ -237,7 +237,7 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
       maxWidth="sm"
       fullWidth
     >
-      <DialogTitle className="flex justify-between items-center bg-indigo-50">
+      <DialogTitle className="flex justify-between items-center bg-rose-50">
         <div className="flex items-center">
           <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
             <img
@@ -280,7 +280,7 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
               <div
                 className={`relative max-w-[70%] rounded-2xl px-4 py-2 ${
                   message.senderId === currentUser?.uid
-                    ? 'bg-indigo-600 text-white rounded-tr-none'
+                    ? 'bg-brand-pink text-white rounded-tr-none'
                     : 'bg-white text-gray-800 rounded-tl-none shadow-sm'
                 }`}
               >
@@ -288,7 +288,7 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
                 <span 
                   className={`text-[11px] block mt-1 ${
                     message.senderId === currentUser?.uid 
-                      ? 'text-indigo-100' 
+                      ? 'text-rose-100' 
                       : 'text-gray-500'
                   }`}
                 >
@@ -316,13 +316,13 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Mesajınızı yazın..."
-              className="flex-1 border rounded-full px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              className="flex-1 border rounded-full px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-pink text-sm"
               disabled={loading}
               ref={inputRef}
             />
             <button
               type="submit"
-              className="min-w-[40px] h-[34px] whitespace-nowrap bg-indigo-600 text-white px-2 sm:px-4 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50 text-sm flex items-center justify-center"
+              className="min-w-[40px] h-[34px] whitespace-nowrap bg-brand-pink text-white px-2 sm:px-4 rounded-full hover:bg-rose-700 transition-colors disabled:opacity-50 text-sm flex items-center justify-center"
               disabled={loading || !newMessage.trim()}
             >
               <span className="hidden sm:inline">Gönder</span>

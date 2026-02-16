@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import CustomSelect from '../../common/components/ui/CustomSelect';
 import { collection, getDocs, query, orderBy, where, limit, DocumentData, addDoc, deleteDoc, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../api/firebase/firebase';
-import { useAuth } from '../../common/hooks/useAuth'; 
+import { useAuth } from '../../common/hooks/useAuth';
 import { User, DanceStyle as DanceStyleType, DanceLevel } from '../../types';
 import { motion } from 'framer-motion';
 import { fetchSignInMethodsForEmail } from 'firebase/auth';
@@ -125,7 +125,7 @@ function PartnerSearchPage(): JSX.Element {
   } | null>(null);
 
   // Dans stilleri eşleştirme haritası - danceStyles ile users tablosundaki değerler arasında
-  const [styleMapping, setStyleMapping] = useState<{[key: string]: DanceStyle}>({});
+  const [styleMapping, setStyleMapping] = useState<{ [key: string]: DanceStyle }>({});
 
   // Convert Firestore user to Partner format - memoize this function
   const convertUserToPartner = useCallback((user: FirestoreUser): Partner => {
@@ -170,14 +170,14 @@ function PartnerSearchPage(): JSX.Element {
       ad: user.displayName || 'İsimsiz Kullanıcı',
       yas: typeof user.age === 'number' ? user.age : 0,
       cinsiyet: convertGender(user.gender),
-      seviye: user.level === 'beginner' ? 'Başlangıç' : 
-              user.level === 'intermediate' ? 'Orta' : 
-              user.level === 'advanced' ? 'İleri' : 
-              user.level === 'professional' ? 'Profesyonel' : 'Başlangıç',
+      seviye: user.level === 'beginner' ? 'Başlangıç' :
+        user.level === 'intermediate' ? 'Orta' :
+          user.level === 'advanced' ? 'İleri' :
+            user.level === 'professional' ? 'Profesyonel' : 'Başlangıç',
       dans: standardizedDanceStyles,
       konum: user.city || 'Belirtilmemiş',
       saatler: user.availableTimes || [],
-      foto: user.photoURL || '', 
+      foto: user.photoURL || '',
       puan: typeof user.rating === 'number' ? user.rating : 4.0,
       boy: typeof user.height === 'number' ? user.height : undefined,
       kilo: typeof user.weight === 'number' ? user.weight : undefined,
@@ -188,25 +188,25 @@ function PartnerSearchPage(): JSX.Element {
   // Calculate relevance score between current user and potential partner - memoize this function
   const calculateRelevanceScore = useCallback((partner: Partner, currentUser: FirestoreUser | null): number => {
     if (!currentUser) return 0;
-    
+
     let score = 0;
-    
+
     // Match on dance styles (high importance)
     if (currentUser.danceStyles && partner.dans) {
-      const matchingStyles = currentUser.danceStyles.filter(style => 
+      const matchingStyles = currentUser.danceStyles.filter(style =>
         partner.dans.includes(style)
       );
       score += matchingStyles.length * 20; // 20 points per matching style
     }
-    
+
     // Match on level (medium importance)
     if (currentUser.level && partner.seviye) {
       const currentUserLevel = currentUser.level;
-      const partnerLevel = partner.seviye === 'Başlangıç' ? 'beginner' : 
-                          partner.seviye === 'Orta' ? 'intermediate' : 
-                          partner.seviye === 'İleri' ? 'advanced' : 
-                          partner.seviye === 'Profesyonel' ? 'professional' : '';
-      
+      const partnerLevel = partner.seviye === 'Başlangıç' ? 'beginner' :
+        partner.seviye === 'Orta' ? 'intermediate' :
+          partner.seviye === 'İleri' ? 'advanced' :
+            partner.seviye === 'Profesyonel' ? 'professional' : '';
+
       if (currentUserLevel === partnerLevel) {
         score += 15; // Exact level match
       } else if (
@@ -218,22 +218,22 @@ function PartnerSearchPage(): JSX.Element {
         score += 10; // Adjacent level
       }
     }
-    
+
     // Match on location (medium importance)
     if (currentUser.city && partner.konum) {
       if (partner.konum.includes(currentUser.city)) {
         score += 15;
       }
     }
-    
+
     // Match on available times (low importance)
     if (currentUser.availableTimes && partner.saatler) {
-      const matchingTimes = currentUser.availableTimes.filter(time => 
+      const matchingTimes = currentUser.availableTimes.filter(time =>
         partner.saatler.includes(time)
       );
       score += matchingTimes.length * 5; // 5 points per matching time slot
     }
-    
+
     return score;
   }, []);
 
@@ -244,16 +244,16 @@ function PartnerSearchPage(): JSX.Element {
       console.log("Dans stilleri zaten yüklenmiş, tekrar yüklenmiyor");
       return;
     }
-    
+
     setLoadingStyles(true);
     try {
       const danceStylesRef = collection(db, 'danceStyles');
       const q = query(danceStylesRef, orderBy('label'));
       const querySnapshot = await getDocs(q);
-      
+
       const styles: DanceStyle[] = [];
-      const mapping: {[key: string]: DanceStyle} = {};
-      
+      const mapping: { [key: string]: DanceStyle } = {};
+
       querySnapshot.forEach((doc) => {
         const styleData = doc.data() as Omit<DanceStyle, 'id'>;
         const style = {
@@ -261,19 +261,19 @@ function PartnerSearchPage(): JSX.Element {
           label: styleData.label,
           value: styleData.value
         };
-        
+
         styles.push(style);
-        
+
         // Farklı yazım şekillerine göre eşleştirme haritasına ekle
         mapping[style.id.toLowerCase()] = style;
         mapping[style.value.toLowerCase()] = style;
         mapping[style.label.toLowerCase()] = style;
       });
-      
+
       setStyleMapping(mapping);
       // Gereksiz log'u kaldıralım
       // console.log("Dans stilleri eşleştirme haritası oluşturuldu:", mapping);
-      
+
       if (styles.length === 0) {
         // If no styles in Firestore, use default styles
         const defaultStyles = [
@@ -289,17 +289,17 @@ function PartnerSearchPage(): JSX.Element {
           { id: 'default-10', label: 'Zeybek', value: 'zeybek' },
           { id: 'default-11', label: 'Jazz', value: 'jazz' }
         ];
-        
+
         setDanceStyles(defaultStyles);
-        
+
         // Varsayılan stiller için eşleştirme haritası oluştur
-        const defaultMapping: {[key: string]: DanceStyle} = {};
+        const defaultMapping: { [key: string]: DanceStyle } = {};
         defaultStyles.forEach(style => {
           defaultMapping[style.id.toLowerCase()] = style;
           defaultMapping[style.value.toLowerCase()] = style;
           defaultMapping[style.label.toLowerCase()] = style;
         });
-        
+
         setStyleMapping(defaultMapping);
       } else {
         setDanceStyles(styles);
@@ -320,17 +320,17 @@ function PartnerSearchPage(): JSX.Element {
         { id: 'default-10', label: 'Zeybek', value: 'zeybek' },
         { id: 'default-11', label: 'Jazz', value: 'jazz' }
       ];
-      
+
       setDanceStyles(defaultStyles);
-      
+
       // Varsayılan stiller için eşleştirme haritası oluştur
-      const defaultMapping: {[key: string]: DanceStyle} = {};
+      const defaultMapping: { [key: string]: DanceStyle } = {};
       defaultStyles.forEach(style => {
         defaultMapping[style.id.toLowerCase()] = style;
         defaultMapping[style.value.toLowerCase()] = style;
         defaultMapping[style.label.toLowerCase()] = style;
       });
-      
+
       setStyleMapping(defaultMapping);
     } finally {
       setLoadingStyles(false);
@@ -349,7 +349,7 @@ function PartnerSearchPage(): JSX.Element {
       console.log("Dans stilleri henüz yüklenmedi, kullanıcılar yüklenemiyor");
       return;
     }
-    
+
     setInitialLoading(true);
     try {
       // Get current user data
@@ -373,23 +373,23 @@ function PartnerSearchPage(): JSX.Element {
       const usersRef = collection(db, 'users');
       const q = query(usersRef);
       const querySnapshot = await getDocs(q);
-      
+
       const users: FirestoreUser[] = [];
       querySnapshot.forEach((doc) => {
         const userData = doc.data() as DocumentData;
-        
+
         // Check if user has student or instructor role but not admin role
         let isValidUser = false;
-        
+
         if (Array.isArray(userData.role)) {
           // If role is an array, check it includes 'student' or 'instructor' but not 'admin'
-          isValidUser = (userData.role.includes('student') || userData.role.includes('instructor')) && 
-                       !userData.role.includes('admin');
+          isValidUser = (userData.role.includes('student') || userData.role.includes('instructor')) &&
+            !userData.role.includes('admin');
         } else {
           // If role is a string, it should be either 'student' or 'instructor'
           isValidUser = userData.role === 'student' || userData.role === 'instructor';
         }
-        
+
         // Include students & instructors & exclude current user if logged in
         if ((!currentUser || doc.id !== currentUser.id) && isValidUser) {
           users.push({
@@ -409,11 +409,11 @@ function PartnerSearchPage(): JSX.Element {
           });
         }
       });
-      
+
       // Convert to Partner format
       const partners = users.map(user => {
         const partner = convertUserToPartner(user);
-        
+
         // Calculate relevance score if user is logged in
         if (currentUserData) {
           partner.relevanceScore = calculateRelevanceScore(partner, currentUserData);
@@ -421,19 +421,19 @@ function PartnerSearchPage(): JSX.Element {
           // No relevance score for anonymous users
           partner.relevanceScore = 0;
         }
-        
+
         return partner;
       });
-      
+
       // Sort by relevance score for logged in users, otherwise randomly
-      const sortedPartners = currentUserData 
+      const sortedPartners = currentUserData
         ? [...partners].sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
         : [...partners].sort(() => Math.random() - 0.5); // Shuffle for anonymous users
-      
+
       setAllPartnerler(sortedPartners);
       setPartnerler(sortedPartners); // Tüm partnerleri göster, kısıtlama yok
       setAramaTamamlandi(true);
-      
+
     } catch (err) {
       console.error('Error fetching users:', err);
       setPartnerler([]);
@@ -453,25 +453,25 @@ function PartnerSearchPage(): JSX.Element {
   // Mevcut iletişim taleplerini kontrol et
   const checkExistingContactRequests = async () => {
     if (!currentUser || partnerler.length === 0) return;
-    
+
     try {
       const contactRequestsRef = collection(db, 'contactRequests');
-      const q = query(contactRequestsRef, 
+      const q = query(contactRequestsRef,
         where('senderId', '==', currentUser.id),
         where('status', '==', 'pending')
       );
-      
+
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         // Tüm bekleyen talepleri bir diziye dönüştür
         const pendingRequests = querySnapshot.docs.map(doc => {
           const data = doc.data();
           const partnerId = data.receiverId;
-          
+
           // İlgili partneri bul
           const partner = partnerler.find(p => p.id === partnerId);
-          
+
           return {
             partnerId: partnerId,
             sent: true,
@@ -479,14 +479,14 @@ function PartnerSearchPage(): JSX.Element {
             contactId: doc.id
           };
         });
-        
+
         // Tüm talepleri state'e kaydet
         setContactStatuses(pendingRequests);
-        
+
         // Geriye uyumluluk için ilk talebi contactStatus'a da kaydet
         if (pendingRequests.length > 0) {
           setContactStatus(pendingRequests[0]);
-          
+
           // LocalStorage'a sadece ilk talebi kaydediyoruz (geriye uyumluluk için)
           localStorage.setItem('contactStatus', JSON.stringify({
             ...pendingRequests[0],
@@ -507,20 +507,20 @@ function PartnerSearchPage(): JSX.Element {
   // Sayfa yüklendiğinde local storage'dan contactStatus'u kontrol et
   useEffect(() => {
     const savedContactStatus = localStorage.getItem('contactStatus');
-    
+
     // Kullanıcı giriş yapmamışsa localStorage'da iletişim bilgisi olmamalı
     if (!currentUser) {
       localStorage.removeItem('contactStatus');
       return;
     }
-    
+
     if (savedContactStatus) {
       try {
         const parsedStatus = JSON.parse(savedContactStatus);
-        
+
         // 24 saatten eski kayıtları temizle
         const isStillValid = (new Date().getTime() - parsedStatus.timestamp) < 24 * 60 * 60 * 1000;
-        
+
         if (isStillValid && currentUser) {
           setContactStatus({
             partnerId: parsedStatus.partnerId,
@@ -588,10 +588,10 @@ function PartnerSearchPage(): JSX.Element {
   // Türkçe karakterleri İngilizce karakterlere dönüştüren yardımcı fonksiyon
   const normalizeText = (text: string): string => {
     if (!text) return '';
-    
+
     // Önce tüm metni küçük harfe çevir
     let normalizedText = text.toLowerCase();
-    
+
     // Türkçe karakterleri İngilizce karakterlere dönüştür
     normalizedText = normalizedText
       .replace(/ı/g, 'i')
@@ -604,31 +604,31 @@ function PartnerSearchPage(): JSX.Element {
       .replace(/,/g, ' ') // Virgülleri boşluğa çevir
       .replace(/\s+/g, ' ') // Birden fazla boşluğu tek boşluğa indir
       .trim();
-    
+
     console.log(`Normalize edildi: "${text}" → "${normalizedText}"`);
     return normalizedText;
   };
-  
+
   // Şehir ismi eşleştirmesi için akıllı kontrol
   const cityMatches = (location: string, searchText: string): boolean => {
     if (!location || !searchText) return false;
-    
+
     // Metinleri normalize et
     const normalizedLocation = normalizeText(location);
     const normalizedSearch = normalizeText(searchText);
-    
+
     console.log(`Kontrol ediliyor: '${normalizedSearch}' aranıyor, konum: '${normalizedLocation}'`);
-    
+
     // İstanbul için özel koşullar
     // İstanbul için birçok yazım şekli ve kısaltma kontrolü
-    if (normalizedSearch === 'ist' || normalizedSearch === 'istanbul' || 
-        normalizedSearch === 'ista' || normalizedSearch === 'İstanbul' || 
-        normalizedSearch === 'İst' || normalizedSearch === 'İsta' ||
-        searchText.toUpperCase() === 'İST' || searchText.toUpperCase() === 'IST') {
-      
+    if (normalizedSearch === 'ist' || normalizedSearch === 'istanbul' ||
+      normalizedSearch === 'ista' || normalizedSearch === 'İstanbul' ||
+      normalizedSearch === 'İst' || normalizedSearch === 'İsta' ||
+      searchText.toUpperCase() === 'İST' || searchText.toUpperCase() === 'IST') {
+
       // istanbul kelimesi geçiyor mu - hem i hem de İ karakterleri için kontrol
       const containsIstanbul = normalizedLocation.includes('istanbul');
-      
+
       if (containsIstanbul) {
         console.log(`✅ İSTANBUL EŞLEŞTİ: "${location}"`);
         return true;
@@ -636,49 +636,49 @@ function PartnerSearchPage(): JSX.Element {
         console.log(`❌ İstanbul eşleşmedi: "${location}"`);
       }
     }
-    
+
     // Ankara için özel durum
-    if (normalizedSearch === 'ank' || normalizedSearch === 'ankara' || 
-        normalizedSearch === 'Ankara' || normalizedSearch === 'Ank' ||
-        searchText.toUpperCase() === 'ANK') {
-      
+    if (normalizedSearch === 'ank' || normalizedSearch === 'ankara' ||
+      normalizedSearch === 'Ankara' || normalizedSearch === 'Ank' ||
+      searchText.toUpperCase() === 'ANK') {
+
       const containsAnkara = normalizedLocation.includes('ankara');
-      
+
       if (containsAnkara) {
         console.log(`✅ ANKARA EŞLEŞTİ: "${location}"`);
         return true;
       }
     }
-    
+
     // İzmir için özel durum
-    if (normalizedSearch === 'izm' || normalizedSearch === 'izmir' || 
-        normalizedSearch === 'İzmir' || normalizedSearch === 'İzm' ||
-        searchText.toUpperCase() === 'İZM' || searchText.toUpperCase() === 'IZM') {
-      
+    if (normalizedSearch === 'izm' || normalizedSearch === 'izmir' ||
+      normalizedSearch === 'İzmir' || normalizedSearch === 'İzm' ||
+      searchText.toUpperCase() === 'İZM' || searchText.toUpperCase() === 'IZM') {
+
       const containsIzmir = normalizedLocation.includes('izmir');
-      
+
       if (containsIzmir) {
         console.log(`✅ İZMİR EŞLEŞTİ: "${location}"`);
         return true;
       }
     }
-    
+
     // Kelime bazlı eşleştirme - tam kelime olarak içeriyor mu kontrol et
     const words = normalizedLocation.split(' ');
     const hasWord = words.some(word => word === normalizedSearch || word.startsWith(normalizedSearch));
-    
+
     if (hasWord) {
       console.log(`✅ KELİME BAZLI EŞLEŞME: '${searchText}' kelimesi burada: '${location}'`);
       return true;
     }
-    
+
     // Normal substring kontrolü
     const hasSubstring = normalizedLocation.includes(normalizedSearch);
     if (hasSubstring) {
       console.log(`✅ ALT DİZE EŞLEŞME: '${searchText}' burada: '${location}'`);
       return true;
     }
-    
+
     console.log(`❌ Hiçbir eşleşme bulunamadı: '${searchText}' için: '${location}'`);
     return false;
   };
@@ -687,58 +687,58 @@ function PartnerSearchPage(): JSX.Element {
   const applyFiltersWithValues = (
     dansTuruValue: string,
     cinsiyetValue: string,
-    seviyeValue: string, 
+    seviyeValue: string,
     konumValue: string,
     uygunSaatlerValue: string[]
   ): void => {
     setLoading(true);
-    
+
     try {
       // Prompt for login after applying filters if not logged in
       if (!currentUser) {
         setShowLoginPrompt(true);
       }
-      
+
       // Apply filters
       let filteredResults = [...allPartnerler];
-      
+
       if (dansTuruValue) {
         // Seçilen dans türünü bulalım
         const selectedDanceStyle = danceStyles.find(style => style.value === dansTuruValue);
-        
+
         if (selectedDanceStyle) {
           console.log("Seçilen dans stili bulundu:", selectedDanceStyle);
-          
+
           // Filtreleme için kullanılacak değerler
           const selectedId = selectedDanceStyle.id;
           const selectedValue = selectedDanceStyle.value;
           const selectedLabel = selectedDanceStyle.label;
-          
+
           console.log("Filtreleme değerleri - ID:", selectedId, "Value:", selectedValue, "Label:", selectedLabel);
-          
+
           // Dans stillerini kontrol et
           filteredResults = filteredResults.filter(partner => {
             // Küçük harf ile karşılaştırma yapalım
-            const partnerDansStilleri = partner.dans.map(dans => 
+            const partnerDansStilleri = partner.dans.map(dans =>
               typeof dans === 'string' ? dans.toLowerCase() : dans
             );
-            
+
             // Seçilen dans stilinin farklı değerleriyle eşleşebilir
             const selectedLabelLower = selectedLabel.toLowerCase();
             const selectedValueLower = selectedValue.toLowerCase();
-            
+
             const hasMatch = partnerDansStilleri.some(dans => {
               if (typeof dans !== 'string') return false;
-              
+
               const dansLower = dans.toLowerCase();
-              return dansLower === selectedLabelLower || 
-                     dansLower === selectedValueLower || 
-                     dansLower === selectedId.toLowerCase();
+              return dansLower === selectedLabelLower ||
+                dansLower === selectedValueLower ||
+                dansLower === selectedId.toLowerCase();
             });
-            
+
             console.log(`Partner ${partner.ad} dans stilleri:`, partner.dans);
             console.log(`Partner ${partner.ad} dans stilinde '${selectedLabel}' var mı:`, hasMatch);
-            
+
             return hasMatch;
           });
         } else {
@@ -747,13 +747,13 @@ function PartnerSearchPage(): JSX.Element {
       }
 
       if (cinsiyetValue) {
-        filteredResults = filteredResults.filter(partner => 
+        filteredResults = filteredResults.filter(partner =>
           partner.cinsiyet === cinsiyetValue
         );
       }
 
       if (seviyeValue) {
-        filteredResults = filteredResults.filter(partner => 
+        filteredResults = filteredResults.filter(partner =>
           partner.seviye === seviyeValue
         );
       }
@@ -762,36 +762,36 @@ function PartnerSearchPage(): JSX.Element {
         // Çok basitleştirilmiş konum eşleştirme mantığı
         const normalizedKonum = normalizeText(konumValue);
         console.log("Arama için normalize edilmiş konum:", normalizedKonum);
-        
+
         filteredResults = filteredResults.filter(partner => {
           if (!partner.konum) return false;
-          
+
           const matches = cityMatches(partner.konum, konumValue);
           if (matches) {
             console.log(`Partner ${partner.ad}, Konum: ${partner.konum} - EŞLEŞME BULUNDU`);
           } else {
             console.log(`Partner ${partner.ad}, Konum: ${partner.konum} - Eşleşme bulunamadı`);
           }
-          
+
           return matches;
         });
       }
 
       if (uygunSaatlerValue.length > 0) {
-        filteredResults = filteredResults.filter(partner => 
+        filteredResults = filteredResults.filter(partner =>
           uygunSaatlerValue.some(saat => partner.saatler.includes(saat))
         );
       }
 
       console.log("Filtreleme sonrası partner sayısı:", filteredResults.length);
-      
+
       // Eğer hiç partner bulunamadıysa ve konum filtresi kullanıldıysa, konumla ilgili uyarı ver
       if (filteredResults.length === 0 && konumValue && konumValue.trim() !== '') {
         console.warn(`"${konumValue}" konumu için hiç partner bulunamadı!`);
         console.log("Tüm partnerlerin konumları:");
         allPartnerler.forEach(p => console.log(`- ${p.ad}: ${p.konum}`));
       }
-      
+
       setPartnerler(filteredResults); // Tüm filtrelenmiş sonuçları göster, kısıtlama yok
       setCurrentPage(1); // Filtreleme sonrası ilk sayfaya dön
       setLoading(false);
@@ -808,10 +808,10 @@ function PartnerSearchPage(): JSX.Element {
 
   // Uygun saatleri işleme fonksiyonu
   const handleSaatChange = (saat: string): void => {
-    const newSaatler = uygunSaatler.includes(saat) 
-      ? uygunSaatler.filter(s => s !== saat) 
+    const newSaatler = uygunSaatler.includes(saat)
+      ? uygunSaatler.filter(s => s !== saat)
       : [...uygunSaatler, saat];
-    
+
     setUygunSaatler(newSaatler);
     // Güncel değerlerle hemen filtreleme yapalım
     applyFiltersWithValues(dansTuru, cinsiyet, seviye, konum, newSaatler);
@@ -821,7 +821,7 @@ function PartnerSearchPage(): JSX.Element {
   const handleDansTuruChange = (value: string | string[]): void => {
     const newValue = Array.isArray(value) ? value[0] : value;
     console.log("Dans türü değişti, yeni değer:", newValue);
-    
+
     // Mevcut değer ile aynıysa ve boş değilse, filtreyi temizle
     if (newValue === dansTuru && newValue !== '') {
       console.log("Aynı dans türü tekrar seçildi, filtre sıfırlanıyor.");
@@ -830,7 +830,7 @@ function PartnerSearchPage(): JSX.Element {
       applyFiltersWithValues('', cinsiyet, seviye, konum, uygunSaatler);
       return;
     }
-    
+
     setDansTuru(newValue);
     // Güncel değerle hemen filtreleme yapalım
     applyFiltersWithValues(newValue, cinsiyet, seviye, konum, uygunSaatler);
@@ -856,7 +856,7 @@ function PartnerSearchPage(): JSX.Element {
   const handleKonumChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const newKonum = e.target.value;
     setKonum(newKonum);
-    
+
     // Konum için debounce ekleyelim, kullanıcı yazarken sürekli filtreleme yapmasın
     if (newKonum.length > 2 || newKonum.length === 0) {
       // Güncel değerle hemen filtreleme yapalım
@@ -897,45 +897,45 @@ function PartnerSearchPage(): JSX.Element {
   // İletişim talebini iptal et
   const cancelContactRequest = async (contactId: string) => {
     if (!contactId || !currentUser) return;
-    
+
     // İşlem sırasında yükleniyor durumunu aktifleştir
     setContactActionLoading(true);
-    
+
     try {
       // Firestore'dan iletişim talebini al
       const contactRef = doc(db, 'contactRequests', contactId);
       const contactSnap = await getDoc(contactRef);
-      
+
       if (contactSnap.exists()) {
         const contactData = contactSnap.data();
         const partnerId = contactData.receiverId;
-        
+
         // İlgili partner bilgisini bul
         const partner = partnerler.find(p => p.id === partnerId);
         const partnerName = partner ? partner.ad : 'Partner';
-        
+
         // Talebin durumunu "cancelled" olarak güncelle (tamamen silmek yerine)
         await updateDoc(contactRef, {
           status: 'cancelled',
           updatedAt: serverTimestamp()
         });
-        
+
         // Tüm taleplerin listesini güncelle
         setContactStatuses(prev => prev.filter(status => status.contactId !== contactId));
-        
+
         // Eğer iptal edilen talep, mevcut gösterilen talepse, contactStatus'u da temizle
         if (contactStatus?.contactId === contactId) {
           setContactStatus(null);
           localStorage.removeItem('contactStatus');
         }
-        
+
         // Başarı mesajı göster
         setToast({
           show: true,
           message: `${partnerName} adlı partnere gönderdiğiniz iletişim talebi iptal edildi.`,
           type: 'info'
         });
-        
+
         // 5 saniye sonra toast'u kapat
         setTimeout(() => {
           setToast(null);
@@ -958,10 +958,10 @@ function PartnerSearchPage(): JSX.Element {
   // Toast bileşeni
   const Toast = () => {
     if (!toast || !toast.show) return null;
-    
-    const bgColorClass = toast.type === 'success' ? 'bg-green-500' : 
-                          toast.type === 'error' ? 'bg-red-500' : 'bg-blue-500';
-                          
+
+    const bgColorClass = toast.type === 'success' ? 'bg-green-500' :
+      toast.type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+
     return (
       <div className="fixed bottom-5 right-5 z-50 transform transition-all duration-300 ease-in-out">
         <div className={`${bgColorClass} text-white py-3 px-4 rounded-lg shadow-lg flex items-start max-w-md`}>
@@ -981,7 +981,7 @@ function PartnerSearchPage(): JSX.Element {
             </svg>
           )}
           <span>{toast.message}</span>
-          <button 
+          <button
             onClick={() => setToast(null)}
             className="ml-auto text-white hover:text-gray-200 flex-shrink-0"
           >
@@ -997,13 +997,13 @@ function PartnerSearchPage(): JSX.Element {
   // Replace the login prompt banner with a modal popup
   const LoginPromptModal = () => {
     if (!showLoginPrompt) return null;
-    
+
     return (
       <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
           {/* Background overlay */}
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setShowLoginPrompt(false)}></div>
-          
+
           {/* Modal panel */}
           <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
           <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
@@ -1027,7 +1027,7 @@ function PartnerSearchPage(): JSX.Element {
             <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
               <button
                 type="button"
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-base font-medium text-white hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-brand-pink to-rose-600 text-base font-medium text-white hover:from-rose-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink sm:col-start-2 sm:text-sm"
                 onClick={() => {
                   setShowLoginPrompt(false);
                   navigate('/signup');
@@ -1037,7 +1037,7 @@ function PartnerSearchPage(): JSX.Element {
               </button>
               <button
                 type="button"
-                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink sm:mt-0 sm:col-start-1 sm:text-sm"
                 onClick={() => {
                   setShowLoginPrompt(false);
                   navigate('/signin');
@@ -1054,10 +1054,10 @@ function PartnerSearchPage(): JSX.Element {
 
   // Partner kartı bileşeni - Modern tasarım
   const PartnerKarti: React.FC<PartnerKartiProps> = ({ partner }) => {
-    const isInstructor = Array.isArray(partner.role) 
+    const isInstructor = Array.isArray(partner.role)
       ? partner.role.includes('instructor')
       : partner.role === 'instructor';
-    
+
     // Partner tipi belirleme
     const userType = isInstructor ? 'instructor' : 'student';
 
@@ -1069,15 +1069,15 @@ function PartnerSearchPage(): JSX.Element {
       userType: userType,
       generatedAvatar: generateInitialsAvatar(partner.ad, userType)
     });
-    
+
     return (
       <div className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col h-full">
         {/* Profil fotoğrafı ve üst kısım */}
         <div className="relative h-64 overflow-hidden">
           {/* Profil fotoğrafı */}
-          <img 
-            src={partner.foto || generateInitialsAvatar(partner.ad, userType)} 
-            alt={partner.ad} 
+          <img
+            src={partner.foto || generateInitialsAvatar(partner.ad, userType)}
+            alt={partner.ad}
             className={`h-full w-full ${partner.foto ? 'object-cover' : 'object-cover bg-gray-50'}`}
             style={{ objectPosition: 'center center' }}
             onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -1093,7 +1093,7 @@ function PartnerSearchPage(): JSX.Element {
               target.className = 'h-full w-full object-cover bg-gray-50';
             }}
           />
-          
+
           {/* Alt bilgiler için gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
             {/* İsim ve puan bilgisi */}
@@ -1111,7 +1111,7 @@ function PartnerSearchPage(): JSX.Element {
                 </div>
               )}
             </div>
-            
+
             {/* Konum bilgisi */}
             {partner.konum && (
               <div className="flex items-center text-gray-200 text-sm mt-2">
@@ -1122,26 +1122,26 @@ function PartnerSearchPage(): JSX.Element {
               </div>
             )}
           </div>
-          
+
           {/* Seviye badge */}
           <div className="absolute top-3 right-3">
-            <span className="px-2 py-1 text-xs font-semibold bg-indigo-600 text-white rounded-full shadow-md">
+            <span className="px-2 py-1 text-xs font-semibold bg-brand-pink text-white rounded-full shadow-md">
               {partner.seviye}
             </span>
           </div>
-          
+
           {/* Eğitmen badge */}
           {isInstructor && (
             <div className="absolute top-12 right-3">
               <span className="px-2 py-1 text-xs font-semibold bg-amber-500 text-white rounded-full shadow-md flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                  <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
                 </svg>
                 Eğitmen
               </span>
             </div>
           )}
-          
+
           {/* Uyumlu badge */}
           {partner.relevanceScore && partner.relevanceScore > 50 && (
             <div className="absolute top-3 left-3">
@@ -1154,7 +1154,7 @@ function PartnerSearchPage(): JSX.Element {
             </div>
           )}
         </div>
-        
+
         {/* Kart içeriği - alt kısım */}
         <div className="p-5 flex-grow flex flex-col">
           {/* Fiziksel özellikler */}
@@ -1187,9 +1187,9 @@ function PartnerSearchPage(): JSX.Element {
             <div className="flex flex-wrap gap-1">
               {partner.dans.length > 0 ? (
                 partner.dans.map((dansTuru, index) => (
-                  <span 
+                  <span
                     key={index}
-                    className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full"
+                    className="bg-rose-100 text-brand-pink text-xs px-2 py-1 rounded-full"
                   >
                     {dansTuru}
                   </span>
@@ -1205,7 +1205,7 @@ function PartnerSearchPage(): JSX.Element {
             <div className="flex flex-wrap gap-1">
               {partner.saatler.length > 0 ? (
                 partner.saatler.map((saat, index) => (
-                  <span 
+                  <span
                     key={index}
                     className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
                   >
@@ -1217,10 +1217,10 @@ function PartnerSearchPage(): JSX.Element {
               )}
             </div>
           </div>
-          
+
           <div className="mt-auto">
-            <button 
-              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-colors duration-300 flex items-center justify-center font-medium shadow-md"
+            <button
+              className="w-full py-3 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-lg hover:from-rose-700 hover:to-purple-700 transition-colors duration-300 flex items-center justify-center font-medium shadow-md"
               onClick={() => handleContact(partner)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1276,26 +1276,26 @@ function PartnerSearchPage(): JSX.Element {
 
       {/* Toast bildirim */}
       <Toast />
-      
+
       {/* Başlık ve filtreler */}
       <div className="mb-8">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="text-center mb-8"
         >
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4 inline-block relative bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block">
             Dans Partneri Bul
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
             Stilinize ve seviyenize uygun dans partnerleri bulun. Beraber dans etmek, teknik geliştirmek veya dans etkinliklerine katılmak için harika bir yol!
           </p>
         </motion.div>
-        
+
         {/* Mobile filter toggle */}
         <div className="lg:hidden mb-4">
-          <button 
+          <button
             onClick={() => setIsFilterVisible(!isFilterVisible)}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 font-medium"
           >
@@ -1305,16 +1305,16 @@ function PartnerSearchPage(): JSX.Element {
             {isFilterVisible ? 'Filtreleri Gizle' : 'Filtreler'}
           </button>
         </div>
-        
+
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filter panel - Responsive */}
           <div className={`lg:w-1/4 ${isFilterVisible || window.innerWidth >= 1024 ? 'block' : 'hidden'}`}>
             <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-4">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">Partner Filtrele</h2>
-                <button 
+                <button
                   onClick={resetFilters}
-                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center"
+                  className="text-brand-pink hover:text-rose-800 text-sm font-medium flex items-center"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1322,15 +1322,15 @@ function PartnerSearchPage(): JSX.Element {
                   Sıfırla
                 </button>
               </div>
-              
+
               <form onSubmit={partnerAra} className="space-y-5">
                 {loadingStyles ? (
                   <div className="bg-gray-50 p-3 rounded-xl flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-indigo-600 mr-2"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink mr-2"></div>
                     <span className="text-gray-600 text-sm">Dans stilleri yükleniyor...</span>
                   </div>
                 ) : (
-                  <CustomSelect 
+                  <CustomSelect
                     label="Dans Türü"
                     name="dansTuru"
                     options={danceStyles}
@@ -1339,8 +1339,8 @@ function PartnerSearchPage(): JSX.Element {
                     placeholder="Tüm dans türleri"
                   />
                 )}
-                
-                <CustomSelect 
+
+                <CustomSelect
                   label="Cinsiyet"
                   name="cinsiyet"
                   options={cinsiyetOptions}
@@ -1348,8 +1348,8 @@ function PartnerSearchPage(): JSX.Element {
                   onChange={handleCinsiyetChange}
                   placeholder="Hepsi"
                 />
-                
-                <CustomSelect 
+
+                <CustomSelect
                   label="Seviye"
                   name="seviye"
                   options={seviyeOptions}
@@ -1357,7 +1357,7 @@ function PartnerSearchPage(): JSX.Element {
                   onChange={handleSeviyeChange}
                   placeholder="Tüm seviyeler"
                 />
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Konum
@@ -1373,11 +1373,11 @@ function PartnerSearchPage(): JSX.Element {
                       value={konum}
                       onChange={handleKonumChange}
                       placeholder="Şehir, semt..."
-                      className="w-full pl-10 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full pl-10 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-pink focus:border-brand-pink"
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Uygun Saatler
@@ -1388,21 +1388,20 @@ function PartnerSearchPage(): JSX.Element {
                         key={saat}
                         type="button"
                         onClick={() => handleSaatChange(saat)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                          uygunSaatler.includes(saat)
-                            ? 'bg-indigo-600 text-white shadow-md'
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${uygunSaatler.includes(saat)
+                            ? 'bg-brand-pink text-white shadow-md'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                          }`}
                       >
                         {saat}
                       </button>
                     ))}
                   </div>
                 </div>
-                
+
                 <button
                   type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 shadow-md flex items-center justify-center font-medium transition-all duration-300"
+                  className="w-full py-3 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-lg hover:from-rose-700 hover:to-purple-700 shadow-md flex items-center justify-center font-medium transition-all duration-300"
                   disabled={loading}
                 >
                   {loading ? (
@@ -1430,7 +1429,7 @@ function PartnerSearchPage(): JSX.Element {
           <div className="lg:w-3/4">
             {initialLoading ? (
               <div className="flex justify-center items-center min-h-[300px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
                 <span className="ml-3 text-lg text-gray-600">Partnerler yükleniyor...</span>
               </div>
             ) : (
@@ -1439,8 +1438,8 @@ function PartnerSearchPage(): JSX.Element {
                   <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
                     <div className="flex justify-between items-center">
                       <h2 className="text-xl font-semibold text-gray-800">
-                        {partnerler.length > 0 
-                          ? `${partnerler.length} Dans Partneri Bulundu` 
+                        {partnerler.length > 0
+                          ? `${partnerler.length} Dans Partneri Bulundu`
                           : "Uygun dans partneri bulunamadı"}
                       </h2>
                       <div className="text-sm text-gray-500">
@@ -1452,7 +1451,7 @@ function PartnerSearchPage(): JSX.Element {
                     </div>
                   </div>
                 )}
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {getCurrentPagePartners().map(partner => (
                     <PartnerKarti key={partner.id} partner={partner} />
@@ -1462,7 +1461,7 @@ function PartnerSearchPage(): JSX.Element {
                 {/* Pagination */}
                 {partnerler.length > partnersPerPage && (
                   <div className="mt-8 flex justify-center">
-                    <Pagination 
+                    <Pagination
                       count={totalPages}
                       page={currentPage}
                       onChange={handlePageChange}
@@ -1470,23 +1469,23 @@ function PartnerSearchPage(): JSX.Element {
                       size="large"
                       sx={{
                         '& .MuiPaginationItem-root': {
-                          color: '#4F46E5',
+                          color: '#ED3D81',
                           '&.Mui-selected': {
-                            backgroundColor: '#4F46E5',
+                            backgroundColor: '#ED3D81',
                             color: 'white',
                             '&:hover': {
-                              backgroundColor: '#4338CA',
+                              backgroundColor: '#c12d65',
                             },
                           },
                           '&:hover': {
-                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            backgroundColor: 'rgba(237, 61, 129, 0.1)',
                           },
                         },
                       }}
                     />
                   </div>
                 )}
-                
+
                 {/* Empty state */}
                 {aramaTamamlandi && partnerler.length === 0 && (
                   <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -1499,9 +1498,9 @@ function PartnerSearchPage(): JSX.Element {
                     <p className="text-gray-600 mb-6 max-w-md mx-auto">
                       Seçtiğiniz kriterlere uygun dans partneri şu anda mevcut değil. Filtreleri değiştirerek tekrar deneyebilirsiniz.
                     </p>
-                    <button 
+                    <button
                       onClick={resetFilters}
-                      className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-medium hover:bg-indigo-200 transition-colors"
+                      className="px-4 py-2 bg-rose-100 text-rose-700 rounded-lg font-medium hover:bg-rose-200 transition-colors"
                     >
                       Tüm Partnerleri Göster
                     </button>
@@ -1512,7 +1511,7 @@ function PartnerSearchPage(): JSX.Element {
           </div>
         </div>
       </div>
-      
+
       {selectedPartner && (
         <ChatDialog
           open={!!selectedPartner}

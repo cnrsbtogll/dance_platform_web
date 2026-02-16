@@ -66,7 +66,7 @@ export const ContactModal: React.FC<{
                     <h4 className="text-sm font-medium text-gray-500">Telefon</h4>
                     <a 
                       href={`tel:${course.phoneNumber}`}
-                      className="text-base text-indigo-600 hover:text-indigo-800"
+                      className="text-base text-brand-pink hover:text-indigo-800"
                     >
                       {course.phoneNumber}
                     </a>
@@ -78,7 +78,7 @@ export const ContactModal: React.FC<{
                     <h4 className="text-sm font-medium text-gray-500">E-posta</h4>
                     <a 
                       href={`mailto:${course.email}?subject=${encodeURIComponent(`${course.name} Kursu Hakkında`)}`}
-                      className="text-base text-indigo-600 hover:text-indigo-800"
+                      className="text-base text-brand-pink hover:text-indigo-800"
                     >
                       {course.email}
                     </a>
@@ -102,7 +102,7 @@ export const ContactModal: React.FC<{
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   type="button"
-                  className="inline-flex justify-center rounded-md border border-transparent bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-900 hover:bg-indigo-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                  className="inline-flex justify-center rounded-md border border-transparent bg-rose-100 px-4 py-2 text-sm font-medium text-indigo-900 hover:bg-indigo-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-pink focus-visible:ring-offset-2"
                   onClick={onClose}
                 >
                   Kapat
@@ -110,7 +110,7 @@ export const ContactModal: React.FC<{
                 {course.phoneNumber && (
                   <a
                     href={`tel:${course.phoneNumber}`}
-                    className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                    className="inline-flex justify-center rounded-md border border-transparent bg-brand-pink px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-pink focus-visible:ring-offset-2"
                   >
                     Hemen Ara
                   </a>
@@ -133,9 +133,9 @@ const ContactButton: React.FC<ContactButtonProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const baseStyles = "py-2 px-4 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200";
+  const baseStyles = "py-2 px-4 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink transition-colors duration-200";
   const variantStyles = {
-    primary: "bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-300 disabled:text-gray-500",
+    primary: "bg-brand-pink text-white hover:bg-rose-700 disabled:bg-gray-300 disabled:text-gray-500",
     secondary: "bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-300 disabled:text-gray-500"
   };
   const widthStyles = fullWidth ? "w-full" : "";

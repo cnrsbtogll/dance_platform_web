@@ -55,16 +55,16 @@ const CourseSearchPage: React.FC = () => {
         const coursesRef = collection(db, 'courses');
         const q = query(coursesRef, orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
-        
+
         const fetchedCourses: DanceClass[] = [];
-        
+
         querySnapshot.forEach((doc) => {
           fetchedCourses.push({
             id: doc.id,
             ...doc.data(),
           } as DanceClass);
         });
-        
+
         setCourses(fetchedCourses);
         setFilteredCourses(fetchedCourses);
         setDisplayedCourses(fetchedCourses.slice(0, coursesPerPage));
@@ -76,7 +76,7 @@ const CourseSearchPage: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     fetchCourses();
   }, []);
 
@@ -187,15 +187,15 @@ const CourseSearchPage: React.FC = () => {
   // Sonuç mesajı
   const resultMessage = useMemo(() => {
     if (loading) return null;
-    
+
     if (filteredCourses.length === 0) {
       return 'Arama kriterlerinize uygun kurs bulunamadı.';
     }
-    
+
     if (hasActiveFilters) {
       return `${filteredCourses.length} kurs bulundu.`;
     }
-    
+
     return null;
   }, [filteredCourses.length, hasActiveFilters, loading]);
 
@@ -203,12 +203,12 @@ const CourseSearchPage: React.FC = () => {
   const loadMoreCourses = () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
-    
+
     const nextPage = page + 1;
     const startIndex = (nextPage - 1) * coursesPerPage;
     const endIndex = startIndex + coursesPerPage;
     const newCourses = filteredCourses.slice(startIndex, endIndex);
-    
+
     if (newCourses.length > 0) {
       setDisplayedCourses(prev => [...prev, ...newCourses]);
       setPage(nextPage);
@@ -216,7 +216,7 @@ const CourseSearchPage: React.FC = () => {
     } else {
       setHasMore(false);
     }
-    
+
     setLoadingMore(false);
   };
 
@@ -226,7 +226,7 @@ const CourseSearchPage: React.FC = () => {
       <div className="bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 sm:text-4xl">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-pink to-rose-600 leading-tight inline-block">
               Dans Kursu Bul
             </h1>
             <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
@@ -248,14 +248,14 @@ const CourseSearchPage: React.FC = () => {
           <div className="mb-6">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-gray-700">Aktif filtreler:</span>
-              
+
               {activeFilters.arama && (
-                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-indigo-100 text-indigo-700">
+                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-rose-100 text-rose-700">
                   Arama: {activeFilters.arama}
                   <button
                     type="button"
                     onClick={() => clearFilter('arama')}
-                    className="flex-shrink-0 ml-1 h-5 w-5 rounded-full inline-flex items-center justify-center text-indigo-400 hover:bg-indigo-200 hover:text-indigo-600 focus:outline-none"
+                    className="flex-shrink-0 ml-1 h-5 w-5 rounded-full inline-flex items-center justify-center text-indigo-400 hover:bg-indigo-200 hover:text-brand-pink focus:outline-none"
                   >
                     <span className="sr-only">Aramayı kaldır</span>
                     <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -264,14 +264,14 @@ const CourseSearchPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              
+
               {activeFilters.dansTuru && (
                 <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-purple-100 text-purple-700">
                   Dans Türü: {activeFilters.dansTuru}
                   <button
                     type="button"
                     onClick={() => clearFilter('dansTuru')}
-                    className="flex-shrink-0 ml-1 h-5 w-5 rounded-full inline-flex items-center justify-center text-purple-400 hover:bg-purple-200 hover:text-purple-600 focus:outline-none"
+                    className="flex-shrink-0 ml-1 h-5 w-5 rounded-full inline-flex items-center justify-center text-purple-400 hover:bg-purple-200 hover:text-rose-600 focus:outline-none"
                   >
                     <span className="sr-only">Dans türünü kaldır</span>
                     <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -280,7 +280,7 @@ const CourseSearchPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              
+
               {activeFilters.seviye && (
                 <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-blue-100 text-blue-700">
                   Seviye: {activeFilters.seviye}
@@ -296,7 +296,7 @@ const CourseSearchPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              
+
               {activeFilters.fiyatAralik && (
                 <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-green-100 text-green-700">
                   Fiyat: {activeFilters.fiyatAralik.replace('-0', '+')} TL
@@ -312,7 +312,7 @@ const CourseSearchPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              
+
               {activeFilters.gun && (
                 <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-pink-100 text-pink-700">
                   Gün: {activeFilters.gun}
@@ -328,18 +328,18 @@ const CourseSearchPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              
+
               <button
                 type="button"
                 onClick={clearAllFilters}
-                className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                className="text-sm text-brand-pink hover:text-indigo-800 font-medium"
               >
                 Tüm filtreleri temizle
               </button>
             </div>
           </div>
         )}
-        
+
         {/* Sonuç Mesajı */}
         {resultMessage && (
           <div className="mb-6 text-sm font-medium text-gray-700">
@@ -366,7 +366,7 @@ const CourseSearchPage: React.FC = () => {
         {/* Yükleniyor */}
         {loading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
             <span className="ml-3 text-gray-700">Kurslar yükleniyor...</span>
           </div>
         )}
@@ -400,7 +400,7 @@ const CourseSearchPage: React.FC = () => {
         {/* Yükleniyor göstergesi */}
         {loadingMore && (
           <div className="flex justify-center items-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-pink"></div>
             <span className="ml-3 text-gray-600">Daha fazla kurs yükleniyor...</span>
           </div>
         )}
@@ -427,7 +427,7 @@ const CourseSearchPage: React.FC = () => {
             <div className="mt-6">
               <button
                 onClick={clearAllFilters}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
               >
                 Filtreleri Temizle
               </button>

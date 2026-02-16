@@ -650,7 +650,7 @@ function InstructorManagement(): JSX.Element {
   if (loading && egitmenler.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -847,7 +847,7 @@ function InstructorManagement(): JSX.Element {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                className="px-4 py-2 bg-brand-pink text-white rounded-md hover:bg-rose-700 transition-colors"
                 disabled={loading}
               >
                 {loading ? 'Kaydediliyor...' : (seciliEgitmen ? 'Güncelle' : 'Ekle')}
@@ -869,7 +869,7 @@ function InstructorManagement(): JSX.Element {
           
           {loading && (
             <div className="flex justify-center my-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-pink"></div>
             </div>
           )}
           
@@ -946,7 +946,7 @@ function InstructorManagement(): JSX.Element {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => egitmenDuzenle(egitmen)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-2"
+                          className="text-brand-pink hover:text-indigo-900 mr-2"
                         >
                           Düzenle
                         </button>

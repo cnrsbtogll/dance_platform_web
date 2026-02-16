@@ -5,6 +5,7 @@ import { db } from '../../api/firebase/firebase';
 import { DanceClass } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import ContactButton from '../../common/components/ui/ContactButton';
+import { getCourseImage } from '../../common/utils/imageUtils';
 
 const CourseDetailPage: React.FC = () => {
   const { id } = useParams<Record<string, string | undefined>>();
@@ -26,7 +27,7 @@ const CourseDetailPage: React.FC = () => {
       try {
         const courseRef = doc(db, 'courses', id);
         const courseDoc = await getDoc(courseRef);
-        
+
         if (courseDoc.exists()) {
           setCourse({
             id: courseDoc.id,
@@ -49,7 +50,7 @@ const CourseDetailPage: React.FC = () => {
   // Seviyeye göre Türkçe adı
   const getLevelName = (level?: string) => {
     if (!level) return '';
-    
+
     switch (level.toLowerCase()) {
       case 'beginner':
         return 'Başlangıç';
@@ -67,7 +68,7 @@ const CourseDetailPage: React.FC = () => {
   // Dans stiline göre Türkçe adı
   const getDanceStyleName = (style?: string) => {
     if (!style) return '';
-    
+
     switch (style.toLowerCase()) {
       case 'salsa':
         return 'Salsa';
@@ -85,7 +86,7 @@ const CourseDetailPage: React.FC = () => {
   // Tarihi formatla
   const formatDate = (date: any) => {
     if (!date) return '';
-    
+
     const d = date instanceof Date ? date : new Date(date.seconds ? date.seconds * 1000 : date);
     return d.toLocaleDateString('tr-TR', {
       day: '2-digit',
@@ -97,10 +98,10 @@ const CourseDetailPage: React.FC = () => {
   // Kursa kaydol
   const handleEnroll = async () => {
     if (!currentUser) {
-      navigate('/signin', { state: { returnUrl: `/courses/${id}` }});
+      navigate('/signin', { state: { returnUrl: `/courses/${id}` } });
       return;
     }
-    
+
     // Burada kursa kaydolma işlemi yapılacak
     alert('Kursa kaydolma işlevi henüz eklenmedi. Yakında aktifleşecek!');
   };
@@ -113,7 +114,7 @@ const CourseDetailPage: React.FC = () => {
           <nav className="flex" aria-label="Breadcrumb">
             <ol className="inline-flex items-center space-x-1 md:space-x-3">
               <li className="inline-flex items-center">
-                <Link to="/" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-indigo-600">
+                <Link to="/" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-brand-pink">
                   <svg className="mr-2 w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
                   </svg>
@@ -125,7 +126,7 @@ const CourseDetailPage: React.FC = () => {
                   <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
                   </svg>
-                  <Link to="/courses" className="ml-1 text-sm font-medium text-gray-700 hover:text-indigo-600 md:ml-2">
+                  <Link to="/courses" className="ml-1 text-sm font-medium text-gray-700 hover:text-brand-pink md:ml-2">
                     Kurslar
                   </Link>
                 </div>
@@ -147,7 +148,7 @@ const CourseDetailPage: React.FC = () => {
         {/* Yükleniyor */}
         {loading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
             <span className="ml-3 text-gray-700">Kurs detayları yükleniyor...</span>
           </div>
         )}
@@ -164,7 +165,7 @@ const CourseDetailPage: React.FC = () => {
               <div className="ml-3">
                 <p className="text-sm text-red-700">{error}</p>
                 <div className="mt-4">
-                  <Link 
+                  <Link
                     to="/courses"
                     className="text-sm font-medium text-red-700 hover:text-red-600"
                   >
@@ -182,20 +183,11 @@ const CourseDetailPage: React.FC = () => {
             <div className="bg-white shadow-lg rounded-lg overflow-hidden">
               {/* Kurs Resmi */}
               <div className="relative h-64 sm:h-80 bg-gray-200">
-                {course.imageUrl ? (
-                  <img 
-                    src={course.imageUrl} 
-                    alt={course.name} 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                    <svg className="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                )}
+                <img
+                  src={getCourseImage(course.imageUrl, course.danceStyle)}
+                  alt={course.name}
+                  className="w-full h-full object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent"></div>
                 <div className="absolute bottom-4 left-4">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white shadow-md text-gray-800">
@@ -229,7 +221,7 @@ const CourseDetailPage: React.FC = () => {
                   </div>
 
                   <div className="flex-initial mt-6 lg:mt-0">
-                    <div className="text-2xl font-bold text-indigo-600">
+                    <div className="text-2xl font-bold text-brand-pink">
                       {course.price.toLocaleString('tr-TR')} {course.currency === 'TRY' ? '₺' : course.currency === 'USD' ? '$' : '€'}
                     </div>
                     <ContactButton
@@ -304,9 +296,9 @@ const CourseDetailPage: React.FC = () => {
 
             {/* Diğer Kursları Keşfet */}
             <div className="mt-10 flex justify-center">
-              <Link 
+              <Link
                 to="/courses"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
               >
                 <svg className="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />

@@ -195,7 +195,7 @@ function SchoolRequests(): JSX.Element {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -293,7 +293,7 @@ function SchoolRequests(): JSX.Element {
                         {request.danceStyles.map((style, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800"
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800"
                           >
                             {style}
                           </span>
@@ -318,7 +318,7 @@ function SchoolRequests(): JSX.Element {
                         </button>
                         <button
                           onClick={() => handleViewDetails(request)}
-                          className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
                         >
                           Detaylar
                         </button>
@@ -390,7 +390,7 @@ function SchoolRequests(): JSX.Element {
                           {selectedRequest.danceStyles.map((style, index) => (
                             <span
                               key={index}
-                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800"
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800"
                             >
                               {style}
                             </span>
@@ -419,7 +419,7 @@ function SchoolRequests(): JSX.Element {
                 <button
                   type="button"
                   onClick={() => setSelectedRequest(null)}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-brand-pink text-base font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   Kapat
                 </button>

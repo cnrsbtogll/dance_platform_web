@@ -69,7 +69,7 @@ const SchoolDetailPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50 pt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
             <span className="ml-3 text-gray-700">Okul bilgileri yükleniyor...</span>
           </div>
         </div>
@@ -115,7 +115,7 @@ const SchoolDetailPage: React.FC = () => {
             <p className="mt-1 text-gray-500">Aradığınız dans okulu bulunamadı.</p>
             <button
               onClick={() => navigate(-1)}
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
             >
               Geri Dön
             </button>
@@ -133,7 +133,7 @@ const SchoolDetailPage: React.FC = () => {
           <nav className="flex" aria-label="Breadcrumb">
             <ol className="inline-flex items-center space-x-1 md:space-x-3">
               <li className="inline-flex items-center">
-                <Link to="/" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-indigo-600">
+                <Link to="/" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-brand-pink">
                   <svg className="mr-2 w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
                   </svg>
@@ -145,7 +145,7 @@ const SchoolDetailPage: React.FC = () => {
                   <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
                   </svg>
-                  <Link to="/schools" className="ml-1 text-sm font-medium text-gray-700 hover:text-indigo-600 md:ml-2">
+                  <Link to="/schools" className="ml-1 text-sm font-medium text-gray-700 hover:text-brand-pink md:ml-2">
                     Dans Okulları
                   </Link>
                 </div>
@@ -193,7 +193,7 @@ const SchoolDetailPage: React.FC = () => {
               onClick={() => setActiveTab('about')}
               className={`${
                 activeTab === 'about'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200`}
             >
@@ -203,7 +203,7 @@ const SchoolDetailPage: React.FC = () => {
               onClick={() => setActiveTab('courses')}
               className={`${
                 activeTab === 'courses'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200`}
             >
@@ -213,7 +213,7 @@ const SchoolDetailPage: React.FC = () => {
               onClick={() => setActiveTab('instructors')}
               className={`${
                 activeTab === 'instructors'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200`}
             >
@@ -223,7 +223,7 @@ const SchoolDetailPage: React.FC = () => {
               onClick={() => setActiveTab('gallery')}
               className={`${
                 activeTab === 'gallery'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200`}
             >
@@ -248,7 +248,7 @@ const SchoolDetailPage: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Dans Stilleri</h3>
                 <div className="flex flex-wrap gap-2">
                   {school.danceStyles.map((style, index) => (
-                    <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                    <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-rose-100 text-indigo-800">
                       {style}
                     </span>
                   ))}
@@ -281,7 +281,7 @@ const SchoolDetailPage: React.FC = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                     </svg>
-                    <a href={school.contactInfo.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800">
+                    <a href={school.contactInfo.website} target="_blank" rel="noopener noreferrer" className="text-brand-pink hover:text-indigo-800">
                       {school.contactInfo.website}
                     </a>
                   </div>
@@ -351,13 +351,13 @@ const SchoolDetailPage: React.FC = () => {
                           alt={course.name}
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-2 py-1 m-2 rounded">
+                        <div className="absolute top-0 right-0 bg-brand-pink text-white text-xs font-bold px-2 py-1 m-2 rounded">
                           {course.level || 'Tüm Seviyeler'}
                         </div>
                       </div>
                       <div className="p-4">
                         <h3 className="text-lg font-semibold text-gray-800 mb-1">{course.name}</h3>
-                        <p className="text-indigo-600 font-medium mb-2">{course.danceStyle || 'Çeşitli'}</p>
+                        <p className="text-brand-pink font-medium mb-2">{course.danceStyle || 'Çeşitli'}</p>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-700 font-bold">{course.price || '?'} {course.currency || 'TRY'}</span>
                           <span className="text-gray-500 text-sm">{course.duration || 60} dk</span>

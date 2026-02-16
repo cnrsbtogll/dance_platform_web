@@ -1,21 +1,14 @@
 {
-  "name": "MyWebSite",
-  "short_name": "MySite",
+  "name": "Feriha",
+  "short_name": "Feriha",
   "icons": [
     {
-      "src": "/public/web-app-manifest-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/public/web-app-manifest-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "src": "/logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
     }
   ],
-  "theme_color": "#ffffff",
+  "theme_color": "#6366f1",
   "background_color": "#ffffff",
   "display": "standalone"
 }

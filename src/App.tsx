@@ -42,7 +42,7 @@ console.log('🔍 Firebase auth durumu:', auth ? 'Tanımlı' : 'Tanımsız', aut
 // Instructor redirect component
 const InstructorRedirect: React.FC<{ user: any }> = ({ user }) => {
   const location = useLocation();
-  
+
   // Eğer kullanıcı eğitmen değilse, hiçbir şey yapma
   if (user?.role !== 'instructor') {
     return null;
@@ -59,17 +59,17 @@ const InstructorRedirect: React.FC<{ user: any }> = ({ user }) => {
   if (restrictedPaths.includes(location.pathname)) {
     return <Navigate to="/instructor" replace />;
   }
-  
+
   return null;
 };
 
 function App(): JSX.Element {
   console.log('🔍 App bileşeni render ediliyor');
-  
+
   const { user, loading, error, isOffline } = useAuth();
   const [currentUser, setCurrentUser] = useState<User | null>(user);
   console.log('🔍 useAuth hook sonuçları:', { user: !!user, loading, error, isOffline });
-  
+
   const isAuthenticated = !!user;
   const [firebaseInitError, setFirebaseInitError] = useState<string | null>(null);
   const [resetTrigger, setResetTrigger] = useState<number>(0);
@@ -105,18 +105,18 @@ function App(): JSX.Element {
   // Profil fotoğrafının güncellendiğini log'la (debug için)
   useEffect(() => {
     if (user) {
-      console.log('👤 Kullanıcı güncellendi:', { 
+      console.log('👤 Kullanıcı güncellendi:', {
         photoURL: user.photoURL?.substring(0, 30) + '...',
         displayName: user.displayName
       });
-      
+
       // Firebase Auth güncellemelerini dinle
       const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
         if (firebaseUser) {
           console.log('🔄 Firebase Auth kullanıcı değişimi algılandı');
         }
       });
-      
+
       return () => unsubscribe();
     }
   }, [user]);
@@ -132,49 +132,49 @@ function App(): JSX.Element {
   // Firebase hata mesajını daha kullanıcı dostu hale getir
   const getUserFriendlyErrorMessage = (errorMessage: string) => {
     console.log('🔍 Hata mesajı işleniyor:', errorMessage);
-    
+
     if (errorMessage.includes('offline') || errorMessage.includes('unavailable')) {
       return 'İnternet bağlantınızı kontrol edin ve sayfayı yenileyin. Sunucuya bağlanılamıyor.';
     }
-    
+
     if (errorMessage.includes('configuration-not-found')) {
       return 'Firebase yapılandırma hatası. Bu uygulama için Firebase projesi doğru şekilde yapılandırılmamış olabilir.';
     }
-    
+
     if (errorMessage.includes('not initialized')) {
       return 'Firebase başlatılamadı. Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin.';
     }
-    
+
     if (errorMessage.includes('Kullanıcı profili henüz oluşturulmamış')) {
       return errorMessage;
     }
-    
+
     // Firebase servislerine bağlanılamama durumları için daha spesifik mesajlar
     if (errorMessage.includes('permission-denied')) {
       return 'Yetkilendirme hatası. Bu işlemi yapmak için gerekli yetkiye sahip değilsiniz.';
     }
-    
+
     if (errorMessage.includes('PERMISSION_DENIED')) {
       return 'Erişim engellendi. Bu içeriğe erişmek için daha yüksek yetki gerekebilir.';
     }
-    
+
     if (errorMessage.includes('quota-exceeded')) {
       return 'Firebase kota sınırı aşıldı. Kısa bir süre sonra tekrar deneyin.';
     }
-    
+
     if (errorMessage.includes('network-request-failed')) {
       return 'Ağ isteği başarısız oldu. İnternet bağlantınızı kontrol edin.';
     }
-    
+
     // Storage bucket ile ilgili hatalar için
     if (errorMessage.includes('storage/invalid-argument') || errorMessage.includes('storage/invalid-bucket')) {
       return 'Storage yapılandırma hatası. Uygulama yöneticisiyle iletişime geçin.';
     }
-    
+
     console.error('⚠️ Bilinmeyen hata:', errorMessage);
     return 'Firebase servislerine bağlanırken bir sorun oluştu. Lütfen daha sonra tekrar deneyin.';
   };
-  
+
   // Uygulama sıkışmasını önlemek için timeout
   useEffect(() => {
     // 30 saniye sonra hala loading ise, zorla resetle
@@ -184,18 +184,18 @@ function App(): JSX.Element {
         window.location.reload();
       }
     }, 30000);
-    
+
     return () => clearTimeout(timeout);
   }, [loading, resetTrigger]);
 
   // Firebase hazır olduğunda tetiklenen olayı dinle
   useEffect(() => {
     console.log('🔍 firebaseReady event listener useEffect çalıştı');
-    
+
     const handleFirebaseReady = (e: Event) => {
-      const customEvent = e as CustomEvent<{success: boolean, error?: string}>;
+      const customEvent = e as CustomEvent<{ success: boolean, error?: string }>;
       console.log('🔍 Firebase ready event alındı:', customEvent.detail);
-      
+
       if (!customEvent.detail.success && customEvent.detail.error) {
         console.error('❌ Firebase başlatma hatası:', customEvent.detail.error);
         setFirebaseInitError(customEvent.detail.error);
@@ -205,10 +205,10 @@ function App(): JSX.Element {
         setFirebaseInitError(null);
       }
     };
-    
+
     // Olay dinleyicisini ekle
     document.addEventListener('firebaseReady', handleFirebaseReady);
-    
+
     return () => {
       console.log('🔍 firebaseReady event listener temizleniyor');
       // Temizleme
@@ -218,7 +218,7 @@ function App(): JSX.Element {
 
   useEffect(() => {
     console.log('🔍 Firebase başlatma kontrol useEffect çalıştı');
-    
+
     // Firebase başlatma hatalarını yakalamak için
     try {
       console.log('🔍 Firebase auth nesnesini kontrol ediliyor...');
@@ -227,22 +227,22 @@ function App(): JSX.Element {
         console.error('❌ Firebase auth nesnesi tanımlanmamış');
         throw new Error('Firebase auth is not initialized');
       }
-      
+
       console.log('🔍 Firebase auth.app özelliği kontrol ediliyor...', auth);
-      
+
       // app özelliğinin ve name özelliğinin varlığını kontrol et
       if (auth.app && typeof auth.app.name === 'string') {
         console.log('✅ Firebase auth başarıyla başlatıldı:', auth.app.name);
       } else {
         console.warn('⚠️ Firebase auth başlatıldı, ancak app.name mevcut değil');
       }
-      
+
       // Firebase config'i kontrol et
       console.log('🔍 Firebase config modülü import ediliyor...');
       import('./api/firebase/firebase').then((module: { default: FirebaseApp }) => {
         const app: FirebaseApp = module.default;
         console.log('🔍 Firebase app modülü yüklendi:', app);
-        
+
         if (!app || Object.keys(app).length === 0) {
           console.error('❌ Firebase app nesnesi boş veya düzgün başlatılmamış');
           setFirebaseInitError('Firebase uygulaması başlatılamadı. Lütfen yapılandırmayı kontrol edin.');
@@ -329,7 +329,7 @@ function App(): JSX.Element {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -348,14 +348,14 @@ function App(): JSX.Element {
             {firebaseInitError}
           </div>
           <div className="mt-6 flex flex-col space-y-2">
-            <button 
-              onClick={() => window.location.reload()} 
-              className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700"
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-brand-pink text-white py-2 px-4 rounded hover:bg-rose-600 transition-colors duration-200"
             >
               Sayfayı Yenile
             </button>
-            <button 
-              onClick={resetFirebaseErrors} 
+            <button
+              onClick={resetFirebaseErrors}
               className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
             >
               Firebase Bağlantısını Sıfırla
@@ -371,7 +371,7 @@ function App(): JSX.Element {
       <AuthProvider>
         <Router>
           <NotificationsCenter />
-          <Toaster 
+          <Toaster
             position="top-center"
             toastOptions={{
               duration: 3000,
@@ -403,13 +403,13 @@ function App(): JSX.Element {
                 ⚠️ Çevrimdışı moddasınız. İnternet bağlantınızı kontrol edin.
               </div>
             )}
-            
+
             {error && !isOffline && (
               <div className="bg-orange-500 text-white text-center py-2 px-4 fixed top-0 left-0 w-full z-50">
                 ⚠️ {getUserFriendlyErrorMessage(error)}
               </div>
             )}
-            
+
             <Navbar isAuthenticated={!!currentUser} user={currentUser} />
             <div className="pt-16">
               <Routes>
@@ -423,32 +423,32 @@ function App(): JSX.Element {
                 <Route path="/schools/:id" element={<SchoolDetailPage />} />
                 <Route path="/festivals" element={<Festivals />} />
                 <Route path="/nights" element={<Nights />} />
-                <Route 
-                  path="/progress" 
+                <Route
+                  path="/progress"
                   element={
                     isAuthenticated ? <ProgressPage /> : <Navigate to="/signin" />
-                  } 
+                  }
                 />
-                <Route 
-                  path="/admin" 
+                <Route
+                  path="/admin"
                   element={
                     isAuthenticated ? <AdminPanel user={currentUser} /> : <Navigate to="/signin" />
-                  } 
+                  }
                 />
-                
-                <Route 
-                  path="/instructor" 
+
+                <Route
+                  path="/instructor"
                   element={
-                    isAuthenticated && currentUser?.role?.includes('instructor') ? 
-                    <InstructorPanel user={currentUser} /> : <Navigate to="/signin" />
-                  } 
+                    isAuthenticated && currentUser?.role?.includes('instructor') ?
+                      <InstructorPanel user={currentUser} /> : <Navigate to="/signin" />
+                  }
                 />
-                <Route 
-                  path="/school-admin" 
+                <Route
+                  path="/school-admin"
                   element={
-                    isAuthenticated && currentUser?.role?.includes('school') ? 
-                    <SchoolAdmin /> : <Navigate to="/signin" />
-                  } 
+                    isAuthenticated && currentUser?.role?.includes('school') ?
+                      <SchoolAdmin /> : <Navigate to="/signin" />
+                  }
                 />
                 <Route
                   path="/become-instructor"
@@ -457,7 +457,7 @@ function App(): JSX.Element {
                 <Route
                   path="/become-school"
                   element={
-                    <BecomeSchool 
+                    <BecomeSchool
                       onMount={() => {
                         console.log('🎯 /become-school route render:', {
                           isAuthenticated,
@@ -472,38 +472,38 @@ function App(): JSX.Element {
                     />
                   }
                 />
-                <Route 
-                  path="/profile" 
+                <Route
+                  path="/profile"
                   element={
                     isAuthenticated ? (
-                      <ProfilePage 
-                        user={currentUser} 
+                      <ProfilePage
+                        user={currentUser}
                         onUpdate={(updatedUser) => {
                           console.log('Profil güncellendi:', updatedUser);
                           // Profil güncellendiğinde yapılacak işlemler
-                        }} 
+                        }}
                       />
                     ) : (
                       <Navigate to="/signin" />
                     )
-                  } 
+                  }
                 />
                 <Route path="/signin" element={isAuthenticated ? <Navigate to="/" /> : <SignIn />} />
                 <Route path="/signup" element={isAuthenticated ? <Navigate to="/" /> : <SignUp />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </div>
-            
+
             <footer className="bg-gray-800 text-white py-8">
               <div className="container mx-auto px-4">
                 <div className="flex flex-col md:flex-row justify-between">
                   <div className="mb-6 md:mb-0">
-                    <h2 className="text-xl font-bold mb-4">Dans Platformu</h2>
+                    <h2 className="text-xl font-bold mb-4">Feriha</h2>
                     <p className="text-gray-300 max-w-md">
                       Türkiye'nin en kapsamlı dans platformu. Dans kursları, eğitmenler ve dans partnerleri için tek adres.
                     </p>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-lg font-semibold mb-3">Bağlantılar</h3>
                     <ul className="space-y-2">
@@ -513,7 +513,7 @@ function App(): JSX.Element {
                       <li><a href="/nights" className="text-gray-300 hover:text-white">Geceler</a></li>
                     </ul>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-lg font-semibold mb-3">İletişim</h3>
                     <p className="text-gray-300">
@@ -537,7 +537,7 @@ function App(): JSX.Element {
                     <p className="text-gray-300">
                       <a href="https://wa.me/905550059876" className="hover:text-white flex items-center group">
                         <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#25D366] mr-2 transition-transform group-hover:scale-110" fill="currentColor">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                         </svg>
                         +90 555 005 9876
                       </a>
@@ -558,9 +558,9 @@ function App(): JSX.Element {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-8 pt-6 border-t border-gray-700 text-gray-400 text-sm text-center">
-                  &copy; {new Date().getFullYear()} Dans Platformu. Tüm hakları saklıdır.
+                  &copy; {new Date().getFullYear()} Feriha. Tüm hakları saklıdır.
                 </div>
               </div>
             </footer>
@@ -570,7 +570,7 @@ function App(): JSX.Element {
               <>
                 <button
                   onClick={() => setShowChatList(true)}
-                  className="fixed bottom-6 right-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group z-50"
+                  className="fixed bottom-6 right-6 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group z-50"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -588,13 +588,13 @@ function App(): JSX.Element {
                 {/* Chat List Dialog */}
                 {showChatList && (
                   <div className="fixed inset-0 z-50 overflow-hidden">
-                    <div 
-                      className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
-                      onClick={handleCloseChatList} 
+                    <div
+                      className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                      onClick={handleCloseChatList}
                     />
                     <div className="fixed inset-y-0 right-0 max-w-md w-full bg-white shadow-xl">
                       <div className="h-full flex flex-col">
-                        <div className="px-4 py-6 bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <div className="px-4 py-6 bg-gradient-to-r from-brand-pink to-rose-600">
                           <div className="flex items-center justify-between">
                             <h2 className="text-xl font-semibold text-white">
                               Mesajlarım {unreadCount > 0 && <span className="text-sm ml-2">({unreadCount} okunmamış)</span>}

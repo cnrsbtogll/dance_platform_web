@@ -54,7 +54,7 @@ const InstructorCard: React.FC<InstructorCardProps> = ({
         <h3 className="text-lg font-semibold text-gray-800">
           {instructor.user.displayName || "Eğitmen"}
         </h3>
-        <p className="text-indigo-600 font-medium mb-1">
+        <p className="text-brand-pink font-medium mb-1">
           Dans Eğitmeni
         </p>
         <div className="flex items-center mb-2">
@@ -77,7 +77,7 @@ const InstructorCard: React.FC<InstructorCardProps> = ({
         <div className="mt-4">
           <button
             onClick={handleContactClick}
-            className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition"
+            className="w-full bg-brand-pink text-white py-2 px-4 rounded-md hover:bg-rose-700 transition"
           >
             İletişime Geç
           </button>

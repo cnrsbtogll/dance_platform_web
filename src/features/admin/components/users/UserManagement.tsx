@@ -1001,7 +1001,7 @@ export const UserManagement: React.FC = () => {
         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
           <button
             onClick={() => editStudent(student)}
-            className="text-indigo-600 hover:text-indigo-900 mr-2"
+            className="text-brand-pink hover:text-indigo-900 mr-2"
           >
             Düzenle
           </button>
@@ -1150,7 +1150,7 @@ export const UserManagement: React.FC = () => {
   if (loading && students.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -1191,7 +1191,7 @@ export const UserManagement: React.FC = () => {
             </button>
             <button 
               onClick={() => handleAddNewUser('school')}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-rose-600 text-white rounded-md hover:bg-purple-700 transition-colors"
               disabled={loading}
             >
               {loading ? 'Yükleniyor...' : 'Yeni Dans Okulu'}
@@ -1272,7 +1272,7 @@ export const UserManagement: React.FC = () => {
                   onClick={() => handleRoleFilter(role)}
                   className={`px-3 py-1 rounded-full text-xs font-medium ${
                     filterConfig.roles.includes(role)
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-brand-pink text-white'
                       : 'bg-gray-200 text-gray-700'
                   }`}
                 >
@@ -1284,7 +1284,7 @@ export const UserManagement: React.FC = () => {
           
           {loading && (
             <div className="flex justify-center my-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-pink"></div>
             </div>
           )}
           
@@ -1417,7 +1417,7 @@ export const UserManagement: React.FC = () => {
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => editStudent(student)}
-                                className="text-indigo-600 hover:text-indigo-900"
+                                className="text-brand-pink hover:text-indigo-900"
                               >
                                 Düzenle
                               </button>

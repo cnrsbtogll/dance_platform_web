@@ -409,7 +409,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[500px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -506,7 +506,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
         transition={{ duration: 0.5 }}
         className="text-center mb-10"
       >
-        <h1 className="text-3xl sm:text-4xl font-bold mb-4 inline-block relative bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-4 inline-block relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent">
           Dans Okulu Başvurusu
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">

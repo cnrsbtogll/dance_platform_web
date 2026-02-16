@@ -120,7 +120,7 @@ const SignIn = () => {
           Hesabınız yok mu?{' '}
           <a 
             href="/signup"
-            className="text-indigo-600 hover:text-indigo-800"
+            className="text-brand-pink hover:text-indigo-800"
             onClick={(e) => {
               e.preventDefault();
               navigate('/signup');

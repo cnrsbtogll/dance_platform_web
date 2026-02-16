@@ -51,7 +51,7 @@ export const TicketList: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-pink"></div>
       </div>
     );
   }
@@ -101,7 +101,7 @@ export const TicketList: React.FC = () => {
             <p className="text-sm text-gray-500 line-through">
               {ticket.fiyatBilgileri.orijinalFiyat}
             </p>
-            <p className="text-lg font-semibold text-indigo-600">
+            <p className="text-lg font-semibold text-brand-pink">
               {ticket.fiyatBilgileri.indirimliFiyat}
             </p>
           </div>

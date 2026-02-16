@@ -19,7 +19,7 @@ function Avatar({ src, alt, className = '' }: AvatarProps) {
   if (!src) {
     return (
       <div 
-        className={`flex items-center justify-center bg-indigo-100 text-indigo-600 ${className}`}
+        className={`flex items-center justify-center bg-rose-100 text-brand-pink ${className}`}
         title={alt}
       >
         <span className="text-sm font-medium">{getInitials(alt)}</span>

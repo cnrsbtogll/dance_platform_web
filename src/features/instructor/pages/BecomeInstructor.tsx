@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  collection, 
-  addDoc, 
-  serverTimestamp, 
-  query, 
-  where, 
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  where,
   getDocs,
   doc,
   getDoc,
@@ -76,7 +76,7 @@ function BecomeInstructor() {
         const danceStylesRef = collection(db, 'danceStyles');
         const q = query(danceStylesRef, orderBy('label'));
         const querySnapshot = await getDocs(q);
-        
+
         const styles: DanceStyle[] = [];
         querySnapshot.forEach((doc) => {
           styles.push({
@@ -84,7 +84,7 @@ function BecomeInstructor() {
             ...doc.data()
           } as DanceStyle);
         });
-        
+
         if (styles.length === 0) {
           // If no styles in Firestore, use default styles
           setDanceStyles([
@@ -130,14 +130,14 @@ function BecomeInstructor() {
           setIsLoading(false);
           return;
         }
-        
+
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
           const userData = userDoc.data();
           const roles = userData.role || [];
-          
+
           if (Array.isArray(roles) && roles.includes('instructor')) {
             setIsAlreadyInstructor(true);
             setIsLoading(false);
@@ -166,13 +166,13 @@ function BecomeInstructor() {
           where('userId', '==', currentUser.uid),
           where('status', '==', 'pending')
         );
-        
+
         const querySnapshot = await getDocs(q);
-        
+
         if (!querySnapshot.empty) {
           setHasExistingApplication(true);
         }
-        
+
         setIsLoading(false);
       } catch (err) {
         console.error('Error checking user status:', err);
@@ -190,10 +190,10 @@ function BecomeInstructor() {
       ...prev,
       [name]: value
     }));
-    
+
     if (formErrors[name as keyof FormData]) {
       setFormErrors(prev => {
-        const updated = {...prev};
+        const updated = { ...prev };
         delete updated[name as keyof FormData];
         return updated;
       });
@@ -203,16 +203,16 @@ function BecomeInstructor() {
   const handleDanceStyleChange = (value: string | string[]) => {
     const danceStylesArray = Array.isArray(value) ? value : [value];
     const filteredStyles = value === '' ? [] : danceStylesArray.filter(style => style !== '');
-    
+
     setSelectedDanceStyles(filteredStyles);
     setFormData(prev => ({
       ...prev,
       danceStyles: filteredStyles
     }));
-    
+
     if (formErrors.danceStyles) {
       setFormErrors(prev => {
-        const updated = {...prev};
+        const updated = { ...prev };
         delete updated.danceStyles;
         return updated;
       });
@@ -237,31 +237,31 @@ function BecomeInstructor() {
     setIsSubmitting(true);
     setGeneralError(null);
     setFormErrors({});
-    
+
     console.log('🔵 Form gönderme işlemi başlatıldı:', formData);
-    
+
     const errors: Partial<Record<keyof FormData, string>> = {};
-    
+
     if (!formData.firstName.trim()) {
       errors.firstName = 'Bu alan zorunlu';
     }
-    
+
     if (!formData.lastName.trim()) {
       errors.lastName = 'Bu alan zorunlu';
     }
-    
+
     if (!formData.danceStyles || formData.danceStyles.length === 0) {
       errors.danceStyles = 'En az bir dans stili seçmelisiniz';
     }
-    
+
     const cleanPhone = formData.contactNumber.replace(/\s/g, '');
-    
+
     if (!cleanPhone) {
       errors.contactNumber = 'Bu alan zorunlu';
     } else if (cleanPhone.length !== 10) {
       errors.contactNumber = '10 rakam girmelisiniz';
     }
-    
+
     if (!currentUser) {
       if (!formData.email) {
         errors.email = 'Bu alan zorunlu';
@@ -271,7 +271,7 @@ function BecomeInstructor() {
     }
 
     console.log('✅ Form validasyonu tamamlandı. Hatalar:', errors);
-    
+
     if (Object.keys(errors).length > 0) {
       console.log('❌ Form validasyonu başarısız');
       setFormErrors(errors);
@@ -323,7 +323,7 @@ function BecomeInstructor() {
           return;
         }
       }
-      
+
       if (!userId || !userEmail) {
         throw new Error('Kullanıcı bilgileri eksik');
       }
@@ -343,14 +343,14 @@ function BecomeInstructor() {
         createdAt: serverTimestamp()
       };
       console.log('📝 Gönderilecek veri:', instructorRequestData);
-      
+
       await addDoc(collection(db, 'instructorRequests'), instructorRequestData);
       console.log('✅ Başvuru başarıyla gönderildi');
-      
+
       setSuccess(true);
       setFormData(initialFormData);
       setSelectedDanceStyles([]);
-      
+
     } catch (err) {
       console.error('❌ Başvuru gönderilirken hata oluştu:', err);
       setGeneralError(`Başvuru gönderilirken bir hata oluştu: ${err instanceof Error ? err.message : 'Bilinmeyen bir hata'}`);
@@ -362,7 +362,7 @@ function BecomeInstructor() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[500px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -379,7 +379,7 @@ function BecomeInstructor() {
           </div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">Zaten bir eğitmensiniz!</h2>
           <p className="text-gray-600 mb-6">Eğitmen panelinize giderek derslerinizi yönetebilirsiniz.</p>
-          <Button 
+          <Button
             onClick={() => navigate('/instructor')}
             variant="primary"
           >
@@ -401,7 +401,7 @@ function BecomeInstructor() {
           </div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">Başvurunuz İnceleniyor</h2>
           <p className="text-gray-600 mb-6">Eğitmen başvurunuz halihazırda inceleniyor. Başvurunuz onaylandığında size e-posta ile bilgilendirme yapılacaktır.</p>
-          <Button 
+          <Button
             onClick={() => navigate('/')}
             variant="primary"
           >
@@ -423,7 +423,7 @@ function BecomeInstructor() {
           </div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">Başvurunuz Alındı!</h2>
           <p className="text-gray-600 mb-6">Eğitmen başvurunuz başarıyla alındı. Başvurunuz incelendikten sonra size e-posta ile bilgilendirme yapılacaktır.</p>
-          <Button 
+          <Button
             onClick={() => navigate('/')}
             variant="primary"
           >
@@ -441,27 +441,27 @@ function BecomeInstructor() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="text-center mb-10"
       >
-        <h1 className="text-3xl sm:text-4xl font-bold mb-4 inline-block relative bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block">
           Eğitmen Olarak Başvurun
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
           Dans tutkunuzu profesyonel bir kariyere dönüştürün ve platformumuzda yeni öğrencilerle buluşun.
         </p>
       </motion.div>
-      
+
       <div className="bg-white p-8 rounded-lg shadow-md">
         {generalError && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
             <p>{generalError}</p>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
@@ -524,7 +524,7 @@ function BecomeInstructor() {
                 label="Telefon"
                 countryCode="+90"
                 phoneNumber={formData.contactNumber || ''}
-                onCountryCodeChange={() => {}}
+                onCountryCodeChange={() => { }}
                 onPhoneNumberChange={(value) => handleInputChange({ target: { name: 'contactNumber', value } })}
                 error={!!formErrors.contactNumber}
                 helperText={formErrors.contactNumber}
@@ -535,7 +535,7 @@ function BecomeInstructor() {
             <div className="md:col-span-2">
               {loadingStyles ? (
                 <div className="bg-gray-100 p-2 rounded-md flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-indigo-500 mr-2"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink mr-2"></div>
                   <span className="text-gray-600">Dans stilleri yükleniyor...</span>
                 </div>
               ) : (
@@ -596,7 +596,7 @@ function BecomeInstructor() {
           </div>
         </form>
       </div>
-      
+
       <div className="mt-6 bg-blue-50 p-4 rounded-md">
         <h3 className="text-blue-800 font-semibold">Bilgi</h3>
         <p className="text-blue-700 text-sm mt-1">

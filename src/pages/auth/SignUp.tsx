@@ -142,7 +142,7 @@ const SignUp: React.FC = () => {
           Zaten hesabınız var mı?{' '}
           <a 
             href="/signin" 
-            className="text-indigo-600 hover:text-indigo-800"
+            className="text-brand-pink hover:text-indigo-800"
             onClick={(e) => {
               e.preventDefault();
               navigate('/signin');

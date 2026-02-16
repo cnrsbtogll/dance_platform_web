@@ -15,7 +15,7 @@ const SchoolsListPage: React.FC = () => {
       setLoading(true);
       try {
         const schoolsData = await getAllDanceSchools();
-        
+
         // Sıralama işlemi
         const sortedSchools = [...schoolsData].sort((a, b) => {
           switch (sortBy) {
@@ -32,7 +32,7 @@ const SchoolsListPage: React.FC = () => {
               return 0;
           }
         });
-        
+
         setSchools(sortedSchools);
       } catch (err) {
         console.error('Dans okulları yüklenirken hata oluştu:', err);
@@ -53,7 +53,7 @@ const SchoolsListPage: React.FC = () => {
           <nav className="flex" aria-label="Breadcrumb">
             <ol className="inline-flex items-center space-x-1 md:space-x-3">
               <li className="inline-flex items-center">
-                <Link to="/" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-indigo-600">
+                <Link to="/" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-brand-pink">
                   <svg className="mr-2 w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
                   </svg>
@@ -74,7 +74,9 @@ const SchoolsListPage: React.FC = () => {
 
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl mb-4">Dans Okulları</h1>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block mb-4">
+            Dans Okulları
+          </h1>
           <p className="max-w-2xl mx-auto text-lg text-gray-500">
             Türkiye'nin dört bir yanından kaliteli dans okullarını keşfedin ve size en uygun olanı bulun.
           </p>
@@ -86,7 +88,7 @@ const SchoolsListPage: React.FC = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'name' | 'rating' | 'courseCount')}
-              className="block w-48 px-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              className="block w-48 px-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-brand-pink focus:border-brand-pink sm:text-sm rounded-md"
             >
               <option value="name">İsme Göre</option>
               <option value="rating">Puana Göre</option>
@@ -98,7 +100,7 @@ const SchoolsListPage: React.FC = () => {
         {/* Yükleniyor */}
         {loading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
             <span className="ml-3 text-gray-600">Dans okulları yükleniyor...</span>
           </div>
         )}

@@ -1067,7 +1067,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
               placeholder="Kurs ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-pink focus:border-transparent"
             />
             <span className="absolute right-3 top-2.5 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1242,7 +1242,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                           name="recurring"
                           checked={formData.recurring}
                           onChange={(e) => setFormData({ ...formData, recurring: true })}
-                          className="form-radio h-4 w-4 text-indigo-600"
+                          className="form-radio h-4 w-4 text-brand-pink"
                         />
                         <span className="ml-2">Periyodik Kurs</span>
                       </label>
@@ -1252,7 +1252,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                           name="recurring"
                           checked={!formData.recurring}
                           onChange={(e) => setFormData({ ...formData, recurring: false })}
-                          className="form-radio h-4 w-4 text-indigo-600"
+                          className="form-radio h-4 w-4 text-brand-pink"
                         />
                         <span className="ml-2">Tek Seferlik Kurs</span>
                       </label>
@@ -1288,7 +1288,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                                 newSchedule[index].time = e.target.value;
                                 setFormData({ ...formData, schedule: newSchedule });
                               }}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-pink focus:ring-brand-pink sm:text-sm"
                               required
                             />
                           </div>
@@ -1317,7 +1317,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                             schedule: [...formData.schedule, { day: 'Pazartesi', time: '18:00' }]
                           });
                         }}
-                        className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 hover:text-indigo-500 w-full"
+                        className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-brand-pink hover:text-brand-pink w-full"
                       >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1337,7 +1337,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                             const selectedDate = e.target.value ? new Date(e.target.value) : null;
                             setFormData({ ...formData, date: selectedDate });
                           }}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-pink focus:ring-brand-pink sm:text-sm"
                           required
                         />
                       </div>
@@ -1348,7 +1348,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                           name="time"
                           value={formData.time}
                           onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-pink focus:ring-brand-pink sm:text-sm"
                           required
                         />
                       </div>
@@ -1436,7 +1436,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => editCourse(course)}
-                        className="text-indigo-600 hover:text-indigo-900"
+                        className="text-brand-pink hover:text-indigo-900"
                       >
                         <span className="sr-only">Düzenle</span>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

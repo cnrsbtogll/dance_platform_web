@@ -280,7 +280,7 @@ function DanceStyleManagement(): JSX.Element {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-indigo-400"
+              className="px-4 py-2 bg-brand-pink text-white rounded-md hover:bg-rose-700 disabled:bg-indigo-400"
             >
               {loading ? 'İşleniyor...' : isEditing ? 'Güncelle' : 'Ekle'}
             </button>
@@ -291,7 +291,7 @@ function DanceStyleManagement(): JSX.Element {
       {/* List of dance styles */}
       {loading ? (
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
           <span className="ml-3 text-gray-700">Yükleniyor...</span>
         </div>
       ) : (
@@ -321,7 +321,7 @@ function DanceStyleManagement(): JSX.Element {
                             type="text"
                             value={formData.label}
                             onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 rounded-md focus:ring-brand-pink focus:border-brand-pink"
                           />
                         ) : (
                           style.label
@@ -333,7 +333,7 @@ function DanceStyleManagement(): JSX.Element {
                             type="text"
                             value={formData.value}
                             onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 rounded-md focus:ring-brand-pink focus:border-brand-pink"
                           />
                         ) : (
                           style.value
@@ -359,7 +359,7 @@ function DanceStyleManagement(): JSX.Element {
                           <>
                             <button
                               onClick={() => handleEdit(style)}
-                              className="text-indigo-600 hover:text-indigo-900 font-medium"
+                              className="text-brand-pink hover:text-indigo-900 font-medium"
                             >
                               Düzenle
                             </button>

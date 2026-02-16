@@ -150,7 +150,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <svg 
               className={`h-5 w-5 transition-colors duration-300 ${
-                searchFocused ? 'text-indigo-500' : 'text-gray-400'
+                searchFocused ? 'text-brand-pink' : 'text-gray-400'
               }`} 
               xmlns="http://www.w3.org/2000/svg" 
               fill="none" 
@@ -167,7 +167,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
             placeholder="Dans kursu veya eğitmen ara..."
-            className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-300"
+            className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-pink focus:border-brand-pink bg-white transition-all duration-300"
           />
           {arama && (
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -210,7 +210,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
         <div>
           {loadingStyles ? (
             <div className="p-3 flex items-center">
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-indigo-500 mr-2"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink mr-2"></div>
               <span className="text-gray-600">Yükleniyor...</span>
             </div>
           ) : (

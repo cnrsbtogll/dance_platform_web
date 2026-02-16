@@ -124,7 +124,7 @@ const InstructorDetailPage: React.FC = () => {
     return (
       <div className="container mx-auto px-4 pt-10">
         <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
           <span className="ml-3 text-gray-600">Eğitmen bilgileri yükleniyor...</span>
         </div>
       </div>
@@ -138,7 +138,7 @@ const InstructorDetailPage: React.FC = () => {
           <p className="text-red-600">{error}</p>
           <button 
             onClick={() => navigate(-1)} 
-            className="mt-4 bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600 transition"
+            className="mt-4 bg-brand-pink text-white py-2 px-4 rounded hover:bg-brand-pink transition"
           >
             Geri Dön
           </button>
@@ -154,7 +154,7 @@ const InstructorDetailPage: React.FC = () => {
           <p className="text-amber-600">Eğitmen bilgisi bulunamadı.</p>
           <button 
             onClick={() => navigate(-1)} 
-            className="mt-4 bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600 transition"
+            className="mt-4 bg-brand-pink text-white py-2 px-4 rounded hover:bg-brand-pink transition"
           >
             Geri Dön
           </button>
@@ -167,9 +167,9 @@ const InstructorDetailPage: React.FC = () => {
     <div className="container mx-auto px-4 py-10">
       {/* Breadcrumb */}
       <div className="mb-6 text-sm text-gray-500 flex items-center">
-        <Link to="/" className="hover:text-indigo-600">Anasayfa</Link>
+        <Link to="/" className="hover:text-brand-pink">Anasayfa</Link>
         <span className="mx-2">/</span>
-        <Link to="/instructors" className="hover:text-indigo-600">Eğitmenler</Link>
+        <Link to="/instructors" className="hover:text-brand-pink">Eğitmenler</Link>
         <span className="mx-2">/</span>
         <span className="text-gray-700">{instructor.user.displayName || 'Eğitmen'}</span>
       </div>
@@ -189,7 +189,7 @@ const InstructorDetailPage: React.FC = () => {
 
           <div className="md:w-2/3 p-6">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">{instructor.user.displayName}</h1>
-            <p className="text-indigo-600 font-medium text-lg mb-4">Dans Eğitmeni</p>
+            <p className="text-brand-pink font-medium text-lg mb-4">Dans Eğitmeni</p>
             
             {/* Değerlendirme */}
             <div className="flex items-center mb-4">
@@ -309,7 +309,7 @@ const InstructorDetailPage: React.FC = () => {
             {/* İletişim / Rezervasyon Butonları */}
             <div className="flex flex-wrap gap-3">
               <button 
-                className="bg-indigo-600 text-white py-2 px-6 rounded-md hover:bg-indigo-700 transition"
+                className="bg-brand-pink text-white py-2 px-6 rounded-md hover:bg-rose-700 transition"
                 onClick={handleContactClick}
               >
                 İletişime Geç
@@ -341,13 +341,13 @@ const InstructorDetailPage: React.FC = () => {
                     alt={danceClass.name} 
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-2 py-1 m-2 rounded">
+                  <div className="absolute top-0 right-0 bg-brand-pink text-white text-xs font-bold px-2 py-1 m-2 rounded">
                     {danceClass.level}
                   </div>
                 </div>
                 <div className="p-4">
                   <h3 className="text-lg font-semibold text-gray-800 mb-1">{danceClass.name}</h3>
-                  <p className="text-indigo-600 font-medium mb-2">{danceClass.danceStyle}</p>
+                  <p className="text-brand-pink font-medium mb-2">{danceClass.danceStyle}</p>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700 font-bold">{danceClass.price} {danceClass.currency}</span>
                     <span className="text-gray-500 text-sm">{danceClass.duration} dk</span>

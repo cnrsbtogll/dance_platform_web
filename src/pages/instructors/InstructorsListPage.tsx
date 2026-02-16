@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  collection, 
-  getDocs, 
-  query, 
-  orderBy 
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy
 } from 'firebase/firestore';
 import { db } from '../../api/firebase/firebase';
 import { fetchAllInstructors } from '../../api/services/userService';
@@ -29,9 +29,9 @@ const InstructorsListPage: React.FC = () => {
   const loadInstructors = async () => {
     try {
       const fetchedInstructors = await fetchAllInstructors();
-      
+
       console.log('Raw Fetched Instructors Data:', JSON.stringify(fetchedInstructors, null, 2));
-      
+
       console.log('Instructor Details:', fetchedInstructors.map(instructor => ({
         id: instructor.id,
         name: instructor.user?.displayName || 'İsimsiz',
@@ -45,14 +45,14 @@ const InstructorsListPage: React.FC = () => {
         photoURL: instructor.user?.photoURL,
         availability: instructor.availability
       })));
-      
+
       // Eğitmenleri tecrübeye göre sıralayalım (yüksekten düşüğe)
       const sortedInstructors = [...fetchedInstructors].sort((a, b) => {
         const experienceA = Number(a.experience) || 0;
         const experienceB = Number(b.experience) || 0;
         return experienceB - experienceA;
       });
-      
+
       setInstructors(sortedInstructors);
     } catch (err) {
       console.error('Eğitmenler yüklenirken hata oluştu:', err);
@@ -66,7 +66,7 @@ const InstructorsListPage: React.FC = () => {
       const stylesRef = collection(db, 'danceStyles');
       const q = query(stylesRef, orderBy('label'));
       const querySnapshot = await getDocs(q);
-      
+
       const styles = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -74,7 +74,7 @@ const InstructorsListPage: React.FC = () => {
           value: data.value || doc.id
         };
       });
-      
+
       console.log('Fetched Dance Styles:', styles);
       setDanceStyles(styles);
     } catch (error) {
@@ -116,12 +116,12 @@ const InstructorsListPage: React.FC = () => {
   // Search ve filtreleme işlemleri
   const filteredInstructors = instructors.filter(instructor => {
     // İsme göre filtreleme
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       (instructor.user.displayName && instructor.user.displayName.toLowerCase().includes(searchTerm.toLowerCase()));
 
     // Dans stiline göre filtreleme
-    const matchesStyle = selectedStyle === '' || 
-      (instructor.specialties && instructor.specialties.some(specialty => 
+    const matchesStyle = selectedStyle === '' ||
+      (instructor.specialties && instructor.specialties.some(specialty =>
         specialty.toLowerCase() === selectedStyle.toLowerCase()
       ));
 
@@ -135,7 +135,7 @@ const InstructorsListPage: React.FC = () => {
         matchesStyle
       });
     }
-    
+
     return matchesSearch && matchesStyle;
   });
 
@@ -159,7 +159,7 @@ const InstructorsListPage: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-10">
         <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
           <span className="ml-3 text-gray-600">Eğitmenler yükleniyor...</span>
         </div>
       </div>
@@ -173,7 +173,7 @@ const InstructorsListPage: React.FC = () => {
           <p className="text-red-600">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600 transition"
+            className="mt-4 bg-brand-pink text-white py-2 px-4 rounded hover:bg-brand-pink transition"
           >
             Yeniden Dene
           </button>
@@ -186,13 +186,20 @@ const InstructorsListPage: React.FC = () => {
     <div className="container mx-auto px-4 py-10">
       {/* Breadcrumb */}
       <div className="mb-6 text-sm text-gray-500 flex items-center">
-        <Link to="/" className="hover:text-indigo-600">Anasayfa</Link>
+        <Link to="/" className="hover:text-brand-pink">Anasayfa</Link>
         <span className="mx-2">/</span>
         <span className="text-gray-700">Eğitmenler</span>
       </div>
 
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Dans Eğitmenlerimiz</h1>
-      
+      <div className="text-center mb-10">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block">
+          Dans Eğitmenlerimiz
+        </h1>
+        <p className="mt-3 text-gray-500 max-w-2xl mx-auto">
+          Türkiye'nin en deneyimli dans eğitmenleri ile tanışın ve öğrenmeye başlayın.
+        </p>
+      </div>
+
       {/* Filtreleme ve Arama */}
       <div className="bg-white rounded-lg shadow-sm p-4 mb-8">
         <div className="md:flex justify-between">
@@ -201,16 +208,16 @@ const InstructorsListPage: React.FC = () => {
               type="text"
               id="search"
               placeholder="Eğitmen adı ara..."
-              className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-brand-pink focus:border-brand-pink"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <div className="md:w-1/3">
             {loadingStyles ? (
               <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-indigo-500"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink"></div>
                 <span className="text-sm text-gray-500">Dans stilleri yükleniyor...</span>
               </div>
             ) : (

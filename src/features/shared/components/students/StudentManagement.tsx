@@ -229,7 +229,7 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
       <div className="relative mb-3">
         {/* Image preview area */}
         <div
-          className="relative w-32 h-32 rounded-full overflow-hidden shadow-md cursor-pointer border-2 border-indigo-500 hover:border-indigo-600 transition-colors"
+          className="relative w-32 h-32 rounded-full overflow-hidden shadow-md cursor-pointer border-2 border-brand-pink hover:border-brand-pink transition-colors"
           onClick={() => fileInputRef.current?.click()}
         >
           {/* Current or preview image */}
@@ -276,7 +276,7 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
             <button
               type="button"
               onClick={confirmUpload}
-              className="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition-colors"
+              className="px-3 py-1 bg-brand-pink text-white text-sm rounded hover:bg-rose-700 transition-colors"
               disabled={isUploading}
             >
               Onayla
@@ -304,7 +304,7 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
       {/* Loading indicator */}
       {isUploading && (
         <div className="flex justify-center mt-2">
-          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-indigo-500"></div>
+          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink"></div>
         </div>
       )}
       
@@ -994,7 +994,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 {student.courseIds.map(courseId => {
                   const course = courses.find(c => c.id === courseId);
                   return course ? (
-                    <span key={courseId} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                    <span key={courseId} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800">
                       {course.name}
                     </span>
                   ) : null;
@@ -1009,7 +1009,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           <div className="flex justify-end space-x-2">
             <button
               onClick={() => editStudent(student)}
-              className="text-indigo-600 hover:text-indigo-900"
+              className="text-brand-pink hover:text-indigo-900"
             >
               Düzenle
             </button>
@@ -1105,7 +1105,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   if (loading && students.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -1139,7 +1139,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               placeholder="Ad veya e-posta ile ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-pink focus:border-transparent"
             />
             <span className="absolute right-3 top-2.5 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1366,7 +1366,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         <>
           {loading && (
             <div className="flex justify-center my-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-pink"></div>
             </div>
           )}
           
@@ -1443,7 +1443,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                     <div className="flex space-x-2 flex-shrink-0">
                       <button
                         onClick={() => editStudent(student)}
-                        className="text-indigo-600 hover:text-indigo-900"
+                        className="text-brand-pink hover:text-indigo-900"
                       >
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -1502,7 +1502,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                           {student.courseIds.map(courseId => {
                             const course = courses.find(c => c.id === courseId);
                             return course ? (
-                              <span key={courseId} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                              <span key={courseId} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800">
                                 {course.name}
                               </span>
                             ) : null;

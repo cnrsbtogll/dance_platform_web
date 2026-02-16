@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { DanceClass } from '../../../types';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import { getCourseImage } from '../../../common/utils/imageUtils';
 
 interface CourseCardProps {
   course: DanceClass;
@@ -12,6 +13,7 @@ interface CourseCardProps {
 const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Dans stiline göre renk
   const getDanceStyleColor = (style: string) => {
@@ -27,7 +29,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
       case 'vals':
         return 'bg-cyan-600';
       case 'hiphop':
-        return 'bg-indigo-600';
+        return 'bg-brand-pink';
       case 'modern-dans':
         return 'bg-green-500';
       default:
@@ -102,7 +104,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
   // Tarihi formatla
   const formatDate = (date: Date | any) => {
     if (!date) return '';
-    
+
     const d = new Date(date.seconds ? date.seconds * 1000 : date);
     return d.toLocaleDateString('tr-TR', {
       day: '2-digit',
@@ -139,6 +141,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
     return `${course.price.toLocaleString('tr-TR')} ${currencySymbol}`;
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Modal açıldığında veya butonlara tıklandığında navigasyonu engelle
+    if (isContactModalOpen) return;
+    navigate(`/courses/${course.id}`);
+  };
+
   const ContactModal = () => (
     <Transition appear show={isContactModalOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={() => setIsContactModalOpen(false)}>
@@ -172,7 +180,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                 >
                   {course.name} - İletişim Bilgileri
                 </Dialog.Title>
-                
+
                 <div className="mt-2 space-y-4">
                   {course.schoolName && (
                     <div>
@@ -180,7 +188,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                       <p className="text-base text-gray-900">{course.schoolName}</p>
                     </div>
                   )}
-                  
+
                   <div>
                     <h4 className="text-sm font-medium text-gray-500">Eğitmen</h4>
                     <p className="text-base text-gray-900">{course.instructorName}</p>
@@ -189,9 +197,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                   {course.phoneNumber && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Telefon</h4>
-                      <a 
+                      <a
                         href={`tel:${course.phoneNumber}`}
-                        className="text-base text-indigo-600 hover:text-indigo-800"
+                        className="text-base text-brand-pink hover:text-indigo-800"
                       >
                         {course.phoneNumber}
                       </a>
@@ -201,9 +209,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                   {course.email && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">E-posta</h4>
-                      <a 
+                      <a
                         href={`mailto:${course.email}`}
-                        className="text-base text-indigo-600 hover:text-indigo-800"
+                        className="text-base text-brand-pink hover:text-indigo-800"
                       >
                         {course.email}
                       </a>
@@ -227,15 +235,19 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                 <div className="mt-6 flex justify-end space-x-3">
                   <button
                     type="button"
-                    className="inline-flex justify-center rounded-md border border-transparent bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-900 hover:bg-indigo-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
-                    onClick={() => setIsContactModalOpen(false)}
+                    className="inline-flex justify-center rounded-md border border-transparent bg-rose-100 px-4 py-2 text-sm font-medium text-indigo-900 hover:bg-indigo-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-pink focus-visible:ring-offset-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsContactModalOpen(false);
+                    }}
                   >
                     Kapat
                   </button>
                   {course.phoneNumber && (
                     <a
                       href={`tel:${course.phoneNumber}`}
-                      className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex justify-center rounded-md border border-transparent bg-brand-pink px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-pink focus-visible:ring-offset-2"
                     >
                       Hemen Ara
                     </a>
@@ -251,32 +263,32 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
 
   return (
     <>
-      <Link
-        to={`/courses/${course.id}`}
-        className="bg-white rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full"
+      <div
+        onClick={handleCardClick}
+        className="bg-white rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full cursor-pointer"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Resim Konteyner - Sabit yükseklik */}
         <div className="relative h-48">
           <div className="absolute inset-0">
-            <img 
-              src={course.imageUrl || `https://via.placeholder.com/400x250?text=${encodeURIComponent(getDanceStyleName(course.danceStyle))}`} 
-              alt={course.name} 
+            <img
+              src={getCourseImage(course.imageUrl, course.danceStyle)}
+              alt={course.name}
               className={`w-full h-full object-cover object-center transition-transform duration-700 ${isHovered ? 'scale-110' : 'scale-100'}`}
               style={{ objectPosition: 'center center' }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80"></div>
           </div>
-          
+
           {/* Seviye rozeti */}
           <div className={`absolute top-4 right-4 ${getLevelColor(course.level)} text-white px-3 py-1 text-sm font-medium rounded-full shadow-lg`}>
             {getLevelName(course.level)}
           </div>
-          
+
           {/* Zamanlama rozeti */}
           <div className="absolute bottom-4 left-4 bg-white/80 backdrop-blur-sm text-gray-800 px-3 py-1 text-sm font-medium rounded-full flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-brand-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {formatSchedule()}
@@ -298,18 +310,18 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                   </span>
                 )}
               </div>
-              <div className="text-lg font-bold text-indigo-600">
+              <div className="text-lg font-bold text-brand-pink">
                 {formatPrice()}
               </div>
             </div>
 
             <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{course.name}</h3>
-            
+
             <p className="text-sm text-gray-500 mb-3">
-              {course.instructorName} 
+              {course.instructorName}
               {course.schoolName && ` • ${course.schoolName}`}
             </p>
-            
+
             <p className="text-sm text-gray-600 line-clamp-2 mb-4">
               {course.description}
             </p>
@@ -321,14 +333,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
               <div className="flex items-center justify-between mb-1">
                 <div className="flex-1 mr-3">
                   <div className="h-2 w-full bg-gray-200 rounded-full">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        course.currentParticipants / course.maxParticipants > 0.8
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${course.currentParticipants / course.maxParticipants > 0.8
                           ? 'bg-red-500'
                           : course.currentParticipants / course.maxParticipants > 0.5
-                          ? 'bg-yellow-500'
-                          : 'bg-green-500'
-                      }`}
+                            ? 'bg-yellow-500'
+                            : 'bg-green-500'
+                        }`}
                       style={{ width: `${(course.currentParticipants / course.maxParticipants) * 100}%` }}
                     ></div>
                   </div>
@@ -338,41 +349,42 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                 </div>
               </div>
               <p className="text-xs text-gray-500">
-                {course.currentParticipants === course.maxParticipants 
-                  ? 'Kontenjan dolu' 
+                {course.currentParticipants === course.maxParticipants
+                  ? 'Kontenjan dolu'
                   : `${course.maxParticipants - course.currentParticipants} kişilik kontenjan kaldı`}
               </p>
             </div>
-            
+
             {/* Butonlar */}
             <div className="flex space-x-2">
-              <Link 
-                to={`/courses/${course.id}`} 
-                className="flex-1 py-2 px-4 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-center"
+              <Link
+                to={`/courses/${course.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1 py-2 px-4 text-sm font-medium rounded-md text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink text-center"
               >
                 Detaylar
               </Link>
               <button
                 onClick={(e) => {
+                  e.stopPropagation();
                   e.preventDefault();
                   setIsContactModalOpen(true);
                 }}
                 disabled={course.currentParticipants >= course.maxParticipants}
-                className={`flex-1 py-2 px-4 text-sm font-medium rounded-md ${
-                  course.currentParticipants >= course.maxParticipants
+                className={`flex-1 py-2 px-4 text-sm font-medium rounded-md ${course.currentParticipants >= course.maxParticipants
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
-                }`}
+                  }`}
               >
                 İletişime Geç
               </button>
             </div>
           </div>
         </div>
-      </Link>
+      </div>
       <ContactModal />
     </>
   );
 };
 
-export default CourseCard; 
+export default CourseCard;
