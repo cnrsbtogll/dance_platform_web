@@ -353,7 +353,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   />
                 </Link>
               </div>
-              <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
+              <div className="hidden lg:ml-8 md:ml-4 md:flex items-center lg:space-x-4 md:space-x-1">
                 {!hasSchoolRole && !hasInstructorRole && (
                   <>
                     <Link
@@ -392,19 +392,20 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 )}
               </div>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-2">
+            <div className="hidden md:ml-4 md:flex md:items-center lg:space-x-2 md:space-x-1">
               {/* Kullanıcının rolüne göre butonları göster */}
               <div className="flex space-x-2">
                 {/* 'Eğitmen Ol' butonu */}
                 {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
                   <Link
                     to="/become-instructor"
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-teal-800 to-cyan-900 hover:from-teal-700 hover:to-cyan-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-teal-800 to-cyan-900 hover:from-teal-700 hover:to-cyan-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    title="Eğitmen Ol"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    Eğitmen Ol
+                    <span className="hidden lg:inline">Eğitmen Ol</span>
                   </Link>
                 )}
 
@@ -412,12 +413,13 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 {!hasSchoolRole && !hasSchoolAdminRole && (
                   <Link
                     to="/become-school"
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    title="Dans Okulu Aç"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    Dans Okulu Aç
+                    <span className="hidden lg:inline">Dans Okulu Aç</span>
                   </Link>
                 )}
 
@@ -425,12 +427,13 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 {hasInstructorRole && (
                   <Link
                     to="/instructor"
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    title="Eğitmen Paneli"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    Eğitmen Paneli
+                    <span className="hidden lg:inline">Eğitmen Paneli</span>
                   </Link>
                 )}
               </div>
@@ -441,18 +444,22 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   {hasSuperAdminRole && (
                     <Link
                       to="/admin"
-                      className="mr-3 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-rose-500 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                      className="mr-1 lg:mr-3 inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-rose-500 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                      title="Admin Panel"
                     >
-                      Admin Panel
+                      <span className="hidden lg:inline">Admin Panel</span>
+                      <span className="lg:hidden text-[10px] font-bold">ADM</span>
                     </Link>
                   )}
                   {/* Okul Yönetim Paneli */}
                   {hasSchoolRole && !hasSuperAdminRole && (
                     <Link
                       to="/school-admin"
-                      className="mr-3 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                      className="mr-1 lg:mr-3 inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                      title="Okul Yönetim Paneli"
                     >
-                      Okul Yönetim Paneli
+                      <span className="hidden lg:inline">Okul Yönetim Paneli</span>
+                      <span className="lg:hidden text-[10px] font-bold">OKUL</span>
                     </Link>
                   )}
                   <div className="ml-3 relative">
@@ -557,23 +564,31 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 </>
               ) : (
                 /* Giriş yapmamış kullanıcılar için butonlar */
-                <div className="space-x-3">
+                <div className="flex items-center space-x-2 lg:space-x-3">
                   <Link
                     to="/signin"
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-2 py-2 lg:px-4 lg:py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    title="Giriş Yap"
                   >
-                    Giriş Yap
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    <span className="hidden lg:inline">Giriş Yap</span>
                   </Link>
                   <Link
                     to="/signup"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-rose-500 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-2 py-2 lg:px-4 lg:py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-rose-500 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    title="Kayıt Ol"
                   >
-                    Kayıt Ol
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    <span className="hidden lg:inline">Kayıt Ol</span>
                   </Link>
                 </div>
               )}
             </div>
-            <div className="-mr-2 flex items-center sm:hidden">
+            <div className="-mr-2 flex items-center md:hidden">
               <button
                 onClick={toggleMenu}
                 className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-brand-pink hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-pink transition duration-150 ease-in-out"
@@ -592,7 +607,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
         {/* Mobil için hamburger menüsü */}
         {isMenuOpen && (
-          <div className="sm:hidden animate-fadeIn fixed top-16 left-0 right-0 z-40 bg-white shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <div className="md:hidden animate-fadeIn fixed top-16 left-0 right-0 z-40 bg-white shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
             <div className="pt-2 pb-3 border-t border-gray-200 bg-gray-50/80 backdrop-blur-sm">
               {/* Her durumda gösterilecek butonlar */}
               <div className="px-4 space-y-2">
