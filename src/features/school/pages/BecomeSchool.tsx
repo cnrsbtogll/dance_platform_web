@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  collection, 
-  addDoc, 
-  serverTimestamp, 
-  query, 
-  where, 
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  where,
   getDocs,
   doc,
   getDoc,
@@ -55,7 +55,7 @@ interface BecomeSchoolProps {
 function BecomeSchool({ onMount }: BecomeSchoolProps) {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  
+
   console.log('🏫 BecomeSchool bileşeni başlatıldı:', {
     currentUser: {
       uid: currentUser?.uid,
@@ -83,7 +83,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
     facilities: [],
     photoURL: ''
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormData, string>>>({});
@@ -105,7 +105,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
       try {
         const danceStylesRef = collection(db, 'danceStyles');
         const querySnapshot = await getDocs(danceStylesRef);
-        
+
         const styles: DanceStyle[] = [];
         querySnapshot.forEach((doc) => {
           styles.push({
@@ -113,7 +113,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
             ...doc.data()
           } as DanceStyle);
         });
-        
+
         if (styles.length === 0) {
           // If no styles in Firestore, use default styles
           setDanceStyles([
@@ -157,7 +157,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
             uid: currentUser.uid,
             email: currentUser.email
           });
-          
+
           const userDocRef = doc(db, 'users', currentUser.uid);
           const userDoc = await getDoc(userDocRef);
 
@@ -167,9 +167,9 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
               userData: userData,
               roles: userData.role
             });
-            
+
             const roles = userData.role || [];
-            
+
             if (Array.isArray(roles) && roles.includes('school')) {
               console.log('⚠️ Kullanıcı zaten okul sahibi');
               setIsAlreadySchool(true);
@@ -197,14 +197,14 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
             where('userId', '==', currentUser.uid),
             where('status', '==', 'pending')
           );
-          
+
           const querySnapshot = await getDocs(q);
-          
+
           if (!querySnapshot.empty) {
             console.log('⏳ Kullanıcının bekleyen başvurusu var');
             setHasExistingApplication(true);
           }
-          
+
           setFormData(prev => ({
             ...prev,
             contactEmail: currentUser.email || ''
@@ -212,7 +212,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
         } else {
           console.log('⚠️ Giriş yapmamış kullanıcı');
         }
-        
+
         setIsLoading(false);
       } catch (err) {
         console.error('❌ Kullanıcı durumu kontrol hatası:', err);
@@ -230,10 +230,10 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
       ...prev,
       [name]: value
     }));
-    
+
     if (formErrors[name as keyof FormData]) {
       setFormErrors(prev => {
-        const updated = {...prev};
+        const updated = { ...prev };
         delete updated[name as keyof FormData];
         return updated;
       });
@@ -243,15 +243,15 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
   const handleDanceStyleChange = (value: string | string[]) => {
     const danceStylesArray = Array.isArray(value) ? value : [value];
     const filteredStyles = value === '' ? [] : danceStylesArray.filter(style => style !== '');
-    
+
     setFormData(prev => ({
       ...prev,
       danceStyles: filteredStyles
     }));
-    
+
     if (formErrors.danceStyles) {
       setFormErrors(prev => {
-        const updated = {...prev};
+        const updated = { ...prev };
         delete updated.danceStyles;
         return updated;
       });
@@ -261,7 +261,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
   const handleFacilitiesChange = (value: string | string[]) => {
     const facilitiesArray = Array.isArray(value) ? value : [value];
     const filteredFacilities = value === '' ? [] : facilitiesArray.filter(facility => facility !== '');
-    
+
     setFormData(prev => ({
       ...prev,
       facilities: filteredFacilities
@@ -280,36 +280,36 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
     setIsSubmitting(true);
     setError(null);
     setFormErrors({});
-    
+
     try {
       const errors: Partial<Record<keyof FormData, string>> = {};
-      
+
       if (!formData.schoolName.trim()) {
         errors.schoolName = 'Bu alan zorunlu';
       }
-      
+
       if (!formData.contactPerson.trim()) {
         errors.contactPerson = 'Bu alan zorunlu';
       }
-      
+
       if (!formData.contactEmail.trim()) {
         errors.contactEmail = 'Bu alan zorunlu';
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
         errors.contactEmail = 'Geçerli bir email adresi girin';
       }
-      
+
       const cleanPhone = formData.contactPhone.replace(/\s/g, '');
-      
+
       if (!cleanPhone) {
         errors.contactPhone = 'Bu alan zorunlu';
       } else if (cleanPhone.length !== 10) {
         errors.contactPhone = '10 rakam girmelisiniz';
       }
-      
+
       if (formData.danceStyles.length === 0) {
         errors.danceStyles = 'En az bir dans stili seçmelisiniz';
       }
-      
+
       if (!currentUser) {
         if (!formData.password) {
           errors.password = 'Bu alan zorunlu';
@@ -317,28 +317,28 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
           errors.password = 'En az 6 karakter girmelisiniz';
         }
       }
-      
+
       if (Object.keys(errors).length > 0) {
         setFormErrors(errors);
         setIsSubmitting(false);
         return;
       }
-      
+
       let userId = currentUser?.uid;
       let userEmail = currentUser?.email || formData.contactEmail;
-      
+
       if (!currentUser) {
         try {
           const userCredential = await createUserWithEmailAndPassword(
-            auth, 
-            formData.contactEmail, 
+            auth,
+            formData.contactEmail,
             formData.password as string
           );
-          
+
           await updateProfile(userCredential.user, { displayName: formData.contactPerson });
-          
+
           userId = userCredential.user.uid;
-          
+
           await setDoc(doc(db, 'users', userId), {
             id: userId,
             email: formData.contactEmail,
@@ -348,13 +348,13 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
             role: ['school_applicant'],
             createdAt: serverTimestamp()
           });
-          
+
         } catch (authError) {
           const error = authError as AuthError;
           throw new Error(getAuthErrorMessage(error));
         }
       }
-      
+
       await addDoc(collection(db, 'schoolRequests'), {
         schoolName: formData.schoolName,
         schoolDescription: formData.schoolDescription,
@@ -376,9 +376,9 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
         status: 'pending',
         createdAt: serverTimestamp()
       });
-      
+
       setSuccess(true);
-      
+
       setFormData({
         schoolName: '',
         schoolDescription: '',
@@ -397,7 +397,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
         facilities: [],
         photoURL: ''
       });
-      
+
     } catch (err) {
       console.error('Error submitting school application:', err);
       setError(`Başvuru gönderilirken bir hata oluştu: ${err instanceof Error ? err.message : 'Bilinmeyen bir hata'}`);
@@ -426,7 +426,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
           </div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">Zaten bir dans okulu yöneticisisiniz!</h2>
           <p className="text-gray-600 mb-6">Dans okulu panelinize giderek okulunuzu yönetebilirsiniz.</p>
-          <Button 
+          <Button
             onClick={() => navigate('/school-admin')}
             variant="primary"
           >
@@ -448,7 +448,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
           </div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">Başvurunuz İnceleniyor</h2>
           <p className="text-gray-600 mb-6">Dans okulu başvurunuz halihazırda inceleniyor. Başvurunuz onaylandığında size e-posta ile bilgilendirme yapılacaktır.</p>
-          <Button 
+          <Button
             onClick={() => navigate('/')}
             variant="primary"
           >
@@ -473,7 +473,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
             {!currentUser ? "Hesabınız oluşturuldu ve " : ""}
             Dans okulu başvurunuz başarıyla alındı. Başvurunuz incelendikten sonra size e-posta ile bilgilendirme yapılacaktır.
           </p>
-          <Button 
+          <Button
             onClick={() => navigate('/')}
             variant="primary"
           >
@@ -500,31 +500,31 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="text-center mb-10"
       >
-        <h1 className="text-3xl sm:text-4xl font-bold mb-4 inline-block relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block py-2">
           Dans Okulu Başvurusu
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
           Dans okulunuzu platformumuza kaydedin ve binlerce dans öğrencisine ulaşın.
         </p>
       </motion.div>
-      
+
       <div className="bg-white p-8 rounded-lg shadow-md">
         {error && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
             <p>{error}</p>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} noValidate>
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Okul Bilgileri</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="col-span-2">
                 <CustomInput
@@ -537,7 +537,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                   required
                 />
               </div>
-              
+
               <div className="col-span-2">
                 <CustomInput
                   label="Okul Tanımı"
@@ -548,7 +548,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                   rows={4}
                 />
               </div>
-              
+
               <div>
                 <CustomInput
                   label="Kuruluş Yılı"
@@ -559,7 +559,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                   helperText={`${1900} - ${new Date().getFullYear()} arası bir yıl girin`}
                 />
               </div>
-              
+
               <div className="col-span-2">
                 <CustomSelect
                   label="Dans Stilleri"
@@ -585,10 +585,10 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
               </div>
             </div>
           </div>
-          
+
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">İletişim Bilgileri</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="col-span-2">
                 <CustomInput
@@ -601,7 +601,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                   required
                 />
               </div>
-              
+
               <div className="col-span-2">
                 <CustomInput
                   label="İletişim E-posta"
@@ -615,7 +615,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                   disabled={!!currentUser}
                 />
               </div>
-              
+
               <div className="col-span-2">
                 <CustomPhoneInput
                   label="İletişim Telefonu"
@@ -623,13 +623,13 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                   countryCode="+90"
                   phoneNumber={formData.contactPhone}
                   onPhoneNumberChange={(value: string) => handleInputChange({ target: { name: 'contactPhone', value } })}
-                  onCountryCodeChange={() => {}}
+                  onCountryCodeChange={() => { }}
                   error={!!formErrors.contactPhone}
                   helperText={formErrors.contactPhone}
                   required
                 />
               </div>
-              
+
               <div className="col-span-2">
                 <CustomInput
                   label="Web Sitesi"
@@ -657,10 +657,10 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
               )}
             </div>
           </div>
-          
+
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Adres Bilgileri</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="col-span-2">
                 <CustomInput
@@ -672,7 +672,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                   rows={3}
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 col-span-2">
                 <div>
                   <CustomInput
@@ -682,7 +682,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                     onChange={handleInputChange}
                   />
                 </div>
-                
+
                 <div>
                   <CustomInput
                     label="İlçe"
@@ -692,7 +692,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 col-span-2">
                 <div>
                   <CustomInput
@@ -702,7 +702,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                     onChange={handleInputChange}
                   />
                 </div>
-                
+
                 <div>
                   <CustomInput
                     label="Ülke"
@@ -727,7 +727,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
               height={200}
             />
           </div>
-          
+
           <div className="flex justify-end">
             <Button
               type="submit"
@@ -740,7 +740,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
           </div>
         </form>
       </div>
-      
+
       <div className="mt-6 bg-blue-50 p-4 rounded-md">
         <h3 className="text-blue-800 font-semibold">Bilgi</h3>
         <p className="text-blue-700 text-sm mt-1">

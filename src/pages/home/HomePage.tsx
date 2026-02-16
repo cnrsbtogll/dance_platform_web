@@ -45,8 +45,8 @@ function HomePage({ isAuthenticated, user }: HomePageProps) {
 
         // Eğitmenleri tecrübeye göre sıralayalım (yüksekten düşüğe)
         const sortedInstructors = [...fetchedInstructors].sort((a, b) => {
-          const experienceA = a.experience || a.tecrube || 0;
-          const experienceB = b.experience || b.tecrube || 0;
+          const experienceA = a.experience || 0;
+          const experienceB = b.experience || 0;
           return Number(experienceB) - Number(experienceA);
         });
 
@@ -94,7 +94,7 @@ function HomePage({ isAuthenticated, user }: HomePageProps) {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight py-2 inline-block max-w-full">
             Feriha'ya Hoş Geldiniz
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
