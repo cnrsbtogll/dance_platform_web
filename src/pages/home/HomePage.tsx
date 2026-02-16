@@ -85,7 +85,7 @@ function HomePage({ isAuthenticated, user }: HomePageProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-rose-50/30 to-white">
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <div className="container mx-auto pt-16 pb-12 px-4 sm:px-6 lg:px-8">
         <motion.div

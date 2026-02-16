@@ -183,73 +183,75 @@ const InstructorsListPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      {/* Breadcrumb */}
-      <div className="mb-6 text-sm text-gray-500 flex items-center">
-        <Link to="/" className="hover:text-brand-pink">Anasayfa</Link>
-        <span className="mx-2">/</span>
-        <span className="text-gray-700">Eğitmenler</span>
-      </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
+        {/* Breadcrumb */}
+        <div className="mb-6 text-sm text-gray-500 flex items-center">
+          <Link to="/" className="hover:text-brand-pink">Anasayfa</Link>
+          <span className="mx-2">/</span>
+          <span className="text-gray-700">Eğitmenler</span>
+        </div>
 
-      <div className="text-center mb-10">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block">
-          Dans Eğitmenlerimiz
-        </h1>
-        <p className="mt-3 text-gray-500 max-w-2xl mx-auto">
-          Türkiye'nin en deneyimli dans eğitmenleri ile tanışın ve öğrenmeye başlayın.
-        </p>
-      </div>
+        <div className="text-center mb-10">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block">
+            Dans Eğitmenlerimiz
+          </h1>
+          <p className="mt-3 text-gray-500 max-w-2xl mx-auto">
+            Türkiye'nin en deneyimli dans eğitmenleri ile tanışın ve öğrenmeye başlayın.
+          </p>
+        </div>
 
-      {/* Filtreleme ve Arama */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-8">
-        <div className="md:flex justify-between">
-          <div className="mb-4 md:mb-0 md:w-1/3">
-            <input
-              type="text"
-              id="search"
-              placeholder="Eğitmen adı ara..."
-              className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-brand-pink focus:border-brand-pink"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <div className="md:w-1/3">
-            {loadingStyles ? (
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink"></div>
-                <span className="text-sm text-gray-500">Dans stilleri yükleniyor...</span>
-              </div>
-            ) : (
-              <CustomSelect
-                name="danceStyle"
-                label="Dans Stiline Göre Filtrele"
-                value={selectedStyle}
-                onChange={(value) => setSelectedStyle(value as string)}
-                options={danceStyles}
-                placeholder="Tüm Dans Stilleri"
-                allowEmpty={true}
+        {/* Filtreleme ve Arama */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-8">
+          <div className="md:flex justify-between">
+            <div className="mb-4 md:mb-0 md:w-1/3">
+              <input
+                type="text"
+                id="search"
+                placeholder="Eğitmen adı ara..."
+                className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-brand-pink focus:border-brand-pink"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
-            )}
+            </div>
+
+            <div className="md:w-1/3">
+              {loadingStyles ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink"></div>
+                  <span className="text-sm text-gray-500">Dans stilleri yükleniyor...</span>
+                </div>
+              ) : (
+                <CustomSelect
+                  name="danceStyle"
+                  label="Dans Stiline Göre Filtrele"
+                  value={selectedStyle}
+                  onChange={(value) => setSelectedStyle(value as string)}
+                  options={danceStyles}
+                  placeholder="Tüm Dans Stilleri"
+                  allowEmpty={true}
+                />
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {filteredInstructors.length === 0 ? (
-        <div className="bg-gray-50 p-10 rounded-lg text-center">
-          <p className="text-gray-500">Aradığınız kriterlere uygun eğitmen bulunamadı.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredInstructors.map((instructor, index) => (
-            <InstructorCard
-              key={instructor.id}
-              instructor={instructor}
-              index={index}
-            />
-          ))}
-        </div>
-      )}
+        {filteredInstructors.length === 0 ? (
+          <div className="bg-gray-50 p-10 rounded-lg text-center">
+            <p className="text-gray-500">Aradığınız kriterlere uygun eğitmen bulunamadı.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredInstructors.map((instructor, index) => (
+              <InstructorCard
+                key={instructor.id}
+                instructor={instructor}
+                index={index}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

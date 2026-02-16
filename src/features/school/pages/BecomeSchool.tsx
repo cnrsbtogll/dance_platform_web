@@ -499,254 +499,256 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-10"
-      >
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block py-2">
-          Dans Okulu Başvurusu
-        </h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Dans okulunuzu platformumuza kaydedin ve binlerce dans öğrencisine ulaşın.
-        </p>
-      </motion.div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 max-w-3xl">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-10"
+        >
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block py-2">
+            Dans Okulu Başvurusu
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Dans okulunuzu platformumuza kaydedin ve binlerce dans öğrencisine ulaşın.
+          </p>
+        </motion.div>
 
-      <div className="bg-white p-8 rounded-lg shadow-md">
-        {error && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-            <p>{error}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Okul Bilgileri</h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <CustomInput
-                  label="Dans Okulu Adı"
-                  name="schoolName"
-                  value={formData.schoolName}
-                  onChange={handleInputChange}
-                  error={!!formErrors.schoolName}
-                  helperText={formErrors.schoolName}
-                  required
-                />
-              </div>
-
-              <div className="col-span-2">
-                <CustomInput
-                  label="Okul Tanımı"
-                  name="schoolDescription"
-                  value={formData.schoolDescription}
-                  onChange={handleInputChange}
-                  multiline
-                  rows={4}
-                />
-              </div>
-
-              <div>
-                <CustomInput
-                  label="Kuruluş Yılı"
-                  name="establishedYear"
-                  type="text"
-                  value={formData.establishedYear}
-                  onChange={handleInputChange}
-                  helperText={`${1900} - ${new Date().getFullYear()} arası bir yıl girin`}
-                />
-              </div>
-
-              <div className="col-span-2">
-                <CustomSelect
-                  label="Dans Stilleri"
-                  name="danceStyles"
-                  value={formData.danceStyles}
-                  options={danceStyleOptions}
-                  onChange={handleDanceStyleChange}
-                  error={formErrors.danceStyles}
-                  multiple
-                  required
-                />
-              </div>
-
-              <div className="col-span-2">
-                <CustomSelect
-                  label="Olanaklar"
-                  name="facilities"
-                  value={formData.facilities}
-                  options={facilitiesOptions}
-                  onChange={handleFacilitiesChange}
-                  multiple
-                />
-              </div>
+        <div className="bg-white p-8 rounded-lg shadow-md">
+          {error && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+              <p>{error}</p>
             </div>
-          </div>
+          )}
 
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">İletişim Bilgileri</h3>
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Okul Bilgileri</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <CustomInput
-                  label="Yetkili Kişi Adı"
-                  name="contactPerson"
-                  value={formData.contactPerson}
-                  onChange={handleInputChange}
-                  error={!!formErrors.contactPerson}
-                  helperText={formErrors.contactPerson}
-                  required
-                />
-              </div>
-
-              <div className="col-span-2">
-                <CustomInput
-                  label="İletişim E-posta"
-                  name="contactEmail"
-                  type="email"
-                  value={formData.contactEmail}
-                  onChange={handleInputChange}
-                  error={!!formErrors.contactEmail}
-                  helperText={formErrors.contactEmail}
-                  required
-                  disabled={!!currentUser}
-                />
-              </div>
-
-              <div className="col-span-2">
-                <CustomPhoneInput
-                  label="İletişim Telefonu"
-                  name="contactPhone"
-                  countryCode="+90"
-                  phoneNumber={formData.contactPhone}
-                  onPhoneNumberChange={(value: string) => handleInputChange({ target: { name: 'contactPhone', value } })}
-                  onCountryCodeChange={() => { }}
-                  error={!!formErrors.contactPhone}
-                  helperText={formErrors.contactPhone}
-                  required
-                />
-              </div>
-
-              <div className="col-span-2">
-                <CustomInput
-                  label="Web Sitesi"
-                  name="website"
-                  type="text"
-                  value={formData.website || ''}
-                  onChange={handleInputChange}
-                  placeholder="https://www.dansokulum.com"
-                />
-              </div>
-
-              {!currentUser && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <CustomInput
-                    label="Şifre"
-                    name="password"
-                    type="password"
-                    value={formData.password || ''}
+                    label="Dans Okulu Adı"
+                    name="schoolName"
+                    value={formData.schoolName}
                     onChange={handleInputChange}
-                    error={!!formErrors.password}
-                    helperText={formErrors.password}
+                    error={!!formErrors.schoolName}
+                    helperText={formErrors.schoolName}
                     required
                   />
                 </div>
-              )}
-            </div>
-          </div>
 
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Adres Bilgileri</h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <CustomInput
-                  label="Adres"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  multiline
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 col-span-2">
-                <div>
+                <div className="col-span-2">
                   <CustomInput
-                    label="Şehir"
-                    name="city"
-                    value={formData.city}
+                    label="Okul Tanımı"
+                    name="schoolDescription"
+                    value={formData.schoolDescription}
                     onChange={handleInputChange}
+                    multiline
+                    rows={4}
                   />
                 </div>
 
                 <div>
                   <CustomInput
-                    label="İlçe"
-                    name="district"
-                    value={formData.district}
+                    label="Kuruluş Yılı"
+                    name="establishedYear"
+                    type="text"
+                    value={formData.establishedYear}
                     onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 col-span-2">
-                <div>
-                  <CustomInput
-                    label="Posta Kodu"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
+                    helperText={`${1900} - ${new Date().getFullYear()} arası bir yıl girin`}
                   />
                 </div>
 
-                <div>
-                  <CustomInput
-                    label="Ülke"
-                    name="country"
-                    value={formData.country || ''}
-                    onChange={handleInputChange}
+                <div className="col-span-2">
+                  <CustomSelect
+                    label="Dans Stilleri"
+                    name="danceStyles"
+                    value={formData.danceStyles}
+                    options={danceStyleOptions}
+                    onChange={handleDanceStyleChange}
+                    error={formErrors.danceStyles}
+                    multiple
+                    required
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <CustomSelect
+                    label="Olanaklar"
+                    name="facilities"
+                    value={formData.facilities}
+                    options={facilitiesOptions}
+                    onChange={handleFacilitiesChange}
+                    multiple
                   />
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Okul Fotoğrafı</h3>
-            <ImageUploader
-              currentPhotoURL={formData.photoURL}
-              onImageChange={handleImageChange}
-              displayName={formData.schoolName || '?'}
-              userType="school"
-              shape="square"
-              width={300}
-              height={200}
-            />
-          </div>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">İletişim Bilgileri</h3>
 
-          <div className="flex justify-end">
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isSubmitting}
-              loading={isSubmitting}
-            >
-              {isSubmitting ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
-            </Button>
-          </div>
-        </form>
-      </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <CustomInput
+                    label="Yetkili Kişi Adı"
+                    name="contactPerson"
+                    value={formData.contactPerson}
+                    onChange={handleInputChange}
+                    error={!!formErrors.contactPerson}
+                    helperText={formErrors.contactPerson}
+                    required
+                  />
+                </div>
 
-      <div className="mt-6 bg-blue-50 p-4 rounded-md">
-        <h3 className="text-blue-800 font-semibold">Bilgi</h3>
-        <p className="text-blue-700 text-sm mt-1">
-          Dans okulu başvurunuz, platformumuz tarafından incelendikten sonra aktif hale gelecektir. Onay sürecinde ek bilgiler veya belge istemleri olabilir.
-          Onay sonrası okul yönetici panelinize erişim sağlayabileceksiniz.
-        </p>
+                <div className="col-span-2">
+                  <CustomInput
+                    label="İletişim E-posta"
+                    name="contactEmail"
+                    type="email"
+                    value={formData.contactEmail}
+                    onChange={handleInputChange}
+                    error={!!formErrors.contactEmail}
+                    helperText={formErrors.contactEmail}
+                    required
+                    disabled={!!currentUser}
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <CustomPhoneInput
+                    label="İletişim Telefonu"
+                    name="contactPhone"
+                    countryCode="+90"
+                    phoneNumber={formData.contactPhone}
+                    onPhoneNumberChange={(value: string) => handleInputChange({ target: { name: 'contactPhone', value } })}
+                    onCountryCodeChange={() => { }}
+                    error={!!formErrors.contactPhone}
+                    helperText={formErrors.contactPhone}
+                    required
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <CustomInput
+                    label="Web Sitesi"
+                    name="website"
+                    type="text"
+                    value={formData.website || ''}
+                    onChange={handleInputChange}
+                    placeholder="https://www.dansokulum.com"
+                  />
+                </div>
+
+                {!currentUser && (
+                  <div className="col-span-2">
+                    <CustomInput
+                      label="Şifre"
+                      name="password"
+                      type="password"
+                      value={formData.password || ''}
+                      onChange={handleInputChange}
+                      error={!!formErrors.password}
+                      helperText={formErrors.password}
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Adres Bilgileri</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <CustomInput
+                    label="Adres"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    multiline
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 col-span-2">
+                  <div>
+                    <CustomInput
+                      label="Şehir"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div>
+                    <CustomInput
+                      label="İlçe"
+                      name="district"
+                      value={formData.district}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 col-span-2">
+                  <div>
+                    <CustomInput
+                      label="Posta Kodu"
+                      name="zipCode"
+                      value={formData.zipCode}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div>
+                    <CustomInput
+                      label="Ülke"
+                      name="country"
+                      value={formData.country || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Okul Fotoğrafı</h3>
+              <ImageUploader
+                currentPhotoURL={formData.photoURL}
+                onImageChange={handleImageChange}
+                displayName={formData.schoolName || '?'}
+                userType="school"
+                shape="square"
+                width={300}
+                height={200}
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={isSubmitting}
+                loading={isSubmitting}
+              >
+                {isSubmitting ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        <div className="mt-6 bg-blue-50 p-4 rounded-md">
+          <h3 className="text-blue-800 font-semibold">Bilgi</h3>
+          <p className="text-blue-700 text-sm mt-1">
+            Dans okulu başvurunuz, platformumuz tarafından incelendikten sonra aktif hale gelecektir. Onay sürecinde ek bilgiler veya belge istemleri olabilir.
+            Onay sonrası okul yönetici panelinize erişim sağlayabileceksiniz.
+          </p>
+        </div>
       </div>
     </div>
   );
