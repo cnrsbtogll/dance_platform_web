@@ -7,7 +7,7 @@ interface Option {
 }
 
 interface CustomSelectProps {
-  label: string;
+  label?: string;
   name: string;
   value: string | string[];
   options: Option[];
@@ -18,6 +18,7 @@ interface CustomSelectProps {
   placeholder?: string;
   fullWidth?: boolean;
   allowEmpty?: boolean;
+  className?: string;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -32,6 +33,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   placeholder,
   fullWidth = true,
   allowEmpty = true,
+  className = '',
 }) => {
   const handleChange = (event: any) => {
     const selectedValue = event.target.value;
@@ -39,11 +41,12 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   };
 
   return (
-    <FormControl 
-      fullWidth={fullWidth} 
-      error={!!error} 
-      required={required} 
-      sx={{ 
+    <FormControl
+      fullWidth={fullWidth}
+      error={!!error}
+      required={required}
+      className={className}
+      sx={{
         minWidth: 120,
         margin: 0,
         '& .MuiInputBase-root': {
@@ -51,21 +54,27 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         }
       }}
     >
-      <InputLabel 
-        id={`${name}-label`} 
-        sx={{ 
-          backgroundColor: 'white', 
-          px: 1,
-          transform: 'translate(14px, -9px) scale(0.75)',
-          '&.MuiInputLabel-shrink': {
+      {label && (
+        <InputLabel
+          id={`${name}-label`}
+          sx={{
             backgroundColor: 'white',
-            transform: 'translate(14px, -9px) scale(0.75)'
-          }
-        }}
-        shrink={true}
-      >
-        {label}
-      </InputLabel>
+            px: 1,
+            transform: 'translate(14px, -9px) scale(0.75)',
+            color: '#64748B', // slate-500
+            '&.Mui-focused': {
+              color: '#005F73', // brand-secondary
+            },
+            '&.MuiInputLabel-shrink': {
+              backgroundColor: 'white',
+              transform: 'translate(14px, -9px) scale(0.75)'
+            }
+          }}
+          shrink={true}
+        >
+          {label}
+        </InputLabel>
+      )}
       <Select
         labelId={`${name}-label`}
         id={name}
@@ -79,24 +88,27 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           '& .MuiSelect-select': {
             padding: '10.5px 14px',
             minHeight: '21px !important',
-            lineHeight: '1.5'
+            lineHeight: '1.5',
+            color: '#0F172A', // brand-text
           },
           backgroundColor: 'white',
-          borderRadius: '0.375rem',
+          borderRadius: '0.75rem', // rounded-xl matches design
           '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#E5E7EB',
+            borderColor: '#E2E8F0', // brand-border
+            borderWidth: '1px',
           },
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#9CA3AF',
+            borderColor: '#94A3B8', // slate-400
           },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#6366F1',
+            borderColor: '#005F73', // brand-secondary
+            borderWidth: '2px',
           }
         }}
       >
         {allowEmpty && (
           <MenuItem value="">
-            <span className="text-gray-500">{placeholder || 'Seçiniz'}</span>
+            <span className="text-gray-400">{placeholder || 'Seçiniz'}</span>
           </MenuItem>
         )}
         {options.map((option) => (
