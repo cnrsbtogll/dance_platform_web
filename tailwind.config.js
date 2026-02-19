@@ -5,13 +5,13 @@ export default {
     extend: {
       colors: {
         brand: {
-          pink: '#ED3D81',
+          pink: '#DA447D',
           dark: '#3B1F2B',
           light: '#FDC8D5',
         }
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #ED3D81 0%, #E91E63 100%)',
+        'brand-gradient': 'linear-gradient(135deg, #DA447D 0%, #DA447D 100%)',
       }
     },
   },
