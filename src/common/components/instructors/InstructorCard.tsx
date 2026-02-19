@@ -16,10 +16,10 @@ interface InstructorCardProps {
   showDetailLink?: boolean;
 }
 
-const InstructorCard: React.FC<InstructorCardProps> = ({ 
-  instructor, 
+const InstructorCard: React.FC<InstructorCardProps> = ({
+  instructor,
   index = 0,
-  showDetailLink = true 
+  showDetailLink = true
 }) => {
   const { currentUser } = useAuth();
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -37,7 +37,7 @@ const InstructorCard: React.FC<InstructorCardProps> = ({
   // Kart içeriği
   const cardContent = (
     <>
-      <div className="h-64 bg-gray-200 relative overflow-hidden">
+      <div className="h-64 bg-gray-200 dark:bg-gray-700 relative overflow-hidden">
         <img
           src={instructor.user.photoURL || generateInitialsAvatar(instructor.user.displayName || 'Eğitmen', 'instructor')}
           alt={instructor.user.displayName || "Eğitmen"}
@@ -51,7 +51,7 @@ const InstructorCard: React.FC<InstructorCardProps> = ({
         />
       </div>
       <div className="p-5">
-        <h3 className="text-lg font-semibold text-gray-800">
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
           {instructor.user.displayName || "Eğitmen"}
         </h3>
         <p className="text-brand-pink font-medium mb-1">
@@ -63,14 +63,14 @@ const InstructorCard: React.FC<InstructorCardProps> = ({
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
           </span>
-          <span className="text-gray-600">{(instructor.rating || 0).toFixed(1)}</span>
-          <span className="text-gray-400 text-sm ml-1">({instructor.reviewCount || 0} değerlendirme)</span>
+          <span className="text-gray-600 dark:text-gray-300">{(instructor.rating || 0).toFixed(1)}</span>
+          <span className="text-gray-400 dark:text-gray-500 text-sm ml-1">({instructor.reviewCount || 0} değerlendirme)</span>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
           <p><span className="font-medium">Tecrübe:</span> {instructor.experience || 0} yıl</p>
           <p><span className="font-medium">Uzmanlık:</span> {
-            instructor.specialties && instructor.specialties.length > 0 
-              ? instructor.specialties.join(', ') 
+            instructor.specialties && instructor.specialties.length > 0
+              ? instructor.specialties.join(', ')
               : "Çeşitli Dans Stilleri"
           }</p>
         </div>
@@ -106,10 +106,9 @@ const InstructorCard: React.FC<InstructorCardProps> = ({
     </>
   );
 
-  // Eğer showDetailLink true ise, kartı link olarak göster
   if (showDetailLink) {
     return (
-      <div className="bg-white rounded-xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 overflow-hidden">
         <Link
           to={`/instructors/${instructor.id}`}
           className="block"
@@ -122,7 +121,7 @@ const InstructorCard: React.FC<InstructorCardProps> = ({
 
   // Link olmayan versiyon
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
       {cardContent}
     </div>
   );

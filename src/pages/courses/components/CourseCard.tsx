@@ -173,10 +173,10 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
                 <Dialog.Title
                   as="h3"
-                  className="text-lg font-medium leading-6 text-gray-900 mb-4"
+                  className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4"
                 >
                   {course.name} - İletişim Bilgileri
                 </Dialog.Title>
@@ -184,8 +184,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                 <div className="mt-2 space-y-4">
                   {course.schoolName && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500">Dans Okulu</h4>
-                      <p className="text-base text-gray-900">{course.schoolName}</p>
+                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Dans Okulu</h4>
+                      <p className="text-base text-gray-900 dark:text-white">{course.schoolName}</p>
                     </div>
                   )}
 
@@ -196,7 +196,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
 
                   {course.phoneNumber && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500">Telefon</h4>
+                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Telefon</h4>
                       <a
                         href={`tel:${course.phoneNumber}`}
                         className="text-base text-brand-pink hover:text-indigo-800"
@@ -208,7 +208,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
 
                   {course.email && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500">E-posta</h4>
+                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">E-posta</h4>
                       <a
                         href={`mailto:${course.email}`}
                         className="text-base text-brand-pink hover:text-indigo-800"
@@ -220,8 +220,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
 
                   {course.location?.address && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500">Adres</h4>
-                      <p className="text-base text-gray-900">{course.location.address}</p>
+                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Adres</h4>
+                      <p className="text-base text-gray-900 dark:text-white">{course.location.address}</p>
                     </div>
                   )}
 
@@ -265,7 +265,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
     <>
       <div
         onClick={handleCardClick}
-        className="bg-white rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full cursor-pointer"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full cursor-pointer"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -287,7 +287,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
           </div>
 
           {/* Zamanlama rozeti */}
-          <div className="absolute bottom-4 left-4 bg-white/80 backdrop-blur-sm text-gray-800 px-3 py-1 text-sm font-medium rounded-full flex items-center">
+          <div className="absolute bottom-4 left-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm text-gray-800 dark:text-gray-200 px-3 py-1 text-sm font-medium rounded-full flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-brand-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -315,14 +315,14 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
               </div>
             </div>
 
-            <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{course.name}</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">{course.name}</h3>
 
-            <p className="text-sm text-gray-500 mb-3">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
               {course.instructorName}
               {course.schoolName && ` • ${course.schoolName}`}
             </p>
 
-            <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">
               {course.description}
             </p>
           </div>
@@ -332,7 +332,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex-1 mr-3">
-                  <div className="h-2 w-full bg-gray-200 rounded-full">
+                  <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full">
                     <div
                       className={`h-2 rounded-full transition-all duration-300 ${course.currentParticipants / course.maxParticipants > 0.8
                         ? 'bg-red-500'
@@ -344,11 +344,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                     ></div>
                   </div>
                 </div>
-                <div className="flex items-center justify-center min-w-[60px] text-sm font-medium text-gray-700 tabular-nums">
+                <div className="flex items-center justify-center min-w-[60px] text-sm font-medium text-gray-700 dark:text-gray-300 tabular-nums">
                   {course.currentParticipants}/{course.maxParticipants}
                 </div>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {course.currentParticipants === course.maxParticipants
                   ? 'Kontenjan dolu'
                   : `${course.maxParticipants - course.currentParticipants} kişilik kontenjan kaldı`}

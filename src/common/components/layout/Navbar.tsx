@@ -8,6 +8,7 @@ import { generateInitialsAvatar } from '../../utils/imageUtils';
 import LoginRequiredModal from '../modals/LoginRequiredModal';
 import { eventBus, EVENTS } from '../../utils/eventBus';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 // Navbar bileşeni için prop tipleri
 interface NavbarProps {
@@ -17,6 +18,7 @@ interface NavbarProps {
 
 function Navbar({ isAuthenticated, user }: NavbarProps) {
   const { currentUser, logout: authLogout } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false);
   const [profilePhotoURL, setProfilePhotoURL] = useState<string>("");
@@ -331,7 +333,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
   return (
     <>
-      <nav className={`bg-white shadow-md fixed w-full z-50 backdrop-blur-sm bg-white/90 ${hasInstructorRole ? 'border-b-2 border-instructor' : hasSchoolRole ? 'border-b-2 border-school' : ''}`}>
+      <nav className={`bg-white dark:bg-gray-900 shadow-md fixed w-full z-50 backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 transition-colors duration-300 ${hasInstructorRole ? 'border-b-2 border-instructor' : hasSchoolRole ? 'border-b-2 border-school' : 'border-b border-gray-200 dark:border-gray-700'}`}>
         {/* Instructor mode banner */}
         {hasInstructorRole && (
           <div className="bg-gradient-to-r from-instructor-dark via-instructor to-instructor-light px-4 py-0.5 flex items-center justify-center gap-2">
@@ -417,6 +419,25 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
               </div>
             </div>
             <div className="hidden md:ml-4 md:flex md:items-center lg:space-x-2 md:space-x-1">
+              {/* Dark mode toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-pink"
+                title={isDark ? 'Aydınlık Mod' : 'Karanlık Mod'}
+                aria-label="Tema değiştir"
+              >
+                {isDark ? (
+                  // Sun icon
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  // Moon icon
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+              </button>
               {/* Kullanıcının rolüne göre butonları göster */}
               <div className="flex space-x-2">
                 {/* 'Eğitmen Ol' butonu */}
@@ -490,8 +511,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     <div className="flex items-center">
                       {/* Kullanıcı Bilgileri - Masaüstü */}
                       <div className="hidden md:block mr-3 text-right">
-                        <div className="text-sm font-medium text-gray-800">{user?.displayName || 'Kullanıcı'}</div>
-                        <div className="text-xs text-gray-500 truncate max-w-[140px]">{user?.email || ''}</div>
+                        <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{user?.displayName || 'Kullanıcı'}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[140px]">{user?.email || ''}</div>
                       </div>
                       <button
                         onClick={toggleProfileMenu}
@@ -515,17 +536,17 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       <div
                         className="origin-top-right absolute right-0 mt-2 w-48 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 transition-all duration-200"
                       >
-                        <div className="rounded-lg bg-white shadow-xs py-1">
+                        <div className="rounded-lg bg-white dark:bg-gray-800 shadow-xs py-1">
                           {/* Kullanıcı Bilgileri - Dropdown */}
-                          <div className="block px-4 py-2 border-b border-gray-100">
-                            <div className="text-sm font-medium text-gray-800">{user?.displayName || 'Kullanıcı'}</div>
-                            <div className="text-xs text-gray-500 truncate">{user?.email || ''}</div>
+                          <div className="block px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+                            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{user?.displayName || 'Kullanıcı'}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email || ''}</div>
                           </div>
                           {/* Profil linki - rolüne göre farklı profil sayfasına yönlendirme */}
                           {hasSuperAdminRole ? (
                             <Link
                               to="/profile?type=admin"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-700 transition-colors duration-150"
+                              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-gray-700 hover:text-rose-700 transition-colors duration-150"
                               onClick={() => setIsProfileMenuOpen(false)}
                             >
                               Admin Profilim
@@ -534,13 +555,13 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                             <>
                               <Link
                                 to="/profile"
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-brand-pink transition-colors duration-150"
+                                className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-gray-700 hover:text-brand-pink transition-colors duration-150"
                                 onClick={() => setIsProfileMenuOpen(false)}
                               >
                                 Profilim
                               </Link>
                               <button
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-brand-pink transition-colors duration-150"
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-gray-700 hover:text-brand-pink transition-colors duration-150"
                                 onClick={() => {
                                   console.log('🎯 İlerleme Durumum butonuna tıklandı:', {
                                     isAuthenticated,
@@ -577,7 +598,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                               handleLogout();
                               setIsProfileMenuOpen(false);
                             }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-700 transition-colors duration-150"
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-gray-700 hover:text-rose-700 transition-colors duration-150"
                           >
                             Çıkış Yap
                           </button>
@@ -591,7 +612,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 <div className="flex items-center space-x-2 lg:space-x-3">
                   <Link
                     to="/signin"
-                    className="inline-flex items-center px-2 py-2 lg:px-4 lg:py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-2 py-2 lg:px-4 lg:py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                     title="Giriş Yap"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -631,8 +652,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
         {/* Mobil için hamburger menüsü */}
         {isMenuOpen && (
-          <div className={`md:hidden animate-fadeIn fixed top-16 left-0 right-0 z-40 bg-white shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto ${hasInstructorRole ? 'border-t-2 border-instructor' : ''}`}>
-            <div className={`pt-2 pb-3 border-t border-gray-200 ${hasInstructorRole ? 'bg-instructor-bg/40' : 'bg-gray-50/80'} backdrop-blur-sm`}>
+          <div className={`md:hidden animate-fadeIn fixed top-16 left-0 right-0 z-40 bg-white dark:bg-gray-900 shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto transition-colors duration-300 ${hasInstructorRole ? 'border-t-2 border-instructor' : ''}`}>
+            <div className={`pt-2 pb-3 border-t border-gray-200 dark:border-gray-700 ${hasInstructorRole ? 'bg-instructor-bg/40' : 'bg-gray-50/80 dark:bg-gray-800/80'} backdrop-blur-sm`}>
               {/* Her durumda gösterilecek butonlar */}
               <div className="px-4 space-y-2">
                 {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
@@ -723,8 +744,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       />
                     </div>
                     <div className="ml-3">
-                      <div className="text-sm font-medium leading-none text-gray-800">{user?.displayName || 'Kullanıcı'}</div>
-                      <div className="text-xs font-medium leading-none text-gray-500 mt-1">{user?.email || ''}</div>
+                      <div className="text-sm font-medium leading-none text-gray-800 dark:text-gray-200">{user?.displayName || 'Kullanıcı'}</div>
+                      <div className="text-xs font-medium leading-none text-gray-500 dark:text-gray-400 mt-1">{user?.email || ''}</div>
                     </div>
                   </div>
                   <div className="mt-3 space-y-1 px-4">
@@ -762,8 +783,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     )}
 
                     {/* Ayırıcı çizgi */}
-                    <div className="my-4 border-t border-gray-200" />
-                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <div className="my-4 border-t border-gray-200 dark:border-gray-700" />
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Profil Menüsü
                     </div>
 
@@ -846,10 +867,33 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                         handleLogout();
                         setIsMenuOpen(false);
                       }}
-                      className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                      className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-gray-700 transition-colors duration-150"
                     >
                       Çıkış Yap
                     </button>
+                    {/* Dark mode toggle - Mobile */}
+                    <div className="pt-3 mt-1 border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        onClick={toggleTheme}
+                        className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+                      >
+                        {isDark ? (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            Aydınlık Mod
+                          </>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                            Karanlık Mod
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </>
               ) : (
