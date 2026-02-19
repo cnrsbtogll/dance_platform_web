@@ -335,10 +335,10 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                   <div className="h-2 w-full bg-gray-200 rounded-full">
                     <div
                       className={`h-2 rounded-full transition-all duration-300 ${course.currentParticipants / course.maxParticipants > 0.8
-                          ? 'bg-red-500'
-                          : course.currentParticipants / course.maxParticipants > 0.5
-                            ? 'bg-yellow-500'
-                            : 'bg-green-500'
+                        ? 'bg-red-500'
+                        : course.currentParticipants / course.maxParticipants > 0.5
+                          ? 'bg-yellow-500'
+                          : 'bg-gradient-to-r from-emerald-500 to-green-600'
                         }`}
                       style={{ width: `${(course.currentParticipants / course.maxParticipants) * 100}%` }}
                     ></div>
@@ -360,7 +360,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
               <Link
                 to={`/courses/${course.id}`}
                 onClick={(e) => e.stopPropagation()}
-                className="flex-1 py-2 px-4 text-sm font-medium rounded-md text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink text-center"
+                className="flex-1 py-2 px-4 text-sm font-medium rounded-md text-brand-pink bg-rose-50 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink text-center"
               >
                 Detaylar
               </Link>
@@ -372,8 +372,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                 }}
                 disabled={course.currentParticipants >= course.maxParticipants}
                 className={`flex-1 py-2 px-4 text-sm font-medium rounded-md ${course.currentParticipants >= course.maxParticipants
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
                   }`}
               >
                 İletişime Geç
@@ -381,7 +381,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
             </div>
           </div>
         </div>
-      </div>
+      </div >
       <ContactModal />
     </>
   );
