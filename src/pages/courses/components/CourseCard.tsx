@@ -278,7 +278,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
               className={`w-full h-full object-cover object-center transition-transform duration-700 ${isHovered ? 'scale-110' : 'scale-100'}`}
               style={{ objectPosition: 'center center' }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80"></div>
+            <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80 transition-transform duration-700 ${isHovered ? 'scale-110' : 'scale-100'}`}></div>
           </div>
 
           {/* Seviye rozeti */}
