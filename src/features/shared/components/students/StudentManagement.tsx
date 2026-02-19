@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  deleteDoc, 
-  getDoc, 
-  updateDoc, 
-  setDoc, 
-  query, 
-  orderBy, 
+import {
+  collection,
+  getDocs,
+  doc,
+  deleteDoc,
+  getDoc,
+  updateDoc,
+  setDoc,
+  query,
+  orderBy,
   serverTimestamp,
   where,
   Timestamp
 } from 'firebase/firestore';
-import { 
-  createUserWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
   updateProfile,
   sendEmailVerification,
   deleteUser,
@@ -109,13 +109,13 @@ interface PhotoModalProps {
 
 const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, photoURL, studentName, defaultImagePath }) => {
   if (!isOpen) return null;
-  
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" onClick={onClose}>
       <div className="bg-white rounded-lg overflow-hidden max-w-3xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-lg font-semibold">{studentName} - Fotoğraf</h3>
-          <button 
+          <button
             className="text-gray-500 hover:text-gray-700"
             onClick={onClose}
           >
@@ -125,9 +125,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, photoURL, stud
           </button>
         </div>
         <div className="p-6 flex justify-center">
-          <img 
-            src={photoURL} 
-            alt={`${studentName} fotoğrafı`} 
+          <img
+            src={photoURL}
+            alt={`${studentName} fotoğrafı`}
             className="max-h-[70vh] max-w-full object-contain"
             onError={(e) => {
               (e.target as HTMLImageElement).src = defaultImagePath;
@@ -217,7 +217,7 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
       <label className="block text-sm font-medium text-gray-700 mb-2">
         Öğrenci Fotoğrafı
       </label>
-      
+
       <input
         type="file"
         hidden
@@ -225,7 +225,7 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
         accept="image/*"
         onChange={handleFileChange}
       />
-      
+
       <div className="relative mb-3">
         {/* Image preview area */}
         <div
@@ -233,15 +233,15 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
           onClick={() => fileInputRef.current?.click()}
         >
           {/* Current or preview image */}
-          <img 
-            src={previewURL || currentPhotoURL || DEFAULT_STUDENT_IMAGE} 
-            alt="Öğrenci fotoğrafı" 
+          <img
+            src={previewURL || currentPhotoURL || DEFAULT_STUDENT_IMAGE}
+            alt="Öğrenci fotoğrafı"
             className="w-full h-full object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).src = DEFAULT_STUDENT_IMAGE;
             }}
           />
-          
+
           {/* Hover overlay */}
           <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -264,14 +264,14 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
           </button>
         )}
       </div>
-      
+
       {/* Preview controls */}
       {previewURL && (
         <div className="flex flex-col items-center gap-2 mt-2">
           <p className="text-xs text-gray-500 text-center">
             Seçilen fotoğrafı kaydetmek için onaylayın veya iptal edin.
           </p>
-          
+
           <div className="flex gap-2">
             <button
               type="button"
@@ -281,7 +281,7 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
             >
               Onayla
             </button>
-            
+
             <button
               type="button"
               onClick={cancelUpload}
@@ -293,21 +293,21 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
           </div>
         </div>
       )}
-      
+
       {/* Error message */}
       {error && (
         <p className="text-xs text-red-500 mt-1">
           {error}
         </p>
       )}
-      
+
       {/* Loading indicator */}
       {isUploading && (
         <div className="flex justify-center mt-2">
           <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink"></div>
         </div>
       )}
-      
+
       {/* Help text */}
       {!previewURL && (
         <p className="text-xs text-gray-500 mt-1">
@@ -345,7 +345,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
   // Photo modal state
   const [photoModalOpen, setPhotoModalOpen] = useState<boolean>(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<{url: string, name: string} | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<{ url: string, name: string } | null>(null);
   const [formData, setFormData] = useState<FormData>({
     displayName: '',
     email: '',
@@ -363,26 +363,26 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   useEffect(() => {
     const checkIfSuperAdmin = async () => {
       if (!auth.currentUser) return;
-      
+
       try {
         const userRef = doc(db, 'users', auth.currentUser.uid);
         const userSnap = await getDoc(userRef);
-        
+
         if (userSnap.exists()) {
           const userData = userSnap.data();
           let roles = userData.role || [];
-          
+
           if (!Array.isArray(roles)) {
             roles = [roles];
           }
-          
+
           setIsSuperAdmin(roles.includes('admin'));
         }
       } catch (err) {
         console.error('Süper admin kontrolü yapılırken hata oluştu:', err);
       }
     };
-    
+
     checkIfSuperAdmin();
   }, []);
 
@@ -390,41 +390,41 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   const fetchAllUsers = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // Get students
       const usersRef = collection(db, 'users');
-      
+
       // Initialize with a default query that returns no results
       let studentsQuery = query(
         usersRef,
         where('role', '==', 'non-existent-role')
       );
-      
+
       // Get current user's role
       const userRef = doc(db, 'users', currentUser?.uid || '');
       const userDoc = await getDoc(userRef);
       const userData = userDoc.data();
       const userRole = userData?.role || '';
-      
+
       if (isAdmin) {
         console.log('Admin mode: fetching all students');
         studentsQuery = query(
-          usersRef, 
+          usersRef,
           where('role', '==', 'student'),
           orderBy('createdAt', 'desc')
         );
       } else if (userRole === 'school') {
         console.log('School mode: fetching students for school', currentUser?.uid);
         studentsQuery = query(
-          usersRef, 
+          usersRef,
           where('schoolId', '==', currentUser?.uid),
           where('role', '==', 'student')
         );
       } else if (userRole === 'instructor') {
         console.log('Instructor mode: fetching students for instructor', currentUser?.uid);
         studentsQuery = query(
-          usersRef, 
+          usersRef,
           where('instructorId', '==', currentUser?.uid),
           where('role', '==', 'student')
         );
@@ -458,7 +458,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           displayName: doc.data().displayName || 'İsimsiz Okul',
           email: doc.data().email || ''
         }));
-        
+
         setSchools(schoolsData);
       }
     } catch (err) {
@@ -485,16 +485,16 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   // Filter students based on search term
   const filterStudents = () => {
     let filtered = [...students];
-    
+
     // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(student => 
-        student.displayName.toLowerCase().includes(term) || 
+      filtered = filtered.filter(student =>
+        student.displayName.toLowerCase().includes(term) ||
         student.email.toLowerCase().includes(term)
       );
     }
-    
+
     setFilteredStudents(filtered);
   };
 
@@ -571,10 +571,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         }));
         return;
       }
-      
+
       // Resize image to reduce size
       const resizedImage = await resizeImageFromBase64(base64Image, 400, 400, 0.75);
-      
+
       // Update form state
       setFormData(prev => ({
         ...prev,
@@ -601,7 +601,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     try {
       // Benzersiz bir davet kodu oluştur
       const invitationId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Remove undefined values from invitationData
       const cleanedInvitationData = Object.fromEntries(
         Object.entries({
@@ -620,7 +620,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       // Kullanıcıyı users koleksiyonuna ekle
       const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const now = Timestamp.now();
-      
+
       const userData = {
         id: userId,
         email,
@@ -662,7 +662,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!currentUser?.uid) return;
-      
+
       const userRef = doc(db, 'users', currentUser.uid);
       const userDoc = await getDoc(userRef);
       const userData = userDoc.data();
@@ -680,7 +680,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
 
     try {
       const coursesRef = collection(db, 'courses');
-      
+
       // First, get all courses to check the data
       const allCoursesSnapshot = await getDocs(coursesRef);
       console.log('All courses in collection:', allCoursesSnapshot.docs.map(doc => ({
@@ -697,7 +697,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
 
       // Query oluştur
       let q = query(coursesRef, orderBy('createdAt', 'desc')); // Default query for admin
-      
+
       if (!isAdmin) {
         if (userRole === 'school') {
           console.log('School: Okula ait kurslar getiriliyor -', currentUser.uid);
@@ -719,7 +719,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       }
 
       console.log('Ana query oluşturuldu:', q);
-      
+
       console.log('Veriler çekiliyor...');
       const snapshot = await getDocs(q);
       console.log('Course query snapshot:', {
@@ -741,7 +741,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           instructorId: data.instructorId
         } as Course;
       });
-      
+
       console.log('Processed courses:', coursesData);
       setCourses(coursesData);
     } catch (err) {
@@ -762,7 +762,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     setLoading(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       console.log('Form submission - Current user role:', userRole);
       console.log('Form data:', formData);
@@ -771,25 +771,25 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       if (selectedStudent) {
         // Update existing student
         const userRef = doc(db, 'users', selectedStudent.id);
-        
+
         // Get instructor name if an instructor is selected
         let instructorName = '';
         if (formData.instructorId) {
           const selectedInstructor = instructors.find(i => i.id === formData.instructorId);
           instructorName = selectedInstructor?.displayName || '';
         }
-        
+
         // Use current user's ID as schoolId for school users
         const schoolId = userRole.includes('school') ? currentUser?.uid : formData.schoolId;
         console.log('Using schoolId:', schoolId);
-        
+
         // Get school name
         let schoolName = '';
         if (schoolId) {
           const selectedSchool = schools.find(s => s.id === schoolId);
           schoolName = selectedSchool?.displayName || '';
         }
-        
+
         const updateData = {
           displayName: formData.displayName,
           phone: formData.phone,
@@ -802,30 +802,30 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           courseIds: formData.courseIds || [],
           updatedAt: serverTimestamp()
         };
-        
+
         console.log('Updating student with data:', updateData);
         await updateDoc(userRef, updateData);
         console.log('Öğrenci güncellendi:', selectedStudent.id);
-        
+
         // Update the students array
-        const updatedStudents = students.map(student => 
-          student.id === selectedStudent.id 
-            ? { 
-                ...student, 
-                displayName: formData.displayName,
-                phone: formData.phone,
-                level: formData.level,
-                instructorId: formData.instructorId || null,
-                instructorName: instructorName || null,
-                schoolId: formData.schoolId || null,
-                schoolName: schoolName || null,
-                photoURL: formData.photoURL || DEFAULT_STUDENT_IMAGE,
-                courseIds: formData.courseIds || [],
-                updatedAt: serverTimestamp() as Timestamp 
-              } 
+        const updatedStudents = students.map(student =>
+          student.id === selectedStudent.id
+            ? {
+              ...student,
+              displayName: formData.displayName,
+              phone: formData.phone,
+              level: formData.level,
+              instructorId: formData.instructorId || null,
+              instructorName: instructorName || null,
+              schoolId: formData.schoolId || null,
+              schoolName: schoolName || null,
+              photoURL: formData.photoURL || DEFAULT_STUDENT_IMAGE,
+              courseIds: formData.courseIds || [],
+              updatedAt: serverTimestamp() as Timestamp
+            }
             : student
         );
-        
+
         setStudents(updatedStudents);
         setSuccess('Öğrenci bilgileri başarıyla güncellendi.');
       } else {
@@ -833,14 +833,14 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         if (!formData.email || !formData.displayName) {
           throw new Error('E-posta ve ad soyad alanları zorunludur.');
         }
-        
+
         // Check if email already exists
         const emailQuery = query(
-          collection(db, 'users'), 
+          collection(db, 'users'),
           where('email', '==', formData.email)
         );
         const emailCheckSnapshot = await getDocs(emailQuery);
-        
+
         if (!emailCheckSnapshot.empty) {
           throw new Error('Bu e-posta adresi zaten kullanılıyor.');
         }
@@ -851,7 +851,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           const selectedInstructor = instructors.find(i => i.id === formData.instructorId);
           instructorName = selectedInstructor?.displayName || '';
         }
-        
+
         // Get school name if a school is selected
         let schoolName = '';
         if (formData.schoolId) {
@@ -871,14 +871,14 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           photoURL: formData.photoURL,
           courseIds: formData.courseIds
         });
-        
+
         setSuccess('Öğrenci başarıyla eklendi ve davet e-postası gönderildi.');
       }
-      
+
       // Close the form
       setEditMode(false);
       setSelectedStudent(null);
-      
+
     } catch (err: any) {
       console.error('Error in form submission:', err);
       setError('İşlem sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
@@ -892,19 +892,19 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     if (!window.confirm('Bu öğrenciyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       // Delete from Firestore
       await deleteDoc(doc(db, 'users', studentId));
-      
+
       // Remove from state
       const updatedStudents = students.filter(student => student.id !== studentId);
       setStudents(updatedStudents);
       setSuccess('Öğrenci başarıyla silindi.');
-      
+
       // Note: Deleting the auth user would require admin SDK or reauthentication,
       // so we're only deleting the Firestore document here.
     } catch (err) {
@@ -918,7 +918,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   // Render student row
   const renderStudent = (student: FirebaseUser) => {
     return (
-      <motion.tr 
+      <motion.tr
         key={student.id}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -929,8 +929,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           <div className="flex items-center">
             <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
               {student.photoURL ? (
-                <img 
-                  className="h-10 w-10 rounded-full object-cover absolute inset-0" 
+                <img
+                  className="h-10 w-10 rounded-full object-cover absolute inset-0"
                   src={student.photoURL}
                   alt={student.displayName}
                   onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -940,8 +940,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   }}
                 />
               ) : (
-                <img 
-                  className="h-10 w-10 rounded-full object-cover" 
+                <img
+                  className="h-10 w-10 rounded-full object-cover"
                   src={generateInitialsAvatar(student.displayName, 'student')}
                   alt={student.displayName}
                 />
@@ -978,7 +978,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         )}
         {userRole !== 'school' && (
           <td className="px-6 py-4 whitespace-nowrap">
-            <SchoolProfile 
+            <SchoolProfile
               school={{
                 id: student.schoolId || '',
                 displayName: student.schoolName || '',
@@ -1009,7 +1009,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           <div className="flex justify-end space-x-2">
             <button
               onClick={() => editStudent(student)}
-              className="text-brand-pink hover:text-indigo-900"
+              className="text-instructor hover:text-instructor-dark"
             >
               Düzenle
             </button>
@@ -1037,7 +1037,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     try {
       console.log('Fetching instructors...');
       const instructorsRef = collection(db, 'instructors');
-      
+
       // Get current user's role
       const userRef = doc(db, 'users', currentUser?.uid || '');
       const userDoc = await getDoc(userRef);
@@ -1105,7 +1105,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   if (loading && students.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-instructor"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -1119,13 +1119,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           <p>{error}</p>
         </div>
       )}
-      
+
       {success && (
         <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
           <p>{success}</p>
         </div>
       )}
-      
+
       {/* Üst Başlık ve Arama Bölümü */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
         <div>
@@ -1139,7 +1139,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               placeholder="Ad veya e-posta ile ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-pink focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-instructor focus:border-transparent"
             />
             <span className="absolute right-3 top-2.5 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1148,9 +1148,9 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             </span>
           </div>
           {!editMode && (
-            <button 
+            <button
               onClick={addNewStudent}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2 bg-instructor text-white rounded-md hover:bg-instructor-dark transition-colors flex items-center justify-center gap-2"
               disabled={loading}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1161,10 +1161,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           )}
         </div>
       </div>
-      
+
       {/* Photo Modal */}
       {selectedPhoto && (
-        <PhotoModal 
+        <PhotoModal
           isOpen={photoModalOpen}
           onClose={() => setPhotoModalOpen(false)}
           photoURL={selectedPhoto.url}
@@ -1172,18 +1172,18 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           defaultImagePath={DEFAULT_STUDENT_IMAGE}
         />
       )}
-      
+
       {editMode ? (
         <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
           <h3 className="text-lg font-semibold mb-4">
             {selectedStudent ? 'Öğrenci Düzenle' : 'Yeni Öğrenci Ekle'}
           </h3>
-          
+
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               {/* Profil Fotoğrafı */}
               <div className="md:col-span-2">
-                <ImageUploader 
+                <ImageUploader
                   currentPhotoURL={formData.photoURL}
                   onImageChange={handlePhotoChange}
                   displayName={formData.displayName || '?'}
@@ -1194,7 +1194,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   maxSizeKB={5120}
                 />
               </div>
-              
+
               <div>
                 <CustomInput
                   name="displayName"
@@ -1206,7 +1206,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   fullWidth
                 />
               </div>
-              
+
               <div>
                 <CustomInput
                   type="email"
@@ -1221,7 +1221,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   disabled={!!selectedStudent}
                 />
               </div>
-              
+
               <div>
                 <CustomPhoneInput
                   name="phone"
@@ -1229,12 +1229,12 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   required
                   countryCode="+90"
                   phoneNumber={formData.phone}
-                  onCountryCodeChange={() => {}}
+                  onCountryCodeChange={() => { }}
                   onPhoneNumberChange={(value: string) => setFormData(prev => ({ ...prev, phone: value }))}
                   fullWidth
                 />
               </div>
-              
+
               <div>
                 <CustomSelect
                   name="level"
@@ -1255,7 +1255,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   required
                 />
               </div>
-              
+
               {isAdmin && (
                 <div>
                   <CustomSelect
@@ -1279,7 +1279,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   />
                 </div>
               )}
-              
+
               {/* School selection - only show for admin */}
               {isAdmin ? (
                 <div>
@@ -1304,7 +1304,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               ) : userRole.includes('school') && (
                 <div>
                   <span className="text-gray-500">Okul:</span>
-                  <SchoolProfile 
+                  <SchoolProfile
                     school={{
                       id: currentUser?.uid || '',
                       displayName: schools.find(s => s.id === currentUser?.uid)?.displayName || '',
@@ -1341,7 +1341,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 />
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <Button
                 variant="outlined"
@@ -1366,10 +1366,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         <>
           {loading && (
             <div className="flex justify-center my-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-pink"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-instructor"></div>
             </div>
           )}
-          
+
           {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -1424,8 +1424,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center max-w-[60%]">
                       <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
-                        <img 
-                          className="h-10 w-10 rounded-full object-cover absolute inset-0" 
+                        <img
+                          className="h-10 w-10 rounded-full object-cover absolute inset-0"
                           src={student.photoURL || generateInitialsAvatar(student.displayName, 'student')}
                           alt={student.displayName}
                           onError={(e) => {
@@ -1443,7 +1443,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                     <div className="flex space-x-2 flex-shrink-0">
                       <button
                         onClick={() => editStudent(student)}
-                        className="text-brand-pink hover:text-indigo-900"
+                        className="text-instructor hover:text-instructor-dark"
                       >
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -1485,7 +1485,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                     {userRole !== 'school' && (
                       <div>
                         <span className="text-gray-500">Okul:</span>
-                        <SchoolProfile 
+                        <SchoolProfile
                           school={{
                             id: student.schoolId || '',
                             displayName: student.schoolName || '',

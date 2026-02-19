@@ -8,6 +8,13 @@ export default {
           pink: '#DA447D',
           dark: '#3B1F2B',
           light: '#FDC8D5',
+        },
+        instructor: {
+          DEFAULT: '#005f73',
+          light: '#0a9396',
+          lighter: '#94d2bd',
+          dark: '#003d4a',
+          bg: '#e9f5f7',
         }
       },
       backgroundImage: {

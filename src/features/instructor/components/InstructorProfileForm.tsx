@@ -113,9 +113,9 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
       const danceStylesRef = collection(db, 'danceStyles');
       const q = query(danceStylesRef, orderBy('label'));
       const querySnapshot = await getDocs(q);
-      
+
       const styles: DanceStyleOption[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         const styleData = doc.data() as Omit<DanceStyleOption, 'id'>;
         styles.push({
@@ -213,7 +213,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             countryCode: instructorData.countryCode || '+90',
             location: instructorData.location || '',
             photoURL: instructorData.photoURL || userData.photoURL || '',
-            
+
             // User koleksiyonundan gelen veriler
             gender: userData.gender || '',
             age: userData.age,
@@ -223,7 +223,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             weight: userData.weight,
             danceStyles: userData.danceStyles || [],
             availableTimes: userData.availableTimes || [],
-            
+
             // Diğer alanlar
             createdAt: instructorData.createdAt || '',
             updatedAt: instructorData.updatedAt || '',
@@ -239,7 +239,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
           toast.success('Profil bilgileri yüklendi');
         } else {
           console.log('ℹ️ No instructor profile found, creating new instructor profile');
-          
+
           // Yeni eğitmen profili oluştur
           const newInstructorData: Partial<InstructorProfileFormData> = {
             displayName: userData.displayName || '',
@@ -268,12 +268,12 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
           try {
             await setDoc(instructorRef, newInstructorData);
             console.log('✅ New instructor profile created:', newInstructorData);
-            
+
             reset(newInstructorData as InstructorProfileFormData);
             setSelectedSpecialties([]);
             setProfilePhotoURL(userData.photoURL || '');
             toast.success('Yeni eğitmen profili oluşturuldu');
-            
+
             // User dokümanını da güncelle
             await updateDoc(userRef, {
               role: 'instructor',
@@ -421,7 +421,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
     }
 
     console.log('🖼️ Starting profile photo update:', { userId: user.id, hasImage: !!base64Image });
-    
+
     try {
       // Önce UI state'ini güncelle
       setProfilePhotoURL(base64Image);
@@ -511,21 +511,19 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
       <nav className="-mb-px flex space-x-8" aria-label="Tabs">
         <button
           onClick={() => setActiveTab('user')}
-          className={`${
-            activeTab === 'user'
-              ? 'border-brand-pink text-brand-pink'
+          className={`${activeTab === 'user'
+              ? 'border-instructor text-instructor'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
         >
           Kullanıcı Bilgileri
         </button>
         <button
           onClick={() => setActiveTab('instructor')}
-          className={`${
-            activeTab === 'instructor'
-              ? 'border-brand-pink text-brand-pink'
+          className={`${activeTab === 'instructor'
+              ? 'border-instructor text-instructor'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
         >
           Eğitmen Bilgileri
         </button>
@@ -712,7 +710,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
   if (initialLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] bg-white rounded-lg shadow-sm p-6">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-instructor"></div>
         <p className="mt-4 text-gray-600">Profil bilgileri yükleniyor...</p>
       </div>
     );
@@ -731,7 +729,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
           <p className="text-gray-600 mb-4">{fetchError}</p>
           <button
             onClick={() => window.location.reload()}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-instructor hover:bg-instructor-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-instructor"
           >
             Yeniden Dene
           </button>
@@ -743,23 +741,23 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {renderTabs()}
-      
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {activeTab === 'user' ? renderUserInfoForm() : renderInstructorInfoForm()}
-        
+
         <div className="flex justify-between pt-6 border-t border-gray-200">
           <button
             type="button"
             onClick={() => setActiveTab(activeTab === 'user' ? 'instructor' : 'user')}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-instructor"
           >
             {activeTab === 'user' ? 'Eğitmen Bilgilerine Geç' : 'Kullanıcı Bilgilerine Dön'}
           </button>
-          
+
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink disabled:opacity-50"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-instructor hover:bg-instructor-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-instructor disabled:opacity-50"
           >
             {loading ? (
               <>

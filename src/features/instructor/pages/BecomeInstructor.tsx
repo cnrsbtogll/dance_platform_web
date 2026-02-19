@@ -362,7 +362,7 @@ function BecomeInstructor() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[500px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-instructor"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -381,7 +381,7 @@ function BecomeInstructor() {
           <p className="text-gray-600 mb-6">Eğitmen panelinize giderek derslerinizi yönetebilirsiniz.</p>
           <Button
             onClick={() => navigate('/instructor')}
-            variant="primary"
+            variant="instructor"
           >
             Eğitmen Paneline Git
           </Button>
@@ -403,7 +403,7 @@ function BecomeInstructor() {
           <p className="text-gray-600 mb-6">Eğitmen başvurunuz halihazırda inceleniyor. Başvurunuz onaylandığında size e-posta ile bilgilendirme yapılacaktır.</p>
           <Button
             onClick={() => navigate('/')}
-            variant="primary"
+            variant="instructor"
           >
             Ana Sayfaya Dön
           </Button>
@@ -425,7 +425,7 @@ function BecomeInstructor() {
           <p className="text-gray-600 mb-6">Eğitmen başvurunuz başarıyla alındı. Başvurunuz incelendikten sonra size e-posta ile bilgilendirme yapılacaktır.</p>
           <Button
             onClick={() => navigate('/')}
-            variant="primary"
+            variant="instructor"
           >
             Ana Sayfaya Dön
           </Button>
@@ -447,7 +447,7 @@ function BecomeInstructor() {
         transition={{ duration: 0.5 }}
         className="text-center mb-10"
       >
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block py-2">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-instructor to-instructor-light bg-clip-text text-transparent leading-tight inline-block py-2">
           Eğitmen Olarak Başvurun
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
@@ -535,7 +535,7 @@ function BecomeInstructor() {
             <div className="md:col-span-2">
               {loadingStyles ? (
                 <div className="bg-gray-100 p-2 rounded-md flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink mr-2"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-instructor mr-2"></div>
                   <span className="text-gray-600">Dans stilleri yükleniyor...</span>
                 </div>
               ) : (
@@ -587,7 +587,7 @@ function BecomeInstructor() {
           <div className="flex justify-end mt-6">
             <Button
               type="submit"
-              variant="primary"
+              variant="instructor"
               disabled={isSubmitting}
               loading={isSubmitting}
             >
@@ -597,9 +597,9 @@ function BecomeInstructor() {
         </form>
       </div>
 
-      <div className="mt-6 bg-blue-50 p-4 rounded-md">
-        <h3 className="text-blue-800 font-semibold">Bilgi</h3>
-        <p className="text-blue-700 text-sm mt-1">
+      <div className="mt-6 bg-instructor-bg p-4 rounded-md border border-instructor-lighter">
+        <h3 className="text-instructor-dark font-semibold">Bilgi</h3>
+        <p className="text-instructor text-sm mt-1">
           Eğitmen başvurunuz, yönetici onayından sonra aktif olacaktır. Onay sürecinde ek bilgiler istenebilir.
           Onay sonrası eğitmen panelinize erişim sağlayabileceksiniz.
         </p>

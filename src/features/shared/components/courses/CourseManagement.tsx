@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
-  orderBy, 
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
   serverTimestamp,
   DocumentData,
   QueryDocumentSnapshot,
@@ -222,18 +222,18 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, course }) 
 // Timestamp'i tarihe çeviren yardımcı fonksiyon ekle
 const timestampToDate = (timestamp: any): string => {
   if (!timestamp) return '';
-  
+
   try {
     // Firebase timestamp kontrolü
     if (timestamp?.seconds) {
       return new Date(timestamp.seconds * 1000).toISOString().split('T')[0];
     }
-    
+
     // Normal Date objesi kontrolü
     if (timestamp instanceof Date) {
       return timestamp.toISOString().split('T')[0];
     }
-    
+
     return '';
   } catch (error) {
     console.error('Tarih dönüştürme hatası:', error);
@@ -295,7 +295,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
       const stylesRef = collection(db, 'danceStyles');
       const q = query(stylesRef, orderBy('label'));
       const querySnapshot = await getDocs(q);
-      
+
       const styles = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -303,7 +303,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
           value: data.value || doc.id
         };
       });
-      
+
       setDanceStyles(styles);
     } catch (error) {
       console.error('Dans stilleri yüklenirken hata:', error);
@@ -363,7 +363,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
       console.log('Test verisi ekleniyor...');
       const docRef = await addDoc(collection(db, 'courses'), testCourse);
       console.log('Test verisi eklendi, ID:', docRef.id);
-      
+
       return docRef.id;
     } catch (err) {
       console.error('Test verisi eklenirken hata:', err);
@@ -391,11 +391,11 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
       }
 
       console.log('Firebase bağlantısı başarılı, kurslar getiriliyor...');
-      
+
       try {
         const coursesRef = collection(db, 'courses');
         console.log('Courses koleksiyonu referansı alındı:', coursesRef);
-        
+
         // Get current user's role
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
@@ -405,7 +405,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
 
         // Query oluştur
         let q = query(coursesRef, orderBy('createdAt', 'desc')); // Default query for admin
-        
+
         if (!isAdmin) {
           if (userRole === 'school') {
             console.log('School: Okula ait kurslar getiriliyor -', currentUser.uid);
@@ -427,23 +427,23 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
         }
 
         console.log('Ana query oluşturuldu:', q);
-        
+
         console.log('Veriler çekiliyor...');
         try {
           const querySnapshot = await Promise.race([
             getDocs(q),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Veri çekme zaman aşımına uğradı')), 10000)
             )
           ]) as QuerySnapshot<DocumentData>;
-          
+
           console.log('Query tamamlandı, sonuçlar:', {
             empty: querySnapshot.empty,
             size: querySnapshot.size,
             metadata: querySnapshot.metadata,
             docs: querySnapshot.docs.map(doc => doc.id)
           });
-          
+
           if (querySnapshot.empty) {
             console.log('Henüz kurs kaydı bulunmuyor');
             setCourses([]);
@@ -460,12 +460,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
               console.error(`Kurs dökümanı işlenirken hata (ID: ${doc.id}):`, docError);
             }
           });
-          
+
           console.log('Tüm kurslar işlendi:', {
             totalCount: coursesData.length,
             courses: coursesData
           });
-          
+
           setCourses(coursesData);
         } catch (queryError: any) {
           console.error('Query işlemi sırasında hata:', {
@@ -473,7 +473,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
             message: queryError.message,
             name: queryError.name
           });
-          
+
           if (queryError.code === 'permission-denied') {
             throw new Error('Kurs verilerine erişim izniniz yok. Yönetici ile iletişime geçin.');
           }
@@ -514,11 +514,11 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
       console.error('Oturum açmış kullanıcı bilgisi bulunamadı');
       return;
     }
-    
+
     try {
       console.log('Eğitmenler getiriliyor...');
       const instructorsRef = collection(db, 'instructors');
-      
+
       let q;
       // Okul yöneticisi için kendi ID'sine bağlı eğitmenleri getir
       if (!isAdmin) {
@@ -541,15 +541,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
         isAdmin,
         queryConditions: q
       });
-      
+
       try {
         const querySnapshot = await Promise.race([
           getDocs(q),
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Eğitmen verisi çekme zaman aşımına uğradı')), 10000)
           )
         ]) as QuerySnapshot<DocumentData>;
-        
+
         console.log('Query sonuçları:', {
           empty: querySnapshot.empty,
           size: querySnapshot.size,
@@ -573,7 +573,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
             };
           })
           .sort((a, b) => a.label.localeCompare(b.label));
-        
+
         console.log('İşlenmiş eğitmen listesi:', instructorsData);
         setInstructors(instructorsData);
       } catch (queryError: any) {
@@ -583,7 +583,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
           name: queryError.name,
           stack: queryError.stack
         });
-        
+
         if (queryError.code === 'permission-denied') {
           throw new Error('Eğitmen verilerine erişim izniniz yok. Yönetici ile iletişime geçin.');
         }
@@ -605,7 +605,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
   // Okulları getir
   const fetchSchools = async () => {
     if (!isAdmin) return;
-    
+
     try {
       console.log('Okullar getiriliyor...');
       const schoolsRef = collection(db, 'schools');
@@ -623,7 +623,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
           data: doc.data()
         }))
       });
-      
+
       const schoolsList = querySnapshot.docs
         .map(doc => {
           const data = doc.data();
@@ -649,7 +649,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
         })
         .filter((school): school is { label: string; value: string } => school !== null)
         .sort((a, b) => a.label.localeCompare(b.label));
-      
+
       console.log('İşlenmiş okul listesi:', schoolsList);
       setSchools(schoolsList);
     } catch (error) {
@@ -659,7 +659,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
         code: error instanceof Error ? (error as any).code : undefined,
         stack: error instanceof Error ? error.stack : undefined
       });
-      
+
       // Varsayılan okul listesi
       setSchools([
         { label: 'Test Okul 1', value: 'test-school-1' },
@@ -909,7 +909,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
   // Firebase için veriyi temizleyen yardımcı fonksiyon
   const cleanDataForFirebase = (data: any) => {
     const cleanData = { ...data };
-    
+
     // Undefined değerleri kaldır
     Object.keys(cleanData).forEach(key => {
       if (cleanData[key] === undefined) {
@@ -924,7 +924,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
 
     // Timestamp alanlarını koru
     const { createdAt, updatedAt, ...restData } = cleanData;
-    
+
     return restData;
   };
 
@@ -994,18 +994,18 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
         // Mevcut kursu güncelle
         const courseRef = doc(db, 'courses', selectedCourse.id);
         await updateDoc(courseRef, courseDataToSave);
-        
+
         const updatedCourse: Course = {
           ...selectedCourse,
           ...courseDataToSave,
         };
-        
-        setCourses(prev => prev.map(course => 
-          course.id === selectedCourse.id 
+
+        setCourses(prev => prev.map(course =>
+          course.id === selectedCourse.id
             ? updatedCourse
             : course
         ));
-        
+
         setSuccess('Kurs başarıyla güncellendi.');
       } else {
         // Yeni kurs ekle
@@ -1013,17 +1013,17 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
           ...courseDataToSave,
           createdAt: serverTimestamp()
         });
-        
+
         const newCourse: Course = {
           ...courseDataToSave,
           id: docRef.id,
           createdAt: serverTimestamp(),
         };
-        
+
         setCourses(prev => [newCourse, ...prev]);
         setSuccess('Yeni kurs başarıyla eklendi.');
       }
-      
+
       setEditMode(false);
       setSelectedCourse(null);
     } catch (err) {
@@ -1067,7 +1067,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
               placeholder="Kurs ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-pink focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-instructor focus:border-transparent"
             />
             <span className="absolute right-3 top-2.5 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1078,6 +1078,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
           <Button
             onClick={addNewCourse}
             type="button"
+            variant="instructor"
           >
             Yeni Kurs Ekle
           </Button>
@@ -1171,8 +1172,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                       label="Durum"
                       options={statusOptions}
                       value={formData.status}
-                      onChange={(value) => setFormData({ 
-                        ...formData, 
+                      onChange={(value) => setFormData({
+                        ...formData,
                         status: value as 'active' | 'inactive'
                       })}
                       placeholder="Durum Seçin"
@@ -1242,7 +1243,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                           name="recurring"
                           checked={formData.recurring}
                           onChange={(e) => setFormData({ ...formData, recurring: true })}
-                          className="form-radio h-4 w-4 text-brand-pink"
+                          className="form-radio h-4 w-4 text-instructor"
                         />
                         <span className="ml-2">Periyodik Kurs</span>
                       </label>
@@ -1252,7 +1253,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                           name="recurring"
                           checked={!formData.recurring}
                           onChange={(e) => setFormData({ ...formData, recurring: false })}
-                          className="form-radio h-4 w-4 text-brand-pink"
+                          className="form-radio h-4 w-4 text-instructor"
                         />
                         <span className="ml-2">Tek Seferlik Kurs</span>
                       </label>
@@ -1288,7 +1289,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                                 newSchedule[index].time = e.target.value;
                                 setFormData({ ...formData, schedule: newSchedule });
                               }}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-pink focus:ring-brand-pink sm:text-sm"
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-instructor focus:ring-instructor sm:text-sm"
                               required
                             />
                           </div>
@@ -1308,7 +1309,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                           </div>
                         </div>
                       ))}
-                      
+
                       <button
                         type="button"
                         onClick={() => {
@@ -1317,7 +1318,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                             schedule: [...formData.schedule, { day: 'Pazartesi', time: '18:00' }]
                           });
                         }}
-                        className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-brand-pink hover:text-brand-pink w-full"
+                        className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-instructor hover:text-instructor w-full"
                       >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1370,7 +1371,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
               >
                 İptal
               </Button>
-              <Button type="submit">
+              <Button type="submit" variant="instructor">
                 {selectedCourse ? 'Güncelle' : 'Kaydet'}
               </Button>
             </div>
@@ -1392,7 +1393,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {courses.filter(course => 
+              {courses.filter(course =>
                 course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase())
               ).map((course) => (
@@ -1424,11 +1425,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                     {course.currentParticipants}/{course.maxParticipants}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      course.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${course.status === 'active'
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
-                    }`}>
+                      }`}>
                       {course.status === 'active' ? 'Aktif' : 'Pasif'}
                     </span>
                   </td>
@@ -1436,7 +1436,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => editCourse(course)}
-                        className="text-brand-pink hover:text-indigo-900"
+                        className="text-instructor hover:text-instructor-dark"
                       >
                         <span className="sr-only">Düzenle</span>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

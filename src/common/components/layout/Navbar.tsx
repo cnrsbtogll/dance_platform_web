@@ -331,7 +331,19 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
   return (
     <>
-      <nav className="bg-white shadow-md fixed w-full z-50 backdrop-blur-sm bg-white/90">
+      <nav className={`bg-white shadow-md fixed w-full z-50 backdrop-blur-sm bg-white/90 ${hasInstructorRole ? 'border-b-2 border-instructor' : ''}`}>
+        {/* Instructor mode banner */}
+        {hasInstructorRole && (
+          <div className="bg-gradient-to-r from-instructor-dark via-instructor to-instructor-light px-4 py-0.5 flex items-center justify-center gap-2">
+            <svg className="w-3 h-3 text-instructor-lighter" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="text-[11px] font-semibold tracking-widest text-white uppercase">Eğitmen Modu</span>
+            <svg className="w-3 h-3 text-instructor-lighter" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -427,7 +439,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 {hasInstructorRole && (
                   <Link
                     to="/instructor"
-                    className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-instructor to-instructor-light hover:from-instructor-dark hover:to-instructor focus:outline-none focus:ring-2 focus:ring-instructor focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                     title="Eğitmen Paneli"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -607,8 +619,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
         {/* Mobil için hamburger menüsü */}
         {isMenuOpen && (
-          <div className="md:hidden animate-fadeIn fixed top-16 left-0 right-0 z-40 bg-white shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
-            <div className="pt-2 pb-3 border-t border-gray-200 bg-gray-50/80 backdrop-blur-sm">
+          <div className={`md:hidden animate-fadeIn fixed top-16 left-0 right-0 z-40 bg-white shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto ${hasInstructorRole ? 'border-t-2 border-instructor' : ''}`}>
+            <div className={`pt-2 pb-3 border-t border-gray-200 ${hasInstructorRole ? 'bg-instructor-bg/40' : 'bg-gray-50/80'} backdrop-blur-sm`}>
               {/* Her durumda gösterilecek butonlar */}
               <div className="px-4 space-y-2">
                 {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
@@ -662,13 +674,21 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   <Link
                     to="/instructor"
                     onClick={() => setIsMenuOpen(false)}
-                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
+                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-instructor to-instructor-light hover:from-instructor-dark hover:to-instructor focus:outline-none focus:ring-1 focus:ring-instructor focus:ring-offset-1 shadow-sm transition-all duration-200"
                   >
                     <div className="flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                       Eğitmen Paneli
+                    </div>
+
+                    {/* Eğitmen rozeti */}
+                    <div className="mt-0.5 flex items-center justify-center">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider text-instructor-lighter uppercase">
+                        <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                        Eğitmen Modu
+                      </span>
                     </div>
                   </Link>
                 )}
