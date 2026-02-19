@@ -62,7 +62,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
   if (variant === 'row') {
     return (
       <div className={`flex items-center ${className}`}>
-        <div className="text-sm text-gray-900">
+        <div className="text-sm text-gray-900 dark:text-white">
           {school.displayName || '-'}
         </div>
       </div>

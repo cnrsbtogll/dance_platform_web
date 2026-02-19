@@ -190,8 +190,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                   )}
 
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500">Eğitmen</h4>
-                    <p className="text-base text-gray-900">{course.instructorName}</p>
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Eğitmen</h4>
+                    <p className="text-base text-gray-900 dark:text-white">{course.instructorName}</p>
                   </div>
 
                   {course.phoneNumber && (
@@ -226,7 +226,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                   )}
 
                   <div className="mt-6">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       * Lütfen iletişime geçerken bu kursun adını belirtmeyi unutmayın.
                     </p>
                   </div>
@@ -287,7 +287,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
           </div>
 
           {/* Zamanlama rozeti */}
-          <div className="absolute bottom-4 left-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm text-gray-800 dark:text-gray-200 px-3 py-1 text-sm font-medium rounded-full flex items-center">
+          <div className="absolute bottom-4 left-4 bg-white dark:bg-slate-800/80 dark:bg-gray-900/80 backdrop-blur-sm text-gray-800 dark:text-gray-200 px-3 py-1 text-sm font-medium rounded-full flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-brand-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -372,7 +372,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                 }}
                 disabled={course.currentParticipants >= course.maxParticipants}
                 className={`flex-1 py-2 px-4 text-sm font-medium rounded-md ${course.currentParticipants >= course.maxParticipants
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-gray-300 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                   : 'bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
                   }`}
               >

@@ -333,7 +333,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
   return (
     <>
-      <nav className={`bg-white dark:bg-gray-900 shadow-md fixed w-full z-50 backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 transition-colors duration-300 ${hasInstructorRole ? 'border-b-2 border-instructor' : hasSchoolRole ? 'border-b-2 border-school' : 'border-b border-gray-200 dark:border-gray-700'}`}>
+      <nav className={`bg-white dark:bg-gray-900 shadow-md fixed w-full z-50 backdrop-blur-sm bg-white dark:bg-gray-900/90 transition-colors duration-300 ${hasInstructorRole ? 'border-b-2 border-instructor' : hasSchoolRole ? 'border-b-2 border-school' : 'border-b border-gray-200 dark:border-gray-700'}`}>
         {/* Instructor mode banner */}
         {hasInstructorRole && (
           <div className="bg-gradient-to-r from-instructor-dark via-instructor to-instructor-light px-4 py-0.5 flex items-center justify-center gap-2">
@@ -386,7 +386,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       to="/partners"
                       className={`${isActive('/partners')
                         ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Partner Bul
                     </Link>
@@ -394,7 +394,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       to="/courses"
                       className={`${isActive('/courses')
                         ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Kurs Bul
                     </Link>
@@ -402,7 +402,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       to="/festivals"
                       className={`${isActive('/festivals')
                         ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Festivaller
                     </Link>
@@ -410,7 +410,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       to="/nights"
                       className={`${isActive('/nights')
                         ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Geceler
                     </Link>
@@ -422,7 +422,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
               {/* Dark mode toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-pink"
+                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-pink"
                 title={isDark ? 'Aydınlık Mod' : 'Karanlık Mod'}
                 aria-label="Tema değiştir"
               >
@@ -612,7 +612,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 <div className="flex items-center space-x-2 lg:space-x-3">
                   <Link
                     to="/signin"
-                    className="inline-flex items-center px-2 py-2 lg:px-4 lg:py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-2 py-2 lg:px-4 lg:py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-slate-800 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                     title="Giriş Yap"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -636,7 +636,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
             <div className="-mr-2 flex items-center md:hidden">
               <button
                 onClick={toggleMenu}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-brand-pink hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-pink transition duration-150 ease-in-out"
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-brand-pink hover:bg-gray-100 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-pink transition duration-150 ease-in-out"
               >
                 <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                   {isMenuOpen ? (
@@ -653,7 +653,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
         {/* Mobil için hamburger menüsü */}
         {isMenuOpen && (
           <div className={`md:hidden animate-fadeIn fixed top-16 left-0 right-0 z-40 bg-white dark:bg-gray-900 shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto transition-colors duration-300 ${hasInstructorRole ? 'border-t-2 border-instructor' : ''}`}>
-            <div className={`pt-2 pb-3 border-t border-gray-200 dark:border-gray-700 ${hasInstructorRole ? 'bg-instructor-bg/40' : 'bg-gray-50/80 dark:bg-gray-800/80'} backdrop-blur-sm`}>
+            <div className={`pt-2 pb-3 border-t border-gray-200 dark:border-gray-700 ${hasInstructorRole ? 'bg-instructor-bg/40' : 'bg-gray-50 dark:bg-slate-900/80 dark:bg-gray-800/80'} backdrop-blur-sm`}>
               {/* Her durumda gösterilecek butonlar */}
               <div className="px-4 space-y-2">
                 {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
@@ -753,28 +753,28 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       <>
                         <Link
                           to="/partners"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Partner Bul
                         </Link>
                         <Link
                           to="/courses"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Kurs Bul
                         </Link>
                         <Link
                           to="/festivals"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Festivaller
                         </Link>
                         <Link
                           to="/nights"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Geceler
@@ -815,7 +815,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     {hasSuperAdminRole ? (
                       <Link
                         to="/profile?type=admin"
-                        className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                        className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Admin Profilim
@@ -824,13 +824,13 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       <>
                         <Link
                           to="/profile"
-                          className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Profilim
                         </Link>
                         <button
-                          className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => {
                             console.log('🎯 İlerleme Durumum butonuna tıklandı:', {
                               isAuthenticated,
@@ -875,7 +875,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     <div className="pt-3 mt-1 border-t border-gray-200 dark:border-gray-700">
                       <button
                         onClick={toggleTheme}
-                        className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+                        className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-gray-800 transition-all duration-200"
                       >
                         {isDark ? (
                           <>
@@ -898,10 +898,10 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 </>
               ) : (
                 /* Giriş yapmamış kullanıcılar için menü */
-                <div className="pt-1 mt-1 border-t border-gray-200 space-y-2">
+                <div className="pt-1 mt-1 border-t border-gray-200 dark:border-slate-700 space-y-2">
                   <Link
                     to="/signin"
-                    className="block w-full px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-brand-pink focus:ring-offset-1 shadow-sm transition-all duration-200"
+                    className="block w-full px-3 py-1 border border-gray-300 dark:border-slate-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-pink focus:ring-offset-1 shadow-sm transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="flex items-center justify-center">

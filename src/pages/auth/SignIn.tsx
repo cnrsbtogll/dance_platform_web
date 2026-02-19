@@ -72,7 +72,7 @@ const SignIn = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-6 text-center">Giriş Yap</h2>
       
       {error && (
@@ -83,7 +83,7 @@ const SignIn = () => {
 
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+          <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="email">
             E-posta
           </label>
           <input
@@ -97,7 +97,7 @@ const SignIn = () => {
         </div>
 
         <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+          <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="password">
             Şifre
           </label>
           <input
@@ -116,7 +116,7 @@ const SignIn = () => {
       </form>
 
       <div className="mt-4 text-center">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Hesabınız yok mu?{' '}
           <a 
             href="/signup"

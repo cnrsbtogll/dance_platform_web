@@ -159,10 +159,10 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, course }) 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">İletişim Bilgileri</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button onClick={onClose} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -171,13 +171,13 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, course }) 
 
         {/* Eğitmen Bilgileri */}
         <div className="mb-6">
-          <h4 className="text-md font-medium text-gray-900 mb-2">Eğitmen</h4>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">
+          <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">Eğitmen</h4>
+          <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
               <span className="font-medium">İsim:</span> {course.instructorName}
             </p>
             {course.instructorPhone && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 <span className="font-medium">Telefon:</span>{' '}
                 <a href={`tel:${course.instructorPhone}`} className="text-blue-600 hover:underline">
                   {course.instructorPhone}
@@ -189,13 +189,13 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, course }) 
 
         {/* Okul Bilgileri */}
         <div className="mb-6">
-          <h4 className="text-md font-medium text-gray-900 mb-2">Dans Okulu</h4>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">
+          <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">Dans Okulu</h4>
+          <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
               <span className="font-medium">İsim:</span> {course.schoolName}
             </p>
             {course.schoolPhone && (
-              <p className="text-sm text-gray-600 mb-1">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                 <span className="font-medium">Telefon:</span>{' '}
                 <a href={`tel:${course.schoolPhone}`} className="text-blue-600 hover:underline">
                   {course.schoolPhone}
@@ -203,7 +203,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, course }) 
               </p>
             )}
             {course.schoolAddress && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 <span className="font-medium">Adres:</span> {course.schoolAddress}
               </p>
             )}
@@ -718,7 +718,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
     return (
       <div className="space-y-4 md:col-span-2">
-        <h3 className="text-lg font-medium text-gray-900">Temel Bilgiler</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Temel Bilgiler</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <CustomInput
@@ -1058,8 +1058,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       {/* Üst Başlık ve Arama Bölümü */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Kurs Yönetimi</h2>
-          <p className="text-sm text-gray-600 mt-1">Kurslarınızı ekleyin, düzenleyin ve yönetin</p>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Kurs Yönetimi</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Kurslarınızı ekleyin, düzenleyin ve yönetin</p>
         </div>
         <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
           <div className="relative flex-grow sm:max-w-[200px]">
@@ -1068,7 +1068,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               placeholder="Kurs ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 ${colorVariant === 'school' ? 'focus:ring-school' : 'focus:ring-instructor'} focus:border-transparent`}
+              className={`w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 ${colorVariant === 'school' ? 'focus:ring-school' : 'focus:ring-instructor'} focus:border-transparent`}
             />
             <span className="absolute right-3 top-2.5 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1088,7 +1088,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
       {/* Form Bölümü */}
       {(editMode || selectedCourse) && (
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Form Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -1096,7 +1096,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
               {/* Program ve Kapasite */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Program ve Kapasite</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Program ve Kapasite</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <CustomSelect
@@ -1126,7 +1126,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
               {/* Fiyat ve Süre */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Fiyat ve Süre</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Fiyat ve Süre</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-stretch max-w-[200px]">
@@ -1142,8 +1142,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                         className="w-24 !rounded-r-none"
                         required
                       />
-                      <div className="flex items-center h-[45px] px-3 border border-l-0 border-gray-300 rounded-r-md bg-gray-50">
-                        <span className="text-gray-500 text-sm">₺</span>
+                      <div className="flex items-center h-[45px] px-3 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-md bg-gray-50 dark:bg-slate-900">
+                        <span className="text-gray-500 dark:text-gray-400 text-sm">₺</span>
                       </div>
                     </div>
                   </div>
@@ -1165,7 +1165,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
               {/* Durum ve Tekrar */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Durum</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Durum</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <CustomSelect
@@ -1186,7 +1186,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
               {/* Lokasyon */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Lokasyon</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Lokasyon</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <CustomSelect
@@ -1233,10 +1233,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
               {/* Program Seçimi */}
               <div className="md:col-span-2 space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Program</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Program</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kurs Tipi</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kurs Tipi</label>
                     <div className="mt-2">
                       <label className="inline-flex items-center mr-4">
                         <input
@@ -1281,7 +1281,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                             />
                           </div>
                           <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Saat</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Saat</label>
                             <input
                               type="time"
                               value={scheduleItem.time}
@@ -1290,7 +1290,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                                 newSchedule[index].time = e.target.value;
                                 setFormData({ ...formData, schedule: newSchedule });
                               }}
-                              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm ${colorVariant === 'school' ? 'focus:border-school focus:ring-school' : 'focus:border-instructor focus:ring-instructor'} sm:text-sm`}
+                              className={`mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm ${colorVariant === 'school' ? 'focus:border-school focus:ring-school' : 'focus:border-instructor focus:ring-instructor'} sm:text-sm`}
                               required
                             />
                           </div>
@@ -1319,7 +1319,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                             schedule: [...formData.schedule, { day: 'Pazartesi', time: '18:00' }]
                           });
                         }}
-                        className={`flex items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg ${colorVariant === 'school' ? 'hover:border-school hover:text-school' : 'hover:border-instructor hover:text-instructor'} w-full`}
+                        className={`flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg ${colorVariant === 'school' ? 'hover:border-school hover:text-school' : 'hover:border-instructor hover:text-instructor'} w-full`}
                       >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1330,7 +1330,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Kurs Tarihi</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kurs Tarihi</label>
                         <input
                           type="date"
                           name="date"
@@ -1339,18 +1339,18 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                             const selectedDate = e.target.value ? new Date(e.target.value) : null;
                             setFormData({ ...formData, date: selectedDate });
                           }}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-pink focus:ring-brand-pink sm:text-sm"
+                          className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-brand-pink focus:ring-brand-pink sm:text-sm"
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Kurs Saati</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kurs Saati</label>
                         <input
                           type="time"
                           name="time"
                           value={formData.time}
                           onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-pink focus:ring-brand-pink sm:text-sm"
+                          className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-brand-pink focus:ring-brand-pink sm:text-sm"
                           required
                         />
                       </div>
@@ -1381,34 +1381,34 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       )}
 
       {/* Kurs Listesi */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-slate-900">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kurs</th>
-                <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program</th>
-                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kapasite</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kurs</th>
+                <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Program</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kapasite</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durum</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
               {courses.filter(course =>
                 course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase())
               ).map((course) => (
-                <tr key={course.id} className="hover:bg-gray-50">
+                <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{course.name}</div>
-                        <div className="text-sm text-gray-500">{course.danceStyle}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{course.name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{course.danceStyle}</div>
                       </div>
                     </div>
                   </td>
                   <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-gray-900 dark:text-white">
                       {course.recurring ? (
                         <div className="space-y-1">
                           {course.schedule.map((s, index) => (
@@ -1422,7 +1422,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       )}
                     </div>
                   </td>
-                  <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {course.currentParticipants}/{course.maxParticipants}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">

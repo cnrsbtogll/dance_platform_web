@@ -183,22 +183,22 @@ const SchoolAdmin: React.FC = () => {
     return (
       <div className="flex justify-center items-center min-h-[500px]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school"></div>
-        <span className="ml-3 text-gray-700">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto my-10 p-8 bg-white rounded-lg shadow-md">
+      <div className="max-w-2xl mx-auto my-10 p-8 bg-white dark:bg-slate-800 rounded-lg shadow-md">
         <div className="text-center">
           <div className="text-red-500 mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Hata</h2>
-          <p className="text-gray-600">{error}</p>
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Hata</h2>
+          <p className="text-gray-600 dark:text-gray-400">{error}</p>
         </div>
       </div>
     );
@@ -216,12 +216,12 @@ const SchoolAdmin: React.FC = () => {
           <h1 className="text-3xl sm:text-4xl font-bold mb-4 inline-block relative bg-gradient-to-r from-school to-school-light bg-clip-text text-transparent">
             Dans Okulu Yönetim Paneli
           </h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Kurslarınızı, öğrencilerinizi, eğitmenlerinizi ve ders programınızı profesyonelce yönetin.
           </p>
         </motion.div>
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
           {/* Tab Navigation - Mobile */}
           <div className="md:hidden border-b overflow-x-auto">
             <div className="flex whitespace-nowrap">
@@ -229,7 +229,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('profile')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'profile'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,7 +241,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('instructors')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'instructors'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -253,7 +253,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('courses')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'courses'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,7 +265,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('students')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'students'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,7 +277,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('schedule')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'schedule'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,7 +289,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('attendance')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'attendance'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +301,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('progress')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'progress'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,7 +313,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('badges')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'badges'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,7 +331,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('profile')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'profile'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Okul Profili
@@ -340,7 +340,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('instructors')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'instructors'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Eğitmenler
@@ -349,7 +349,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('courses')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'courses'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Kurslar
@@ -358,7 +358,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('students')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'students'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Öğrenciler
@@ -367,7 +367,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('schedule')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'schedule'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Program
@@ -376,7 +376,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('attendance')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'attendance'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Yoklama
@@ -385,7 +385,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('progress')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'progress'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 İlerleme Takibi
@@ -394,7 +394,7 @@ const SchoolAdmin: React.FC = () => {
                 onClick={() => setActiveTab('badges')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'badges'
                   ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Rozetler
@@ -407,14 +407,14 @@ const SchoolAdmin: React.FC = () => {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Okul Profili</h2>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Okul Profili</h2>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                       Dans okulunuzun temel bilgilerini görüntüleyin ve düzenleyin
                     </p>
                   </div>
                 </div>
 
-                <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+                <div className="bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 rounded-lg p-6">
                   <SchoolProfile
                     school={schoolInfo}
                     variant="card"

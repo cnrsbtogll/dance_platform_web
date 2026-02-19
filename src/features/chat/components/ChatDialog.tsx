@@ -249,7 +249,7 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
           <div>
             <span className="font-semibold block">{partner.displayName}</span>
             {partner.role && (
-              <span className="text-xs text-gray-600">{getRoleLabel(partner.role)}</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">{getRoleLabel(partner.role)}</span>
             )}
           </div>
         </div>
@@ -262,7 +262,7 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
 
       <DialogContent className="flex flex-col h-[500px] p-0">
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-900">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -281,7 +281,7 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
                 className={`relative max-w-[70%] rounded-2xl px-4 py-2 ${
                   message.senderId === currentUser?.uid
                     ? 'bg-brand-pink text-white rounded-tr-none'
-                    : 'bg-white text-gray-800 rounded-tl-none shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 rounded-tl-none shadow-sm'
                 }`}
               >
                 <p className="text-sm break-words">{message.content}</p>
@@ -289,7 +289,7 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
                   className={`text-[11px] block mt-1 ${
                     message.senderId === currentUser?.uid 
                       ? 'text-rose-100' 
-                      : 'text-gray-500'
+                      : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
                   {message.timestamp instanceof Date 
@@ -309,7 +309,7 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
         </div>
 
         {/* Message Input */}
-        <form onSubmit={handleSendMessage} className="border-t p-3 bg-white">
+        <form onSubmit={handleSendMessage} className="border-t p-3 bg-white dark:bg-slate-800">
           <div className="flex gap-1">
             <input
               type="text"

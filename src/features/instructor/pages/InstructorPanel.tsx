@@ -87,12 +87,12 @@ function InstructorPanel({ user }: InstructorPanelProps) {
           <h1 className="text-3xl sm:text-4xl font-bold mb-4 inline-block relative bg-gradient-to-r from-instructor to-instructor-light bg-clip-text text-transparent">
             Eğitmen Yönetim Paneli
           </h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Kurslarınızı, öğrencilerinizi ve ders programınızı profesyonelce yönetin ve dans eğitimi deneyiminizi en üst düzeye çıkarın.
           </p>
         </motion.div>
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
           {/* Tab Navigation - Mobile */}
           <div className="md:hidden border-b overflow-x-auto">
             <div className="flex whitespace-nowrap">
@@ -100,7 +100,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('profile')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'profile'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +112,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('courses')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'courses'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,7 +124,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('students')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'students'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,7 +136,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('schedule')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'schedule'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +148,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('attendance')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'attendance'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,7 +160,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('progress')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'progress'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,7 +172,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('badges')}
                 className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'badges'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,7 +190,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('profile')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'profile'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Profilim
@@ -199,7 +199,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('courses')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'courses'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Kurslarım
@@ -208,7 +208,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('students')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'students'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Öğrencilerim
@@ -217,7 +217,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('schedule')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'schedule'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Ders Programım
@@ -226,7 +226,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('attendance')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'attendance'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Yoklama
@@ -235,7 +235,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('progress')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'progress'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 İlerleme Takibi
@@ -244,7 +244,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 onClick={() => setActiveTab('badges')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'badges'
                   ? 'border-instructor text-instructor'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Rozetler

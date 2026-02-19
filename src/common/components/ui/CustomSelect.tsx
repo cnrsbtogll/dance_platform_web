@@ -96,7 +96,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       >
         {allowEmpty && (
           <MenuItem value="">
-            <span className="text-gray-500">{placeholder || 'Seçiniz'}</span>
+            <span className="text-gray-500 dark:text-gray-400">{placeholder || 'Seçiniz'}</span>
           </MenuItem>
         )}
         {options.map((option) => (

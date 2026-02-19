@@ -651,7 +651,7 @@ function InstructorManagement(): JSX.Element {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-        <span className="ml-3 text-gray-700">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
   }
@@ -685,7 +685,7 @@ function InstructorManagement(): JSX.Element {
       </div>
       
       {duzenlemeModu ? (
-        <div className="bg-gray-50 p-6 rounded-lg">
+        <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-lg">
           <h3 className="text-lg font-semibold mb-4">
             {seciliEgitmen ? 'Eğitmen Düzenle' : 'Yeni Eğitmen Ekle'}
           </h3>
@@ -693,7 +693,7 @@ function InstructorManagement(): JSX.Element {
           <form onSubmit={formGonder}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label htmlFor="ad" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="ad" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Eğitmen Adı*
                 </label>
                 <input
@@ -703,7 +703,7 @@ function InstructorManagement(): JSX.Element {
                   required
                   value={formVeri.ad}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
                 />
               </div>
               
@@ -722,7 +722,7 @@ function InstructorManagement(): JSX.Element {
               </div>
               
               <div>
-                <label htmlFor="tecrube" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="tecrube" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Tecrübe
                 </label>
                 <input
@@ -731,7 +731,7 @@ function InstructorManagement(): JSX.Element {
                   name="tecrube"
                   value={formVeri.tecrube}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
                   placeholder="Örn: 5 yıl"
                 />
               </div>
@@ -751,7 +751,7 @@ function InstructorManagement(): JSX.Element {
               </div>
               
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   E-posta*
                 </label>
                 <input
@@ -761,15 +761,15 @@ function InstructorManagement(): JSX.Element {
                   required={!seciliEgitmen}
                   value={formVeri.email}
                   onChange={handleInputChange}
-                  className={`w-full p-2 border border-gray-300 rounded-md ${seciliEgitmen ? 'bg-gray-100' : ''}`}
+                  className={`w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md ${seciliEgitmen ? 'bg-gray-100 dark:bg-slate-800' : ''}`}
                   readOnly={seciliEgitmen !== null}
                 />
                 {seciliEgitmen ? (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     E-posta adresi değiştirilemez.
                   </p>
                 ) : (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Eğitmen için otomatik olarak bir kullanıcı hesabı oluşturulacaktır.
                   </p>
                 )}
@@ -788,7 +788,7 @@ function InstructorManagement(): JSX.Element {
               {!seciliEgitmen && (
                 <div className="md:col-span-2">
                   <div className="mt-3">
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Şifre
                     </label>
                     <input
@@ -797,10 +797,10 @@ function InstructorManagement(): JSX.Element {
                       name="password"
                       value={formVeri.password}
                       onChange={handleInputChange}
-                      className="w-full p-2 border border-gray-300 rounded-md"
+                      className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
                       placeholder="Boş bırakırsanız otomatik şifre oluşturulur"
                     />
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       Şifre belirtilmezse, eğitmenin adına göre otomatik bir şifre oluşturulacaktır.
                     </p>
                   </div>
@@ -808,7 +808,7 @@ function InstructorManagement(): JSX.Element {
               )}
               
               <div className="md:col-span-2">
-                <label htmlFor="biyografi" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="biyografi" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Biyografi
                 </label>
                 <textarea
@@ -817,12 +817,12 @@ function InstructorManagement(): JSX.Element {
                   rows={4}
                   value={formVeri.biyografi}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
                 ></textarea>
               </div>
               
               <div className="md:col-span-2">
-                <label htmlFor="gorsel" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="gorsel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Eğitmen Fotoğrafı
                 </label>
                 <ImageUploader
@@ -840,7 +840,7 @@ function InstructorManagement(): JSX.Element {
               <button
                 type="button"
                 onClick={() => setDuzenlemeModu(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+                className="px-4 py-2 bg-gray-300 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 transition-colors"
                 disabled={loading}
               >
                 İptal
@@ -863,7 +863,7 @@ function InstructorManagement(): JSX.Element {
               placeholder="Eğitmen adı veya uzmanlık ara..."
               value={aramaTerimi}
               onChange={(e) => setAramaTerimi(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
+              className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
             />
           </div>
           
@@ -875,26 +875,26 @@ function InstructorManagement(): JSX.Element {
           
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-slate-900">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Eğitmen
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Uzmanlık
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Okul
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Tecrübe
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     İşlemler
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
                 {filtrelenmisEgitmenler.length > 0 ? (
                   filtrelenmisEgitmenler.map((egitmen) => (
                     <motion.tr 
@@ -902,7 +902,7 @@ function InstructorManagement(): JSX.Element {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.3 }}
-                      className="hover:bg-gray-50"
+                      className="hover:bg-gray-50 dark:hover:bg-slate-800"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -928,20 +928,20 @@ function InstructorManagement(): JSX.Element {
                             )}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{egitmen.ad}</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">{egitmen.ad}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-white">
                           {danceStyles.find(style => style.value === egitmen.uzmanlık)?.label || egitmen.uzmanlık}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{getOkulAdi(egitmen.okul_id)}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{getOkulAdi(egitmen.okul_id)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{egitmen.tecrube}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{egitmen.tecrube}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
@@ -961,7 +961,7 @@ function InstructorManagement(): JSX.Element {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                       {aramaTerimi ? 'Aramanıza uygun eğitmen bulunamadı.' : 'Henüz hiç eğitmen kaydı bulunmuyor.'}
                     </td>
                   </tr>

@@ -81,17 +81,17 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 inline-block relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent">
           Yönetim Paneli
         </h1>
-        <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
+        <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">
           Dans okulları, eğitmenler ve dans stilleri gibi sistem genelindeki içerikleri yönetin ve platformu kontrol edin.
         </p>
       </motion.div>
       
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
         {/* Mobile Menu Button */}
-        <div className="md:hidden border-b border-gray-200 p-4">
+        <div className="md:hidden border-b border-gray-200 dark:border-slate-700 p-4">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
+            className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
           >
             <span>{
               activeTab === 'kullanicilar' ? 'Tüm Kullanıcılar' :
@@ -106,7 +106,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
         </div>
 
         {/* Navigation Tabs */}
-        <div className={`border-b border-gray-200 ${isMobileMenuOpen ? 'block' : 'hidden'} md:block`}>
+        <div className={`border-b border-gray-200 dark:border-slate-700 ${isMobileMenuOpen ? 'block' : 'hidden'} md:block`}>
           <nav className="flex flex-col md:flex-row -mb-px">
             <button
               onClick={() => {
@@ -116,7 +116,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
               className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
                 activeTab === 'kullanicilar'
                   ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
               }`}
             >
               Tüm Kullanıcılar
@@ -129,7 +129,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
               className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
                 activeTab === 'kurslar'
                   ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
               }`}
             >
               Kurslar
@@ -142,7 +142,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
               className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
                 activeTab === 'talepler'
                   ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
               }`}
             >
               Talepler
@@ -156,7 +156,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
                   activeTab === 'ornek-veri'
                     ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                 }`}
               >
                 Örnek Veri
@@ -187,17 +187,17 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
           )}
           {activeTab === 'ornek-veri' && isSuperAdmin && (
             <div className="space-y-8">
-              <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-slate-700">
                 <h2 className="text-lg sm:text-xl font-semibold mb-4">Dans Stilleri Yönetimi</h2>
-                <p className="mb-4 text-sm sm:text-base text-gray-700">
+                <p className="mb-4 text-sm sm:text-base text-gray-700 dark:text-gray-300">
                   Dans stillerini ekleyebilir, düzenleyebilir ve silebilirsiniz. Eklenen dans stilleri, kurs oluşturma ve eğitmen profillerinde kullanılabilir.
                 </p>
                 <DanceStyleManagement />
               </div>
 
-              <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-slate-700">
                 <h2 className="text-lg sm:text-xl font-semibold mb-4">Örnek Veri Ekleme</h2>
-                <p className="mb-4 text-sm sm:text-base text-gray-700">
+                <p className="mb-4 text-sm sm:text-base text-gray-700 dark:text-gray-300">
                   Bu panel ile veritabanına örnek kullanıcılar ekleyebilirsiniz. Eklenen kullanıcılar dans partneri eşleştirme 
                   sistemi için kullanılabilir. Her bir örnek kullanıcı çeşitli dans stilleri, seviyeler, boy, kilo ve konum 
                   bilgileri içerir.
@@ -207,9 +207,9 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 </div>
               </div>
               
-              <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-slate-700">
                 <h2 className="text-lg sm:text-xl font-semibold mb-4">Örnek Dans Kursları</h2>
-                <p className="mb-4 text-sm sm:text-base text-gray-700">
+                <p className="mb-4 text-sm sm:text-base text-gray-700 dark:text-gray-300">
                   Bu bölümde veritabanına örnek dans kursları ekleyebilirsiniz. Oluşturulan kurslar, mevcut dans okulları ve eğitmenlerle ilişkilendirilecektir.
                 </p>
                 <div className="flex flex-wrap gap-4">
@@ -217,9 +217,9 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 </div>
               </div>
               
-              <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-slate-700">
                 <h2 className="text-lg sm:text-xl font-semibold mb-4">İlerleme Durumu Koleksiyonları</h2>
-                <p className="mb-4 text-sm sm:text-base text-gray-700">
+                <p className="mb-4 text-sm sm:text-base text-gray-700 dark:text-gray-300">
                   Bu bölümde İlerleme Durumu sayfası için gerekli Firebase koleksiyonlarını oluşturabilirsiniz. Bu koleksiyonlar, kullanıcıların dans kurslarındaki ilerlemelerini, başarı rozetlerini ve katılım durumlarını takip etmek için kullanılır.
                 </p>
                 <div className="flex flex-wrap gap-4">
@@ -227,9 +227,9 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 </div>
               </div>
               
-              <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-slate-700">
                 <h2 className="text-lg sm:text-xl font-semibold mb-4">Veri Migrasyon Araçları</h2>
-                <p className="mb-4 text-sm sm:text-base text-gray-700">
+                <p className="mb-4 text-sm sm:text-base text-gray-700 dark:text-gray-300">
                   Bu bölümde veritabanındaki koleksiyonlar arasında veri taşıma işlemleri yapabilirsiniz.
                 </p>
                 <div className="flex flex-wrap gap-4">

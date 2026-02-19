@@ -64,7 +64,7 @@ const InstructorCard: React.FC<InstructorCardProps> = ({
             </svg>
           </span>
           <span className="text-gray-600 dark:text-gray-300">{(instructor.rating || 0).toFixed(1)}</span>
-          <span className="text-gray-400 dark:text-gray-500 text-sm ml-1">({instructor.reviewCount || 0} değerlendirme)</span>
+          <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm ml-1">({instructor.reviewCount || 0} değerlendirme)</span>
         </div>
         <div className="text-sm text-gray-500 dark:text-gray-400">
           <p><span className="font-medium">Tecrübe:</span> {instructor.experience || 0} yıl</p>

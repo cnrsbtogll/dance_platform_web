@@ -363,22 +363,22 @@ function BecomeInstructor() {
     return (
       <div className="flex justify-center items-center min-h-[500px]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-instructor"></div>
-        <span className="ml-3 text-gray-700">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
   }
 
   if (isAlreadyInstructor) {
     return (
-      <div className="max-w-2xl mx-auto my-10 p-8 bg-white rounded-lg shadow-md">
+      <div className="max-w-2xl mx-auto my-10 p-8 bg-white dark:bg-slate-800 rounded-lg shadow-md">
         <div className="text-center">
           <div className="text-green-500 mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Zaten bir eğitmensiniz!</h2>
-          <p className="text-gray-600 mb-6">Eğitmen panelinize giderek derslerinizi yönetebilirsiniz.</p>
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Zaten bir eğitmensiniz!</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">Eğitmen panelinize giderek derslerinizi yönetebilirsiniz.</p>
           <Button
             onClick={() => navigate('/instructor')}
             variant="instructor"
@@ -392,15 +392,15 @@ function BecomeInstructor() {
 
   if (hasExistingApplication) {
     return (
-      <div className="max-w-2xl mx-auto my-10 p-8 bg-white rounded-lg shadow-md">
+      <div className="max-w-2xl mx-auto my-10 p-8 bg-white dark:bg-slate-800 rounded-lg shadow-md">
         <div className="text-center">
           <div className="text-yellow-500 mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Başvurunuz İnceleniyor</h2>
-          <p className="text-gray-600 mb-6">Eğitmen başvurunuz halihazırda inceleniyor. Başvurunuz onaylandığında size e-posta ile bilgilendirme yapılacaktır.</p>
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Başvurunuz İnceleniyor</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">Eğitmen başvurunuz halihazırda inceleniyor. Başvurunuz onaylandığında size e-posta ile bilgilendirme yapılacaktır.</p>
           <Button
             onClick={() => navigate('/')}
             variant="instructor"
@@ -414,15 +414,15 @@ function BecomeInstructor() {
 
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto my-10 p-8 bg-white rounded-lg shadow-md">
+      <div className="max-w-2xl mx-auto my-10 p-8 bg-white dark:bg-slate-800 rounded-lg shadow-md">
         <div className="text-center">
           <div className="text-green-500 mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Başvurunuz Alındı!</h2>
-          <p className="text-gray-600 mb-6">Eğitmen başvurunuz başarıyla alındı. Başvurunuz incelendikten sonra size e-posta ile bilgilendirme yapılacaktır.</p>
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Başvurunuz Alındı!</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">Eğitmen başvurunuz başarıyla alındı. Başvurunuz incelendikten sonra size e-posta ile bilgilendirme yapılacaktır.</p>
           <Button
             onClick={() => navigate('/')}
             variant="instructor"
@@ -450,12 +450,12 @@ function BecomeInstructor() {
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-instructor to-instructor-light bg-clip-text text-transparent leading-tight inline-block py-2">
           Eğitmen Olarak Başvurun
         </h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
+        <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
           Dans tutkunuzu profesyonel bir kariyere dönüştürün ve platformumuzda yeni öğrencilerle buluşun.
         </p>
       </motion.div>
 
-      <div className="bg-white p-8 rounded-lg shadow-md">
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md">
         {generalError && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
             <p>{generalError}</p>
@@ -534,9 +534,9 @@ function BecomeInstructor() {
 
             <div className="md:col-span-2">
               {loadingStyles ? (
-                <div className="bg-gray-100 p-2 rounded-md flex items-center">
+                <div className="bg-gray-100 dark:bg-slate-800 p-2 rounded-md flex items-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-instructor mr-2"></div>
-                  <span className="text-gray-600">Dans stilleri yükleniyor...</span>
+                  <span className="text-gray-600 dark:text-gray-400">Dans stilleri yükleniyor...</span>
                 </div>
               ) : (
                 <CustomSelect

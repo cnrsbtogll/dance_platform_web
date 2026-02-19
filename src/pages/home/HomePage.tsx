@@ -326,7 +326,7 @@ function HomePage({ isAuthenticated, user }: HomePageProps) {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/signup"
-                  className="inline-flex items-center justify-center rounded-md bg-white px-6 py-3 text-base font-medium text-rose-700 shadow-md hover:bg-rose-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-rose-700"
+                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-slate-800 px-6 py-3 text-base font-medium text-rose-700 shadow-md hover:bg-rose-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-rose-700"
                 >
                   Ücretsiz Kayıt Ol
                 </Link>

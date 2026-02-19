@@ -125,7 +125,7 @@ const InstructorDetailPage: React.FC = () => {
       <div className="container mx-auto px-4 pt-10">
         <div className="flex justify-center items-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-          <span className="ml-3 text-gray-600">Eğitmen bilgileri yükleniyor...</span>
+          <span className="ml-3 text-gray-600 dark:text-gray-400">Eğitmen bilgileri yükleniyor...</span>
         </div>
       </div>
     );
@@ -166,15 +166,15 @@ const InstructorDetailPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-10">
       {/* Breadcrumb */}
-      <div className="mb-6 text-sm text-gray-500 flex items-center">
+      <div className="mb-6 text-sm text-gray-500 dark:text-gray-400 flex items-center">
         <Link to="/" className="hover:text-brand-pink">Anasayfa</Link>
         <span className="mx-2">/</span>
         <Link to="/instructors" className="hover:text-brand-pink">Eğitmenler</Link>
         <span className="mx-2">/</span>
-        <span className="text-gray-700">{instructor.user.displayName || 'Eğitmen'}</span>
+        <span className="text-gray-700 dark:text-gray-300">{instructor.user.displayName || 'Eğitmen'}</span>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden">
         {/* Eğitmen Üst Bölüm */}
         <div className="md:flex">
           <div className="md:w-1/3 p-6">
@@ -188,7 +188,7 @@ const InstructorDetailPage: React.FC = () => {
           </div>
 
           <div className="md:w-2/3 p-6">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">{instructor.user.displayName}</h1>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">{instructor.user.displayName}</h1>
             <p className="text-brand-pink font-medium text-lg mb-4">Dans Eğitmeni</p>
             
             {/* Değerlendirme */}
@@ -210,14 +210,14 @@ const InstructorDetailPage: React.FC = () => {
                   />
                 </svg>
               ))}
-              <span className="text-gray-600 ml-2">{(instructor.rating || 0).toFixed(1)}</span>
+              <span className="text-gray-600 dark:text-gray-400 ml-2">{(instructor.rating || 0).toFixed(1)}</span>
               <span className="text-gray-400 text-sm ml-1">({instructor.reviewCount || 0} değerlendirme)</span>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4 mb-6">
               <div>
-                <p className="text-gray-700"><span className="font-medium">Tecrübe:</span> {instructor.experience || instructor.tecrube || 0} yıl</p>
-                <p className="text-gray-700">
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-medium">Tecrübe:</span> {instructor.experience || instructor.tecrube || 0} yıl</p>
+                <p className="text-gray-700 dark:text-gray-300">
                   <span className="font-medium">Uzmanlık:</span> {
                     Array.isArray(instructor.uzmanlık) ? instructor.uzmanlık.join(', ') : 
                     Array.isArray(instructor.specialties) ? instructor.specialties.join(', ') : 
@@ -228,13 +228,13 @@ const InstructorDetailPage: React.FC = () => {
                 </p>
                 
                 {instructor.user.danceStyles && Array.isArray(instructor.user.danceStyles) && instructor.user.danceStyles.length > 0 && (
-                  <p className="text-gray-700"><span className="font-medium">Dans Stilleri:</span> {instructor.user.danceStyles.join(', ')}</p>
+                  <p className="text-gray-700 dark:text-gray-300"><span className="font-medium">Dans Stilleri:</span> {instructor.user.danceStyles.join(', ')}</p>
                 )}
               </div>
 
               <div>
                 {instructor.certifications && Array.isArray(instructor.certifications) && instructor.certifications.length > 0 && (
-                  <p className="text-gray-700">
+                  <p className="text-gray-700 dark:text-gray-300">
                     <span className="font-medium">Sertifikalar:</span> {instructor.certifications.join(', ')}
                   </p>
                 )}
@@ -288,7 +288,7 @@ const InstructorDetailPage: React.FC = () => {
                     href={instructor.socialMediaLinks.tiktok} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-gray-800 hover:text-gray-900"
+                    className="text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:text-white"
                   >
                     <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
@@ -301,8 +301,8 @@ const InstructorDetailPage: React.FC = () => {
             {/* Biyografi */}
             {instructor.biography && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Biyografi</h3>
-                <p className="text-gray-600">{instructor.biography}</p>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Biyografi</h3>
+                <p className="text-gray-600 dark:text-gray-400">{instructor.biography}</p>
               </div>
             )}
 
@@ -321,11 +321,11 @@ const InstructorDetailPage: React.FC = () => {
 
       {/* Eğitmenin Dersleri */}
       <div className="mt-12">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Eğitmenin Dersleri</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Eğitmenin Dersleri</h2>
         
         {classes.length === 0 ? (
-          <div className="bg-gray-50 p-8 rounded-lg text-center">
-            <p className="text-gray-500">Bu eğitmene ait aktif dans dersi bulunmuyor.</p>
+          <div className="bg-gray-50 dark:bg-slate-900 p-8 rounded-lg text-center">
+            <p className="text-gray-500 dark:text-gray-400">Bu eğitmene ait aktif dans dersi bulunmuyor.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -333,7 +333,7 @@ const InstructorDetailPage: React.FC = () => {
               <Link 
                 key={danceClass.id}
                 to={`/courses/${danceClass.id}`}
-                className="bg-white rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                className="bg-white dark:bg-slate-800 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 overflow-hidden"
               >
                 <div className="h-48 bg-gray-200 relative overflow-hidden">
                   <img 
@@ -346,11 +346,11 @@ const InstructorDetailPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1">{danceClass.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">{danceClass.name}</h3>
                   <p className="text-brand-pink font-medium mb-2">{danceClass.danceStyle}</p>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-700 font-bold">{danceClass.price} {danceClass.currency}</span>
-                    <span className="text-gray-500 text-sm">{danceClass.duration} dk</span>
+                    <span className="text-gray-700 dark:text-gray-300 font-bold">{danceClass.price} {danceClass.currency}</span>
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">{danceClass.duration} dk</span>
                   </div>
                 </div>
               </Link>

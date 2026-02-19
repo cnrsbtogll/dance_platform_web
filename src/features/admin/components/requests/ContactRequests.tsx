@@ -152,9 +152,9 @@ function ContactRequestsManagement(): JSX.Element {
       case 'rejected':
         return 'bg-red-100 text-red-800';
       case 'cancelled':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200';
     }
   };
 
@@ -203,16 +203,16 @@ function ContactRequestsManagement(): JSX.Element {
         transition={{ duration: 0.5 }}
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">İletişim Talepleri</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">İletişim Talepleri</h2>
           <div className="flex items-center">
-            <label htmlFor="status-filter" className="mr-2 text-sm font-medium text-gray-700">
+            <label htmlFor="status-filter" className="mr-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               Durum:
             </label>
             <select
               id="status-filter"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-pink focus:border-brand-pink text-sm"
+              className="border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-pink focus:border-brand-pink text-sm"
             >
               <option value="all">Tümü</option>
               <option value="pending">Beklemede</option>
@@ -250,43 +250,43 @@ function ContactRequestsManagement(): JSX.Element {
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-pink"></div>
-            <span className="ml-3 text-lg text-gray-600">İletişim talepleri yükleniyor...</span>
+            <span className="ml-3 text-lg text-gray-600 dark:text-gray-400">İletişim talepleri yükleniyor...</span>
           </div>
         ) : contactRequests.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <div className="text-center py-12 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">İletişim talebi bulunamadı</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">İletişim talebi bulunamadı</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Seçili durumda iletişim talebi bulunmuyor veya henüz hiç iletişim talebi gönderilmemiş.
             </p>
           </div>
         ) : (
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+          <div className="bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-lg border border-gray-200 dark:border-slate-700">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-slate-900">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Gönderen
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Alıcı
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Durum
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Tarih
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     İşlemler
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
                 {contactRequests.map((request) => (
-                  <tr key={request.id} className="hover:bg-gray-50">
+                  <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -301,8 +301,8 @@ function ContactRequestsManagement(): JSX.Element {
                           />
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{request.senderName}</div>
-                          <div className="text-sm text-gray-500">ID: {request.senderId.substring(0, 6)}...</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{request.senderName}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">ID: {request.senderId.substring(0, 6)}...</div>
                         </div>
                       </div>
                     </td>
@@ -320,8 +320,8 @@ function ContactRequestsManagement(): JSX.Element {
                           />
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{request.receiverName}</div>
-                          <div className="text-sm text-gray-500">ID: {request.receiverId.substring(0, 6)}...</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{request.receiverName}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">ID: {request.receiverId.substring(0, 6)}...</div>
                         </div>
                       </div>
                     </td>
@@ -330,7 +330,7 @@ function ContactRequestsManagement(): JSX.Element {
                         {getStatusText(request.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {formatDate(request.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -355,7 +355,7 @@ function ContactRequestsManagement(): JSX.Element {
                       <button
                         onClick={() => deleteRequest(request.id)}
                         disabled={processingId === request.id}
-                        className="text-gray-600 hover:text-gray-900 ml-2 disabled:opacity-50"
+                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white ml-2 disabled:opacity-50"
                       >
                         {processingId === request.id ? 'İşleniyor...' : 'Sil'}
                       </button>

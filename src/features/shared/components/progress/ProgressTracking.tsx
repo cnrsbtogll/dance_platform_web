@@ -15,8 +15,8 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">İlerleme Takibi</h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">İlerleme Takibi</h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {isAdmin 
               ? 'Öğrencilerin dans eğitimindeki gelişimini takip edin'
               : 'Öğrencilerinizin dans eğitimindeki gelişimini takip edin'}
@@ -24,7 +24,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
         </div>
       </div>
 
-      <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+      <div className="bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 rounded-lg p-6">
         <div className="text-center py-12">
           <svg
             className="mx-auto h-12 w-12 text-gray-400"
@@ -39,8 +39,8 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
               d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">İlerleme takibi özelliği yakında aktif olacak</h3>
-          <p className="mt-1 text-sm text-gray-500">Bu özellik şu anda geliştirme aşamasındadır.</p>
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">İlerleme takibi özelliği yakında aktif olacak</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Bu özellik şu anda geliştirme aşamasındadır.</p>
         </div>
       </div>
     </div>

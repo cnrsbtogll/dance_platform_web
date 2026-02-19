@@ -24,7 +24,7 @@ function Button({
   const baseClasses = 'px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2';
   const variantClasses = {
     primary: 'bg-brand-pink text-white hover:bg-rose-700 focus:ring-brand-pink',
-    secondary: 'bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-500',
+    secondary: 'bg-gray-200 text-gray-700 dark:text-gray-300 hover:bg-gray-300 focus:ring-gray-500',
     instructor: 'bg-instructor text-white hover:bg-instructor-dark focus:ring-instructor',
     school: 'bg-school text-white hover:bg-school-dark focus:ring-school',
   };

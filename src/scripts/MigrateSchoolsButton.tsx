@@ -85,9 +85,9 @@ const MigrateSchoolsButton: React.FC = () => {
   };
 
   return (
-    <div className="my-4 p-4 border rounded-lg bg-white">
+    <div className="my-4 p-4 border rounded-lg bg-white dark:bg-slate-800">
       <h3 className="text-xl font-semibold mb-4">Dans Okulları Veri Taşıma</h3>
-      <p className="mb-4 text-gray-600">
+      <p className="mb-4 text-gray-600 dark:text-gray-400">
         Bu işlem, <strong>{SOURCE_COLLECTION}</strong> koleksiyonundaki tüm verileri <strong>{TARGET_COLLECTION}</strong> koleksiyonuna taşıyacaktır.
       </p>
       

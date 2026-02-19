@@ -896,7 +896,7 @@ export const UserManagement: React.FC = () => {
       case 'student':
         return 'bg-green-100 text-green-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200';
     }
   };
 
@@ -940,7 +940,7 @@ export const UserManagement: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="hover:bg-gray-50"
+        className="hover:bg-gray-50 dark:hover:bg-slate-800"
       >
         <td className="px-6 py-4 whitespace-nowrap">
           <div className="flex items-center">
@@ -966,21 +966,21 @@ export const UserManagement: React.FC = () => {
               )}
             </div>
             <div className="ml-4">
-              <div className="text-sm font-medium text-gray-900">{student.displayName}</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">{student.displayName}</div>
               {student.phoneNumber && (
-                <div className="text-sm text-gray-500">{student.phoneNumber}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{student.phoneNumber}</div>
               )}
             </div>
           </div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">{student.email}</div>
+          <div className="text-sm text-gray-900 dark:text-white">{student.email}</div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
           {renderRoleBadges(student.role)}
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">
+          <div className="text-sm text-gray-900 dark:text-white">
             {student.level === 'beginner' && 'Başlangıç'}
             {student.level === 'intermediate' && 'Orta'}
             {student.level === 'advanced' && 'İleri'}
@@ -989,12 +989,12 @@ export const UserManagement: React.FC = () => {
           </div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">
+          <div className="text-sm text-gray-900 dark:text-white">
             {student.instructorName || '-'}
           </div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">
+          <div className="text-sm text-gray-900 dark:text-white">
             {student.schoolName || '-'}
           </div>
         </td>
@@ -1151,7 +1151,7 @@ export const UserManagement: React.FC = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-        <span className="ml-3 text-gray-700">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
   }
@@ -1201,9 +1201,9 @@ export const UserManagement: React.FC = () => {
       </div>
       
       {editMode ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
               {selectedStudent ? 'Kullanıcı Düzenle' : `Yeni ${
                 selectedUserType === 'student' ? 'Öğrenci' :
                 selectedUserType === 'instructor' ? 'Eğitmen' :
@@ -1224,7 +1224,7 @@ export const UserManagement: React.FC = () => {
               onPhotoChange={handlePhotoChange}
             />
             
-            <div className="p-4 sm:p-6 bg-gray-50 border-t border-gray-200">
+            <div className="p-4 sm:p-6 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700">
               <div className="flex flex-col sm:flex-row-reverse gap-3 sm:gap-4">
                 <Button
                   type="submit"
@@ -1262,7 +1262,7 @@ export const UserManagement: React.FC = () => {
                 placeholder="Ad veya e-posta ile ara..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm"
               />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -1273,7 +1273,7 @@ export const UserManagement: React.FC = () => {
                   className={`px-3 py-1 rounded-full text-xs font-medium ${
                     filterConfig.roles.includes(role)
                       ? 'bg-brand-pink text-white'
-                      : 'bg-gray-200 text-gray-700'
+                      : 'bg-gray-200 text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   {role}
@@ -1290,11 +1290,11 @@ export const UserManagement: React.FC = () => {
           
           <div className="-mx-4 sm:mx-0 overflow-hidden">
             <div className="inline-block min-w-full align-middle">
-              <div className="overflow-x-auto border border-gray-200 sm:rounded-lg shadow-sm">
+              <div className="overflow-x-auto border border-gray-200 dark:border-slate-700 sm:rounded-lg shadow-sm">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 dark:bg-slate-900">
                     <tr>
-                      <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'displayName'}
                           direction={sortConfig.field === 'displayName' ? sortConfig.direction : 'asc'}
@@ -1303,7 +1303,7 @@ export const UserManagement: React.FC = () => {
                           Kullanıcı
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'email'}
                           direction={sortConfig.field === 'email' ? sortConfig.direction : 'asc'}
@@ -1312,7 +1312,7 @@ export const UserManagement: React.FC = () => {
                           E-posta
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'role'}
                           direction={sortConfig.field === 'role' ? sortConfig.direction : 'asc'}
@@ -1321,7 +1321,7 @@ export const UserManagement: React.FC = () => {
                           Roller
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'level'}
                           direction={sortConfig.field === 'level' ? sortConfig.direction : 'asc'}
@@ -1330,7 +1330,7 @@ export const UserManagement: React.FC = () => {
                           Dans Seviyesi
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'instructorName'}
                           direction={sortConfig.field === 'instructorName' ? sortConfig.direction : 'asc'}
@@ -1339,7 +1339,7 @@ export const UserManagement: React.FC = () => {
                           Eğitmen
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'schoolName'}
                           direction={sortConfig.field === 'schoolName' ? sortConfig.direction : 'asc'}
@@ -1348,15 +1348,15 @@ export const UserManagement: React.FC = () => {
                           Okul
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         İşlemler
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
                     {paginatedStudents.length > 0 ? (
                       paginatedStudents.map((student) => (
-                        <tr key={student.id} className="hover:bg-gray-50">
+                        <tr key={student.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
                           <td className="px-4 sm:px-6 py-4">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 relative bg-green-100 rounded-full overflow-hidden">
@@ -1380,22 +1380,22 @@ export const UserManagement: React.FC = () => {
                                 )}
                               </div>
                               <div className="ml-3 sm:ml-4">
-                                <div className="text-xs sm:text-sm font-medium text-gray-900">{student.displayName}</div>
-                                <div className="text-xs text-gray-500 sm:hidden">{student.email}</div>
+                                <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{student.displayName}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">{student.email}</div>
                                 {student.phoneNumber && (
-                                  <div className="text-xs text-gray-500">{student.phoneNumber}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">{student.phoneNumber}</div>
                                 )}
                               </div>
                             </div>
                           </td>
                           <td className="hidden sm:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900">{student.email}</div>
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">{student.email}</div>
                           </td>
                           <td className="hidden md:table-cell px-4 sm:px-6 py-4">
                             {renderRoleBadges(student.role)}
                           </td>
                           <td className="hidden lg:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900">
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">
                               {student.level === 'beginner' && 'Başlangıç'}
                               {student.level === 'intermediate' && 'Orta'}
                               {student.level === 'advanced' && 'İleri'}
@@ -1404,12 +1404,12 @@ export const UserManagement: React.FC = () => {
                             </div>
                           </td>
                           <td className="hidden xl:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900">
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">
                               {student.instructorName || '-'}
                             </div>
                           </td>
                           <td className="hidden xl:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900">
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">
                               {student.schoolName || '-'}
                             </div>
                           </td>
@@ -1433,7 +1433,7 @@ export const UserManagement: React.FC = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} className="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm text-gray-500">
+                        <td colSpan={7} className="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                           {searchTerm || filterConfig.roles.length > 0
                             ? 'Aramanıza veya seçtiğiniz filtrelere uygun kullanıcı bulunamadı.'
                             : 'Henüz hiç kullanıcı kaydı bulunmuyor.'}

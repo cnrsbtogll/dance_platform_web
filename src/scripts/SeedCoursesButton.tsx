@@ -27,9 +27,9 @@ const SeedCoursesButton: React.FC<SeedCoursesButtonProps> = ({ courseCount = 20 
   };
 
   return (
-    <div className="my-4 p-4 border rounded-lg bg-white">
+    <div className="my-4 p-4 border rounded-lg bg-white dark:bg-slate-800">
       <h3 className="text-xl font-semibold mb-4">Örnek Dans Kursları Ekleme</h3>
-      <p className="mb-4 text-gray-600">
+      <p className="mb-4 text-gray-600 dark:text-gray-400">
         Bu işlem, veritabanına {courseCount} adet örnek dans kursu ekleyecektir. 
         Oluşturulacak kurslar Salsa, Bachata, Kizomba, Tango ve Vals stillerinde olacaktır.
         Ayrıca, kurslar için rastgele eğitmenler ve dans okulları seçilecektir.

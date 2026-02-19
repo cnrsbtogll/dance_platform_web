@@ -129,7 +129,7 @@ export const TicketSaleForm: React.FC = () => {
 
       // Firebase'e kaydet
       await addDoc(collection(db, 'tickets'), ticketData);
-      
+
       // Başarı mesajı göster
       toast.success('Bilet satış ilanınız başarıyla oluşturuldu!', {
         duration: 3000,
@@ -169,8 +169,8 @@ export const TicketSaleForm: React.FC = () => {
   const discount = calculateDiscount();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-sm">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Bilet Satış İlanı</h2>
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm transition-colors duration-300">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Bilet Satış İlanı</h2>
 
       <div className="space-y-4">
         <TextField
@@ -249,7 +249,7 @@ export const TicketSaleForm: React.FC = () => {
         </div>
 
         {discount && (
-          <div className="text-sm text-green-600 font-medium">
+          <div className="text-sm text-green-600 dark:text-green-400 font-medium">
             İndirim Oranı: %{discount}
           </div>
         )}

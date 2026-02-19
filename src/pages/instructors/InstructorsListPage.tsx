@@ -160,7 +160,7 @@ const InstructorsListPage: React.FC = () => {
       <div className="container mx-auto px-4 py-10">
         <div className="flex justify-center items-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-          <span className="ml-3 text-gray-600">Eğitmenler yükleniyor...</span>
+          <span className="ml-3 text-gray-600 dark:text-gray-400">Eğitmenler yükleniyor...</span>
         </div>
       </div>
     );
@@ -183,33 +183,33 @@ const InstructorsListPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="container mx-auto px-4">
         {/* Breadcrumb */}
-        <div className="mb-6 text-sm text-gray-500 flex items-center">
+        <div className="mb-6 text-sm text-gray-500 dark:text-gray-400 flex items-center">
           <Link to="/" className="hover:text-brand-pink">Anasayfa</Link>
           <span className="mx-2">/</span>
-          <span className="text-gray-700">Eğitmenler</span>
+          <span className="text-gray-700 dark:text-gray-300">Eğitmenler</span>
         </div>
 
         <div className="text-center mb-10">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block">
             Dans Eğitmenlerimiz
           </h1>
-          <p className="mt-3 text-gray-500 max-w-2xl mx-auto">
+          <p className="mt-3 text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
             Türkiye'nin en deneyimli dans eğitmenleri ile tanışın ve öğrenmeye başlayın.
           </p>
         </div>
 
         {/* Filtreleme ve Arama */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-8">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 mb-8">
           <div className="md:flex justify-between">
             <div className="mb-4 md:mb-0 md:w-1/3">
               <input
                 type="text"
                 id="search"
                 placeholder="Eğitmen adı ara..."
-                className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-brand-pink focus:border-brand-pink"
+                className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-brand-pink focus:border-brand-pink"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -219,7 +219,7 @@ const InstructorsListPage: React.FC = () => {
               {loadingStyles ? (
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink"></div>
-                  <span className="text-sm text-gray-500">Dans stilleri yükleniyor...</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Dans stilleri yükleniyor...</span>
                 </div>
               ) : (
                 <CustomSelect
@@ -237,8 +237,8 @@ const InstructorsListPage: React.FC = () => {
         </div>
 
         {filteredInstructors.length === 0 ? (
-          <div className="bg-gray-50 p-10 rounded-lg text-center">
-            <p className="text-gray-500">Aradığınız kriterlere uygun eğitmen bulunamadı.</p>
+          <div className="bg-gray-50 dark:bg-slate-900 p-10 rounded-lg text-center">
+            <p className="text-gray-500 dark:text-gray-400">Aradığınız kriterlere uygun eğitmen bulunamadı.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

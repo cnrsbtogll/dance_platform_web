@@ -221,15 +221,15 @@ const CourseSearchPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Header Bölümü */}
-      <div className="bg-white border-b border-gray-100 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shadow-sm transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-pink to-rose-600 leading-tight inline-block">
               Dans Kursu Bul
             </h1>
-            <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+            <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400 sm:mt-4">
               Türkiye'nin en kapsamlı dans kursu arama platformu
             </p>
           </div>
@@ -247,10 +247,10 @@ const CourseSearchPage: React.FC = () => {
         {hasActiveFilters && (
           <div className="mb-6">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">Aktif filtreler:</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Aktif filtreler:</span>
 
               {activeFilters.arama && (
-                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-rose-100 text-rose-700">
+                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300">
                   Arama: {activeFilters.arama}
                   <button
                     type="button"
@@ -266,7 +266,7 @@ const CourseSearchPage: React.FC = () => {
               )}
 
               {activeFilters.dansTuru && (
-                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-purple-100 text-purple-700">
+                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
                   Dans Türü: {activeFilters.dansTuru}
                   <button
                     type="button"
@@ -282,7 +282,7 @@ const CourseSearchPage: React.FC = () => {
               )}
 
               {activeFilters.seviye && (
-                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-blue-100 text-blue-700">
+                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
                   Seviye: {activeFilters.seviye}
                   <button
                     type="button"
@@ -298,7 +298,7 @@ const CourseSearchPage: React.FC = () => {
               )}
 
               {activeFilters.fiyatAralik && (
-                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-green-100 text-green-700">
+                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
                   Fiyat: {activeFilters.fiyatAralik.replace('-0', '+')} TL
                   <button
                     type="button"
@@ -314,7 +314,7 @@ const CourseSearchPage: React.FC = () => {
               )}
 
               {activeFilters.gun && (
-                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-pink-100 text-pink-700">
+                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300">
                   Gün: {activeFilters.gun}
                   <button
                     type="button"
@@ -342,7 +342,7 @@ const CourseSearchPage: React.FC = () => {
 
         {/* Sonuç Mesajı */}
         {resultMessage && (
-          <div className="mb-6 text-sm font-medium text-gray-700">
+          <div className="mb-6 text-sm font-medium text-gray-700 dark:text-gray-300">
             {resultMessage}
           </div>
         )}
@@ -367,7 +367,7 @@ const CourseSearchPage: React.FC = () => {
         {loading && (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-            <span className="ml-3 text-gray-700">Kurslar yükleniyor...</span>
+            <span className="ml-3 text-gray-700 dark:text-gray-300">Kurslar yükleniyor...</span>
           </div>
         )}
 
@@ -401,7 +401,7 @@ const CourseSearchPage: React.FC = () => {
         {loadingMore && (
           <div className="flex justify-center items-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-pink"></div>
-            <span className="ml-3 text-gray-600">Daha fazla kurs yükleniyor...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">Daha fazla kurs yükleniyor...</span>
           </div>
         )}
 
@@ -422,8 +422,8 @@ const CourseSearchPage: React.FC = () => {
                 d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <h3 className="mt-2 text-lg font-medium text-gray-900">Sonuç bulunamadı</h3>
-            <p className="mt-1 text-gray-500">Arama kriterlerinize uygun kurs bulunamadı.</p>
+            <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">Sonuç bulunamadı</h3>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">Arama kriterlerinize uygun kurs bulunamadı.</p>
             <div className="mt-6">
               <button
                 onClick={clearAllFilters}

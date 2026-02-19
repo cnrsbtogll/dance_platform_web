@@ -42,7 +42,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
         const danceStylesRef = collection(db, 'danceStyles');
         const q = query(danceStylesRef, orderBy('label'));
         const querySnapshot = await getDocs(q);
-        
+
         const styles: DanceStyle[] = [];
         querySnapshot.forEach((doc) => {
           styles.push({
@@ -50,7 +50,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
             ...doc.data()
           } as DanceStyle);
         });
-        
+
         if (styles.length === 0) {
           // If no styles in Firestore, use default styles
           setDanceStyles([
@@ -140,21 +140,19 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
     <form className="max-w-4xl mx-auto">
       {/* Modern Search Bar */}
       <div className="mb-6">
-        <div 
-          className={`relative transition-all duration-300 ${
-            searchFocused 
-              ? 'shadow-lg rounded-2xl transform -translate-y-1' 
-              : 'shadow-md rounded-xl hover:shadow-lg'
-          }`}
+        <div
+          className={`relative transition-all duration-300 ${searchFocused
+            ? 'shadow-lg rounded-2xl transform -translate-y-1'
+            : 'shadow-md rounded-xl hover:shadow-lg'
+            }`}
         >
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <svg 
-              className={`h-5 w-5 transition-colors duration-300 ${
-                searchFocused ? 'text-brand-pink' : 'text-gray-400'
-              }`} 
-              xmlns="http://www.w3.org/2000/svg" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              className={`h-5 w-5 transition-colors duration-300 ${searchFocused ? 'text-brand-pink' : 'text-gray-400'
+                }`}
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -167,14 +165,14 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
             placeholder="Dans kursu veya eğitmen ara..."
-            className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-pink focus:border-brand-pink bg-white transition-all duration-300"
+            className="w-full pl-12 pr-12 py-4 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-pink focus:border-brand-pink bg-white dark:bg-gray-800 text-gray-900 dark:text-white dark:placeholder-gray-400 transition-all duration-300"
           />
           {arama && (
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
               <button
                 type="button"
                 onClick={handleClearSearch}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-all duration-150"
+                className="text-gray-400 hover:text-gray-600 dark:text-gray-400 focus:outline-none p-1 rounded-full hover:bg-gray-100 dark:bg-slate-800 transition-all duration-150"
               >
                 <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -183,10 +181,10 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
             </div>
           )}
         </div>
-        
+
         {/* Quick Search Suggestions */}
         <div className="flex flex-wrap gap-2 mt-3">
-          <span className="text-xs text-gray-500 self-center">Popüler aramalar:</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 self-center">Popüler aramalar:</span>
           {['Salsa', 'Bachata', 'Tango', 'Hip Hop'].map(term => (
             <button
               key={term}
@@ -198,7 +196,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
                   arama: term
                 });
               }}
-              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-full transition-colors duration-200"
+              className="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-full transition-colors duration-200"
             >
               {term}
             </button>
@@ -211,16 +209,18 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
           {loadingStyles ? (
             <div className="p-3 flex items-center">
               <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink mr-2"></div>
-              <span className="text-gray-600">Yükleniyor...</span>
+              <span className="text-gray-600 dark:text-gray-300">Yükleniyor...</span>
             </div>
           ) : (
             <CustomSelect
+              name="dansTuru"
               options={danceStyles.map(style => ({
                 label: style.label,
                 value: style.value
               }))}
               value={dansTuru}
-              onChange={(value) => {
+              onChange={(val) => {
+                const value = Array.isArray(val) ? val[0] : val;
                 setDansTuru(value);
                 onFilterChange({
                   seviye,
@@ -238,12 +238,14 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
 
         <div>
           <CustomSelect
+            name="seviye"
             options={seviyeler.map(sev => ({
               label: sev,
               value: sev
             }))}
             value={seviye}
-            onChange={(value) => {
+            onChange={(val) => {
+              const value = Array.isArray(val) ? val[0] : val;
               setSeviye(value);
               onFilterChange({
                 seviye: value,
@@ -260,9 +262,11 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
 
         <div>
           <CustomSelect
+            name="fiyatAralik"
             options={fiyatAraliklari}
             value={fiyatAralik}
-            onChange={(value) => {
+            onChange={(val) => {
+              const value = Array.isArray(val) ? val[0] : val;
               setFiyatAralik(value);
               onFilterChange({
                 seviye,
@@ -279,12 +283,14 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
 
         <div>
           <CustomSelect
+            name="gun"
             options={gunler.map(g => ({
               label: g,
               value: g
             }))}
             value={gun}
-            onChange={(value) => {
+            onChange={(val) => {
+              const value = Array.isArray(val) ? val[0] : val;
               setGun(value);
               onFilterChange({
                 seviye,

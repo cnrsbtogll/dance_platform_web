@@ -40,7 +40,7 @@ export const TicketList: React.FC = () => {
         id: doc.id,
         ...doc.data()
       })) as Ticket[];
-      
+
       setTickets(ticketList);
       setLoading(false);
     });
@@ -58,7 +58,7 @@ export const TicketList: React.FC = () => {
 
   if (tickets.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
         Henüz satılık bilet ilanı bulunmuyor.
       </div>
     );
@@ -69,36 +69,36 @@ export const TicketList: React.FC = () => {
       {tickets.map((ticket) => (
         <div
           key={ticket.id}
-          className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow flex flex-col h-[400px]"
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow flex flex-col h-[400px]"
         >
           <div className="flex justify-between items-start gap-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex-1 break-words">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex-1 break-words">
               {ticket.festivalBilgileri.festivalAdi}
             </h3>
-            <span className="text-sm font-medium text-green-600 whitespace-nowrap">
+            <span className="text-sm font-medium text-green-600 dark:text-green-400 whitespace-nowrap">
               {ticket.fiyatBilgileri.indirimOrani} İndirim
             </span>
           </div>
-          
+
           <div className="mt-4 space-y-2">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               📍 {ticket.festivalBilgileri.konum}
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               📅 {new Date(ticket.festivalBilgileri.baslangicTarihi).toLocaleDateString('tr-TR')} - {new Date(ticket.festivalBilgileri.bitisTarihi).toLocaleDateString('tr-TR')}
             </p>
           </div>
 
           <div className="mt-4 flex-1 overflow-y-auto">
             {ticket.festivalBilgileri.aciklama && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 ℹ️ {ticket.festivalBilgileri.aciklama}
               </p>
             )}
           </div>
 
           <div className="mt-4">
-            <p className="text-sm text-gray-500 line-through">
+            <p className="text-sm text-gray-500 dark:text-gray-400 line-through">
               {ticket.fiyatBilgileri.orijinalFiyat}
             </p>
             <p className="text-lg font-semibold text-brand-pink">
@@ -106,12 +106,12 @@ export const TicketList: React.FC = () => {
             </p>
           </div>
 
-          <div className="mt-4 pt-4 border-t">
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex flex-wrap gap-2">
               {ticket.iletisimBilgileri.telefon !== 'Belirtilmedi' && (
                 <a
                   href={`tel:${ticket.iletisimBilgileri.telefon.replace(/\s/g, '')}`}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-50 text-green-700 hover:bg-green-100"
+                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"
                 >
                   📞 Ara
                 </a>
@@ -121,7 +121,7 @@ export const TicketList: React.FC = () => {
                   href={`https://instagram.com/${ticket.iletisimBilgileri.instagram.replace('@', '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-pink-50 text-pink-700 hover:bg-pink-100"
+                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-900/50"
                 >
                   📱 Instagram
                 </a>

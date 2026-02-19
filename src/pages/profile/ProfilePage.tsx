@@ -240,8 +240,8 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
   const renderBasicInfoForm = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Temel Bilgiler (Zorunlu)</h3>
-        <p className="text-sm text-gray-500 mb-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Temel Bilgiler (Zorunlu)</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
           Bu bilgiler dans partnerinizle eşleşmeniz için gereklidir.
         </p>
       </div>
@@ -344,8 +344,8 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
   const renderPhysicalAttributesForm = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Fiziksel Özellikler (İsteğe Bağlı)</h3>
-        <p className="text-sm text-gray-500 mb-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Fiziksel Özellikler (İsteğe Bağlı)</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
           Bu bilgileri paylaşmak isteğe bağlıdır, ancak daha uyumlu partner eşleştirmeleri yapılmasına yardımcı olur.
         </p>
       </div>

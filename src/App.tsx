@@ -340,12 +340,12 @@ function App(): JSX.Element {
   if (firebaseInitError) {
     return (
       <div className="flex flex-col justify-center items-center h-screen bg-red-50">
-        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg max-w-md w-full">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Firebase Bağlantı Hatası</h2>
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-700 dark:text-gray-300 mb-4">
             {getUserFriendlyErrorMessage(firebaseInitError)}
           </p>
-          <div className="bg-gray-100 p-3 rounded text-sm font-mono overflow-auto">
+          <div className="bg-gray-100 dark:bg-slate-800 p-3 rounded text-sm font-mono overflow-auto">
             {firebaseInitError}
           </div>
           <div className="mt-6 flex flex-col space-y-2">
@@ -594,7 +594,7 @@ function App(): JSX.Element {
                         className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
                         onClick={handleCloseChatList}
                       />
-                      <div className="fixed inset-y-0 right-0 max-w-md w-full bg-white shadow-xl">
+                      <div className="fixed inset-y-0 right-0 max-w-md w-full bg-white dark:bg-slate-800 shadow-xl">
                         <div className="h-full flex flex-col">
                           <div className="px-4 py-6 bg-gradient-to-r from-brand-pink to-rose-600">
                             <div className="flex items-center justify-between">

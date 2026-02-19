@@ -243,7 +243,7 @@ function InstructorRequests() {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-        <span className="ml-3 text-gray-700">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
   }
@@ -264,46 +264,46 @@ function InstructorRequests() {
 
   if (requests.length === 0) {
     return (
-      <div className="bg-gray-50 p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">Eğitmen Başvuruları</h2>
-        <p className="text-gray-600">Şu anda bekleyen eğitmen başvurusu bulunmamaktadır.</p>
+      <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-lg shadow-md">
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Eğitmen Başvuruları</h2>
+        <p className="text-gray-600 dark:text-gray-400">Şu anda bekleyen eğitmen başvurusu bulunmamaktadır.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-      <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-6">Eğitmen Başvuruları</h2>
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 sm:p-6">
+      <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Eğitmen Başvuruları</h2>
 
       <div className="-mx-4 sm:mx-0 overflow-hidden">
         <div className="inline-block min-w-full align-middle">
-          <div className="overflow-x-auto border border-gray-200 sm:rounded-lg shadow-sm">
+          <div className="overflow-x-auto border border-gray-200 dark:border-slate-700 sm:rounded-lg shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-slate-900">
                 <tr>
-                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Eğitmen
                   </th>
-                  <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     E-posta
                   </th>
-                  <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Deneyim
                   </th>
-                  <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Dans Stilleri
                   </th>
-                  <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Başvuru Tarihi
                   </th>
-                  <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     İşlemler
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
                 {Array.isArray(requests) && requests.map((request) => (
-                  <tr key={request.id} className="hover:bg-gray-50">
+                  <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -314,22 +314,22 @@ function InstructorRequests() {
                           />
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {`${request.firstName} ${request.lastName}`.trim()}
                           </div>
-                          <div className="text-sm text-gray-500 md:hidden">
+                          <div className="text-sm text-gray-500 dark:text-gray-400 md:hidden">
                             {request.userEmail}
                           </div>
-                          <div className="text-sm text-gray-500 lg:hidden">
+                          <div className="text-sm text-gray-500 dark:text-gray-400 lg:hidden">
                             {request.experience}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="hidden md:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500">
+                    <td className="hidden md:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                       {request.userEmail}
                     </td>
-                    <td className="hidden lg:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500">
+                    <td className="hidden lg:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                       {request.experience}
                     </td>
                     <td className="hidden xl:table-cell px-4 sm:px-6 py-4">
@@ -348,7 +348,7 @@ function InstructorRequests() {
                         )}
                       </div>
                     </td>
-                    <td className="hidden lg:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                    <td className="hidden lg:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                       {request.createdAt ? (
                         (request.createdAt as any).toDate ? (
                           (request.createdAt as any).toDate().toLocaleDateString('tr-TR')
@@ -379,7 +379,7 @@ function InstructorRequests() {
                 ))}
                 {requests.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 sm:px-6 py-4 text-sm text-center text-gray-500">
+                    <td colSpan={6} className="px-4 sm:px-6 py-4 text-sm text-center text-gray-500 dark:text-gray-400">
                       Henüz eğitmen başvurusu bulunmamaktadır.
                     </td>
                   </tr>

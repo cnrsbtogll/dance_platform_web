@@ -228,7 +228,7 @@ function DanceStyleManagement(): JSX.Element {
       )}
       
       {/* Form for adding/editing dance styles */}
-      <div className="bg-gray-50 p-6 rounded-lg mb-6">
+      <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-lg mb-6">
         <h3 className="text-lg font-semibold mb-4">
           {isEditing ? 'Dans Stili Düzenle' : 'Yeni Dans Stili Ekle'}
         </h3>
@@ -236,7 +236,7 @@ function DanceStyleManagement(): JSX.Element {
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label htmlFor="label" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="label" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Dans Stili Adı*
               </label>
               <input
@@ -246,13 +246,13 @@ function DanceStyleManagement(): JSX.Element {
                 required
                 value={formData.label}
                 onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
                 placeholder="Örn: Salsa"
               />
             </div>
             
             <div>
-              <label htmlFor="value" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="value" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Teknik Değer (Boş bırakılırsa otomatik oluşturulur)
               </label>
               <input
@@ -261,7 +261,7 @@ function DanceStyleManagement(): JSX.Element {
                 name="value"
                 value={formData.value}
                 onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
                 placeholder="Örn: salsa"
               />
             </div>
@@ -272,7 +272,7 @@ function DanceStyleManagement(): JSX.Element {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800"
               >
                 İptal
               </button>
@@ -292,48 +292,48 @@ function DanceStyleManagement(): JSX.Element {
       {loading ? (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-          <span className="ml-3 text-gray-700">Yükleniyor...</span>
+          <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
         </div>
       ) : (
         <div className="-mx-4 sm:mx-0 overflow-hidden">
           <div className="inline-block min-w-full align-middle">
-            <div className="overflow-x-auto border border-gray-200 sm:rounded-lg shadow-sm">
+            <div className="overflow-x-auto border border-gray-200 dark:border-slate-700 sm:rounded-lg shadow-sm">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-slate-900">
                   <tr>
-                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       Dans Stili
                     </th>
-                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       Teknik Değer
                     </th>
-                    <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       İşlemler
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
                   {danceStyles.map((style) => (
-                    <tr key={style.id} className="hover:bg-gray-50">
-                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                    <tr key={style.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">
                         {isEditing && selectedStyle && selectedStyle.id === style.id ? (
                           <input
                             type="text"
                             value={formData.label}
                             onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 rounded-md focus:ring-brand-pink focus:border-brand-pink"
+                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md focus:ring-brand-pink focus:border-brand-pink"
                           />
                         ) : (
                           style.label
                         )}
                       </td>
-                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">
                         {isEditing && selectedStyle && selectedStyle.id === style.id ? (
                           <input
                             type="text"
                             value={formData.value}
                             onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 rounded-md focus:ring-brand-pink focus:border-brand-pink"
+                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md focus:ring-brand-pink focus:border-brand-pink"
                           />
                         ) : (
                           style.value
@@ -350,7 +350,7 @@ function DanceStyleManagement(): JSX.Element {
                             </button>
                             <button
                               onClick={resetForm}
-                              className="text-gray-600 hover:text-gray-900 font-medium"
+                              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white font-medium"
                             >
                               İptal
                             </button>
