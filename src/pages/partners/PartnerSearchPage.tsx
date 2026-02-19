@@ -1027,7 +1027,7 @@ function PartnerSearchPage(): JSX.Element {
             <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
               <button
                 type="button"
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-brand-pink to-rose-600 text-base font-medium text-white hover:from-rose-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink sm:col-start-2 sm:text-sm"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-brand-pink to-rose-600 text-base font-medium text-white hover:from-rose-700 hover:to-rose-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink sm:col-start-2 sm:text-sm"
                 onClick={() => {
                   setShowLoginPrompt(false);
                   navigate('/signup');
@@ -1220,7 +1220,7 @@ function PartnerSearchPage(): JSX.Element {
 
           <div className="mt-auto">
             <button
-              className="w-full py-3 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-lg hover:from-rose-700 hover:to-purple-700 transition-colors duration-300 flex items-center justify-center font-medium shadow-md"
+              className="w-full py-3 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-lg hover:from-rose-700 hover:to-rose-800 transition-colors duration-300 flex items-center justify-center font-medium shadow-md"
               onClick={() => handleContact(partner)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1402,7 +1402,7 @@ function PartnerSearchPage(): JSX.Element {
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-lg hover:from-rose-700 hover:to-purple-700 shadow-md flex items-center justify-center font-medium transition-all duration-300"
+                    className="w-full py-3 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-lg hover:from-rose-700 hover:to-rose-800 shadow-md flex items-center justify-center font-medium transition-all duration-300"
                     disabled={loading}
                   >
                     {loading ? (

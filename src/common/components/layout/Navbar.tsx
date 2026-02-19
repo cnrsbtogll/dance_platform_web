@@ -869,7 +869,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   </Link>
                   <Link
                     to="/signup"
-                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-purple-500 focus:outline-none focus:ring-1 focus:ring-brand-pink focus:ring-offset-1 shadow-sm transition-all duration-200"
+                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-rose-700 focus:outline-none focus:ring-1 focus:ring-brand-pink focus:ring-offset-1 shadow-sm transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="flex items-center justify-center">
