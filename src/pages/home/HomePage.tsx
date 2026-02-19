@@ -105,68 +105,72 @@ function HomePage({ isAuthenticated, user }: HomePageProps) {
             {/* Partner Bul Kartı */}
             <Link
               to="/partners"
-              className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+              className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-red-100"
             >
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-brand-pink opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
+              <div className="absolute top-0 right-0 -mt-6 -mr-6 h-28 w-28 rounded-full bg-red-500 opacity-10 group-hover:opacity-20 transition-all duration-300 group-hover:scale-110"></div>
               <div className="relative">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-rose-100 text-brand-pink mb-4 group-hover:scale-110 transform transition-transform duration-300">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-red-50 text-red-500 mb-4 group-hover:scale-110 transform transition-transform duration-300 shadow-sm">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Partner Bul</h3>
-                <p className="text-sm text-gray-600">Dans partnerinizi bulun ve birlikte dans etmeye başlayın.</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Partner Bul</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">Dans partnerinizi bulun ve birlikte dans etmeye başlayın.</p>
+                <span className="mt-3 inline-flex items-center text-xs font-semibold text-red-500 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">Keşfet →</span>
               </div>
             </Link>
 
             {/* Kurs Bul Kartı */}
             <Link
               to="/courses"
-              className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+              className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-violet-100"
             >
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-rose-500 opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
+              <div className="absolute top-0 right-0 -mt-6 -mr-6 h-28 w-28 rounded-full bg-violet-500 opacity-10 group-hover:opacity-20 transition-all duration-300 group-hover:scale-110"></div>
               <div className="relative">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-rose-100 text-brand-pink mb-4 group-hover:scale-110 transform transition-transform duration-300">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 mb-4 group-hover:scale-110 transform transition-transform duration-300 shadow-sm">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Dans Kursu Bul</h3>
-                <p className="text-sm text-gray-600">Size en uygun dans kursunu keşfedin ve hemen başlayın.</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Dans Kursu Bul</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">Size en uygun dans kursunu keşfedin ve hemen başlayın.</p>
+                <span className="mt-3 inline-flex items-center text-xs font-semibold text-violet-600 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">Keşfet →</span>
               </div>
             </Link>
 
             {/* Festivaller Kartı */}
             <Link
               to="/festivals"
-              className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+              className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-amber-100"
             >
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-rose-500 opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
+              <div className="absolute top-0 right-0 -mt-6 -mr-6 h-28 w-28 rounded-full bg-amber-400 opacity-10 group-hover:opacity-20 transition-all duration-300 group-hover:scale-110"></div>
               <div className="relative">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-rose-100 text-rose-600 mb-4 group-hover:scale-110 transform transition-transform duration-300">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 mb-4 group-hover:scale-110 transform transition-transform duration-300 shadow-sm">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.701 2.701 0 00-1.5-.454M9 6v2m3-2v2m3-2v2M9 3h.01M12 3h.01M15 3h.01M21 21v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7h18zm-3-9v-2a2 2 0 00-2-2H8a2 2 0 00-2 2v2h12z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Festivaller</h3>
-                <p className="text-sm text-gray-600">Dans festivallerini keşfedin ve unutulmaz deneyimler yaşayın.</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Festivaller</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">Dans festivallerini keşfedin ve unutulmaz deneyimler yaşayın.</p>
+                <span className="mt-3 inline-flex items-center text-xs font-semibold text-amber-600 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">Keşfet →</span>
               </div>
             </Link>
 
             {/* Geceler Kartı */}
             <Link
               to="/nights"
-              className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+              className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-teal-100"
             >
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-cyan-500 opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
+              <div className="absolute top-0 right-0 -mt-6 -mr-6 h-28 w-28 rounded-full bg-teal-600 opacity-10 group-hover:opacity-20 transition-all duration-300 group-hover:scale-110"></div>
               <div className="relative">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-100 text-cyan-600 mb-4 group-hover:scale-110 transform transition-transform duration-300">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 mb-4 group-hover:scale-110 transform transition-transform duration-300 shadow-sm">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Dans Geceleri</h3>
-                <p className="text-sm text-gray-600">Özel dans gecelerinde eğlenceye katılın ve dans edin.</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Dans Geceleri</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">Özel dans gecelerinde eğlenceye katılın ve dans edin.</p>
+                <span className="mt-3 inline-flex items-center text-xs font-semibold text-teal-600 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">Keşfet →</span>
               </div>
             </Link>
           </div>
