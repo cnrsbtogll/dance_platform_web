@@ -209,7 +209,7 @@ const InstructorsListPage: React.FC = () => {
                 type="text"
                 id="search"
                 placeholder="Eğitmen adı ara..."
-                className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-brand-pink focus:border-brand-pink"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:border-brand-pink"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />

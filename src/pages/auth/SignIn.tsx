@@ -41,7 +41,7 @@ const SignIn = () => {
 
       // Kullanıcı verilerini Firestore'dan al
       const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         console.log('👤 User data:', userData);
@@ -73,8 +73,8 @@ const SignIn = () => {
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-xl">
-      <h2 className="text-2xl font-bold mb-6 text-center">Giriş Yap</h2>
-      
+      <h2 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">Giriş Yap</h2>
+
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
           {error}
@@ -91,7 +91,7 @@ const SignIn = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink"
             required
           />
         </div>
@@ -105,7 +105,7 @@ const SignIn = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink"
             required
           />
         </div>
@@ -118,7 +118,7 @@ const SignIn = () => {
       <div className="mt-4 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Hesabınız yok mu?{' '}
-          <a 
+          <a
             href="/signup"
             className="text-brand-pink hover:text-indigo-800"
             onClick={(e) => {

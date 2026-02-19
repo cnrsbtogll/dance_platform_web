@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { User } from '../../../types';
 import { motion } from 'framer-motion';
 import { ThemeProvider } from '@mui/material/styles';
-import instructorTheme from '../../../styles/instructorTheme';
+import createInstructorTheme from '../../../styles/instructorTheme';
+import { useTheme } from '../../../contexts/ThemeContext';
 import InstructorProfileForm from '../components/InstructorProfileForm';
 import CourseManagement from '../../../features/shared/components/courses/CourseManagement';
 import { query, where, orderBy, collection, getDocs } from 'firebase/firestore';
@@ -28,6 +29,8 @@ interface Course {
 }
 
 function InstructorPanel({ user }: InstructorPanelProps) {
+  const { isDark } = useTheme();
+  const instructorTheme = createInstructorTheme(isDark ? 'dark' : 'light');
   const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'students' | 'schedule' | 'attendance' | 'progress' | 'badges'>('profile');
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);

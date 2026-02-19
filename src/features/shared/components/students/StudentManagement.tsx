@@ -1010,7 +1010,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           <div className="flex justify-end space-x-2">
             <button
               onClick={() => editStudent(student)}
-              className={colorVariant === 'school' ? 'text-school hover:text-school-dark' : 'text-instructor hover:text-instructor-dark'}
+              className={colorVariant === 'school' ? 'text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter' : 'text-instructor hover:text-instructor-dark dark:text-instructor-light dark:hover:text-instructor-lighter'}
             >
               Düzenle
             </button>
@@ -1140,7 +1140,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               placeholder="Ad veya e-posta ile ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 ${colorVariant === 'school' ? 'focus:ring-school' : 'focus:ring-instructor'} focus:border-transparent`}
+              className={`w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 ${colorVariant === 'school' ? 'focus:ring-school dark:focus:ring-school-light' : 'focus:ring-instructor dark:focus:ring-instructor-light'} focus:border-transparent`}
             />
             <span className="absolute right-3 top-2.5 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1151,7 +1151,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           {!editMode && (
             <button
               onClick={addNewStudent}
-              className={`w-full px-4 py-2 text-white rounded-md transition-colors flex items-center justify-center gap-2 ${colorVariant === 'school' ? 'bg-school hover:bg-school-dark' : 'bg-instructor hover:bg-instructor-dark'}`}
+              className={`w-full px-4 py-2 text-white rounded-md transition-colors flex items-center justify-center gap-2 ${colorVariant === 'school' ? 'bg-school hover:bg-school-dark dark:bg-school-light dark:text-school-dark dark:hover:bg-school-lighter' : 'bg-instructor hover:bg-instructor-dark dark:bg-instructor-light dark:text-instructor-dark dark:hover:bg-instructor-lighter'}`}
               disabled={loading}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1444,7 +1444,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                     <div className="flex space-x-2 flex-shrink-0">
                       <button
                         onClick={() => editStudent(student)}
-                        className={colorVariant === 'school' ? 'text-school hover:text-school-dark' : 'text-instructor hover:text-instructor-dark'}
+                        className={colorVariant === 'school' ? 'text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter' : 'text-instructor hover:text-instructor-dark dark:text-instructor-light dark:hover:text-instructor-lighter'}
                       >
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

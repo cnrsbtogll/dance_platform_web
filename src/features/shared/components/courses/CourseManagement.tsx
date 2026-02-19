@@ -1068,7 +1068,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               placeholder="Kurs ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 ${colorVariant === 'school' ? 'focus:ring-school' : 'focus:ring-instructor'} focus:border-transparent`}
+              className={`w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 ${colorVariant === 'school' ? 'focus:ring-school dark:focus:ring-school-light' : 'focus:ring-instructor dark:focus:ring-instructor-light'} focus:border-transparent`}
             />
             <span className="absolute right-3 top-2.5 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1244,7 +1244,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                           name="recurring"
                           checked={formData.recurring}
                           onChange={(e) => setFormData({ ...formData, recurring: true })}
-                          className={`form-radio h-4 w-4 ${colorVariant === 'school' ? 'text-school' : 'text-instructor'}`}
+                          className={`form-radio h-4 w-4 ${colorVariant === 'school' ? 'text-school dark:text-school-light' : 'text-instructor dark:text-instructor-light'}`}
                         />
                         <span className="ml-2">Periyodik Kurs</span>
                       </label>
@@ -1254,7 +1254,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                           name="recurring"
                           checked={!formData.recurring}
                           onChange={(e) => setFormData({ ...formData, recurring: false })}
-                          className={`form-radio h-4 w-4 ${colorVariant === 'school' ? 'text-school' : 'text-instructor'}`}
+                          className={`form-radio h-4 w-4 ${colorVariant === 'school' ? 'text-school dark:text-school-light' : 'text-instructor dark:text-instructor-light'}`}
                         />
                         <span className="ml-2">Tek Seferlik Kurs</span>
                       </label>
@@ -1290,7 +1290,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                                 newSchedule[index].time = e.target.value;
                                 setFormData({ ...formData, schedule: newSchedule });
                               }}
-                              className={`mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm ${colorVariant === 'school' ? 'focus:border-school focus:ring-school' : 'focus:border-instructor focus:ring-instructor'} sm:text-sm`}
+                              className={`mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm ${colorVariant === 'school' ? 'focus:border-school focus:ring-school dark:focus:ring-school-light' : 'focus:border-instructor focus:ring-instructor dark:focus:ring-instructor-light'} sm:text-sm`}
                               required
                             />
                           </div>
@@ -1319,7 +1319,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                             schedule: [...formData.schedule, { day: 'Pazartesi', time: '18:00' }]
                           });
                         }}
-                        className={`flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg ${colorVariant === 'school' ? 'hover:border-school hover:text-school' : 'hover:border-instructor hover:text-instructor'} w-full`}
+                        className={`flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg ${colorVariant === 'school' ? 'hover:border-school hover:text-school dark:hover:border-school-light dark:hover:text-school-light' : 'hover:border-instructor hover:text-instructor dark:hover:border-instructor-light dark:hover:text-instructor-light'} w-full`}
                       >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

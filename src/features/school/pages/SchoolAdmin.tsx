@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ThemeProvider } from '@mui/material/styles';
-import schoolTheme from '../../../styles/schoolTheme';
+import createSchoolTheme from '../../../styles/schoolTheme';
+import { useTheme } from '../../../contexts/ThemeContext';
 import {
   collection,
   query,
@@ -51,6 +52,8 @@ interface SchoolInfo {
 
 const SchoolAdmin: React.FC = () => {
   const { currentUser } = useAuth();
+  const { isDark } = useTheme();
+  const schoolTheme = createSchoolTheme(isDark ? 'dark' : 'light');
   const [activeTab, setActiveTab] = useState<
     'profile' |
     'courses' |

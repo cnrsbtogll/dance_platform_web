@@ -63,8 +63,8 @@ const SignUp: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-xl">
-      <h2 className="text-2xl font-bold mb-6 text-center">Hesap Oluştur</h2>
-      
+      <h2 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">Hesap Oluştur</h2>
+
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
           {error}
@@ -82,7 +82,7 @@ const SignUp: React.FC = () => {
             name="displayName"
             value={formData.displayName}
             onChange={handleChange}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink"
             required
           />
         </div>
@@ -97,7 +97,7 @@ const SignUp: React.FC = () => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink"
             required
           />
         </div>
@@ -112,7 +112,7 @@ const SignUp: React.FC = () => {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink"
             required
           />
         </div>
@@ -127,7 +127,7 @@ const SignUp: React.FC = () => {
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink"
             required
           />
         </div>
@@ -140,8 +140,8 @@ const SignUp: React.FC = () => {
       <div className="mt-4 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Zaten hesabınız var mı?{' '}
-          <a 
-            href="/signin" 
+          <a
+            href="/signin"
             className="text-brand-pink hover:text-indigo-800"
             onClick={(e) => {
               e.preventDefault();

@@ -1,8 +1,9 @@
 import { createTheme } from '@mui/material/styles';
 
 // Eğitmen paneli için özel tema - #005f73 teal renk paleti
-const instructorTheme = createTheme({
+const createInstructorTheme = (mode: 'light' | 'dark' = 'light') => createTheme({
     palette: {
+        mode,
         primary: {
             main: '#005f73',
             light: '#0a9396',
@@ -15,25 +16,17 @@ const instructorTheme = createTheme({
             dark: '#5faf97',
             contrastText: '#003d4a',
         },
-        error: {
-            main: '#f44336',
-        },
-        warning: {
-            main: '#ff9800',
-        },
-        info: {
-            main: '#0a9396',
-        },
-        success: {
-            main: '#4caf50',
-        },
+        error: { main: '#f44336' },
+        warning: { main: '#ff9800' },
+        info: { main: '#0a9396' },
+        success: { main: '#4caf50' },
         background: {
-            default: '#f5f5f5',
-            paper: '#ffffff',
+            default: mode === 'dark' ? '#0f172a' : '#f5f5f5',
+            paper: mode === 'dark' ? '#1e293b' : '#ffffff',
         },
         text: {
-            primary: '#333333',
-            secondary: '#666666',
+            primary: mode === 'dark' ? '#f1f5f9' : '#333333',
+            secondary: mode === 'dark' ? '#94a3b8' : '#666666',
         },
     },
     typography: {
@@ -49,9 +42,7 @@ const instructorTheme = createTheme({
             textTransform: 'none',
         },
     },
-    shape: {
-        borderRadius: 8,
-    },
+    shape: { borderRadius: 8 },
     components: {
         MuiButton: {
             styleOverrides: {
@@ -95,7 +86,109 @@ const instructorTheme = createTheme({
                 },
             },
         },
+        MuiOutlinedInput: {
+            styleOverrides: {
+                root: {
+                    backgroundColor: mode === 'dark' ? '#1e293b' : '#ffffff',
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: mode === 'dark' ? '#64748b' : '#9CA3AF',
+                    },
+                },
+                notchedOutline: {
+                    borderColor: mode === 'dark' ? '#475569' : '#E5E7EB',
+                },
+                input: {
+                    color: mode === 'dark' ? '#f1f5f9' : '#333333',
+                },
+            },
+        },
+        MuiInputLabel: {
+            styleOverrides: {
+                root: {
+                    color: mode === 'dark' ? '#94a3b8' : '#6B7280',
+                },
+            },
+        },
+        MuiSelect: {
+            styleOverrides: {
+                select: {
+                    color: mode === 'dark' ? '#f1f5f9' : '#333333',
+                },
+            },
+        },
+        MuiPaper: {
+            styleOverrides: {
+                root: {
+                    backgroundImage: 'none',
+                },
+            },
+        },
+        MuiTableHead: {
+            styleOverrides: {
+                root: {
+                    '& .MuiTableCell-root': {
+                        backgroundColor: mode === 'dark' ? '#1e293b' : '#f0fdfa',
+                        color: mode === 'dark' ? '#f1f5f9' : '#333333',
+                    },
+                },
+            },
+        },
+        MuiTableCell: {
+            styleOverrides: {
+                root: {
+                    borderBottomColor: mode === 'dark' ? '#334155' : '#E5E7EB',
+                    color: mode === 'dark' ? '#cbd5e1' : '#374151',
+                },
+            },
+        },
+        MuiTableRow: {
+            styleOverrides: {
+                root: {
+                    '&:hover': {
+                        backgroundColor: mode === 'dark' ? 'rgba(148, 163, 184, 0.05)' : 'rgba(0, 95, 115, 0.04)',
+                    },
+                },
+            },
+        },
+        MuiDivider: {
+            styleOverrides: {
+                root: {
+                    borderColor: mode === 'dark' ? '#334155' : '#E5E7EB',
+                },
+            },
+        },
+        MuiChip: {
+            styleOverrides: {
+                root: {
+                    '&.MuiChip-colorDefault': {
+                        backgroundColor: mode === 'dark' ? '#334155' : undefined,
+                        color: mode === 'dark' ? '#cbd5e1' : undefined,
+                    },
+                },
+            },
+        },
+        MuiDialog: {
+            styleOverrides: {
+                paper: {
+                    backgroundColor: mode === 'dark' ? '#1e293b' : '#ffffff',
+                },
+            },
+        },
+        MuiDialogTitle: {
+            styleOverrides: {
+                root: {
+                    color: mode === 'dark' ? '#f1f5f9' : '#333333',
+                },
+            },
+        },
+        MuiDialogContent: {
+            styleOverrides: {
+                root: {
+                    color: mode === 'dark' ? '#cbd5e1' : '#374151',
+                },
+            },
+        },
     },
 });
 
-export default instructorTheme;
+export default createInstructorTheme;
