@@ -1,0 +1,23 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:5173",
+  "loginUser": "harun@iskar.com",
+  "loginPassword": "123456",
+  "executionArgs": {
+    "projectName": "dance_platform",
+    "projectPath": "/Users/aa/Documents/projects/dance_platform",
+    "testIds": [
+      "TC003",
+      "TC004",
+      "TC009"
+    ],
+    "additionalInstruction": "Test only the home page, course search, and instructors list pages. These are public pages that do not require authentication.",
+    "envs": {
+      "API_KEY": "sk-user-8heVRSBvSOk3esZI6Cv3HkUlTlqCeqSdDdqZjtAR_d9Gmayd6MWaA9cbhS_KxFwun01MMtOD2GS4IqsH4KEXB38PG5PG2WB8EjSW2rxZV4BwkmCfVAl9264gm17c8REb5n4"
+    }
+  },
+  "serverPort": 49954,
+  "proxy": "http://de75a8a7-2b99-4e11-a422-def0d582e726:E0m0fYNgM0ttsyuEGeeStDB9JBCYNd5S@tun.testsprite.com:8080"
+}

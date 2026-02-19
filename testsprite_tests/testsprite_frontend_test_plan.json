@@ -1,0 +1,3890 @@
+[
+  {
+    "id": "TC001",
+    "title": "Successful sign up redirects to home",
+    "description": "Verifies a new user can register with valid details and is redirected to the home page.",
+    "category": "User Authentication - Sign Up",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signup"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Kayıt\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Test User\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"test.user.signup+1@example.com\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass123!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the sign up / register button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Öne çıkan\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Invalid email format shows validation error",
+    "description": "Verifies the sign up form blocks submission and shows an error when the email format is invalid.",
+    "category": "User Authentication - Sign Up",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signup"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Test User\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"not-an-email\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass123!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the sign up / register button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"geçerli\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/signup\"}]}],"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Home page loads and shows featured sections",
+    "description": "Verifies the landing page loads and displays featured courses and featured instructors sections.",
+    "category": "Home Page",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Öne Çıkan\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Kurs\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Eğitmen\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Featured courses section\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Featured instructors section\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Navigate from Home to Courses via top navigation",
+    "description": "Verifies users can use the Home page navigation link to reach the Courses page.",
+    "category": "Home Page",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Courses\" in the navigation menu"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/courses\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Courses\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Course search or filter area\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Navigate from Home to Instructors via navigation",
+    "description": "Verifies users can use the Home page navigation link to reach the Instructors list page.",
+    "category": "Home Page",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Instructors\" in the navigation menu"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/instructors\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Eğitmen\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructors list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Navigate from Home to Schools via navigation",
+    "description": "Verifies users can use the Home page navigation link to reach the Schools list page.",
+    "category": "Home Page",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Schools\" in the navigation menu"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/schools\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Okul\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Featured courses section displays at least one visible course card",
+    "description": "Verifies the featured courses section renders usable content (not empty state) on the Home page.",
+    "category": "Home Page",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Featured courses section\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Featured courses section\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"A featured course card\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Course title on a featured course card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Featured instructors section displays at least one visible instructor card",
+    "description": "Verifies the featured instructors section renders usable content (not empty state) on the Home page.",
+    "category": "Home Page",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Featured instructors section\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Featured instructors section\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"A featured instructor card\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor name on a featured instructor card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Logo click navigates back to Home page",
+    "description": "Verifies that clicking the site logo in the top navigation returns the user to the Home page from another page.",
+    "category": "Navigation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /courses"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/courses\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the site logo in the top navigation bar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Öne çıkan kurslar\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Top nav link 'Kurslar' opens Courses listing/search page",
+    "description": "Verifies the Courses navigation link routes correctly to the Courses page.",
+    "category": "Navigation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Kurslar\" in the top navigation bar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/courses\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Kurs\""
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Top nav link 'Eğitmenler' opens Instructors list page",
+    "description": "Verifies the Instructors navigation link routes correctly to the Instructors page.",
+    "category": "Navigation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Eğitmenler\" in the top navigation bar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/instructors\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Eğitmenler\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Top nav link 'Okullar' opens Schools list page",
+    "description": "Verifies the Schools navigation link routes correctly to the Schools page.",
+    "category": "Navigation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Okullar\" in the top navigation bar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/schools\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Okullar\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Theme toggle switches between light and dark mode",
+    "description": "Verifies that toggling the theme updates the visible UI theme state.",
+    "category": "Navigation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Theme toggle\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the theme toggle in the top navigation bar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Dark\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the theme toggle in the top navigation bar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Light\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Authenticated user opens Profile from avatar",
+    "description": "Verifies that a logged-in user can use the avatar in the navbar to navigate to the Profile page.",
+    "category": "Navigation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Sign In\" to submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the user avatar in the top navigation bar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/profile\""
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Open Course Search page and view initial course list",
+    "description": "Verifies that the Courses page loads and shows a list of available dance courses.",
+    "category": "Course Search",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to \"/courses\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Course\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Kurs\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Courses list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Search\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Search courses by keyword and see matching results",
+    "description": "Verifies that entering a keyword filters the course list to relevant results.",
+    "category": "Course Search",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to \"/courses\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Courses list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"salsa\" into the \"Search\" field"
+      },
+      {
+        "type": "action",
+        "description": "Press \"Enter\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Courses list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"salsa\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Search with a nonsense keyword shows empty state",
+    "description": "Verifies that an empty state message is shown when no courses match a keyword search.",
+    "category": "Course Search",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to \"/courses\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Search\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"zzzxxyy-no-course\" into the \"Search\" field"
+      },
+      {
+        "type": "action",
+        "description": "Press \"Enter\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Sonuç bulunamadı\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Courses list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Filter courses by dance style",
+    "description": "Verifies that selecting a dance style filter updates the visible course results.",
+    "category": "Course Search",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to \"/courses\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Style\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Salsa\" from the \"Style\" dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Courses list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Salsa\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Filter courses by level",
+    "description": "Verifies that selecting a level filter updates the visible course results.",
+    "category": "Course Search",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to \"/courses\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Level\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Beginner\" from the \"Level\" dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Courses list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Beginner\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Filter courses by price range",
+    "description": "Verifies that setting a price range filters courses and updates the visible results.",
+    "category": "Course Search",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to \"/courses\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Price\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"0\" into the \"Min price\" field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"1000\" into the \"Max price\" field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Courses list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Price\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Combine multiple filters and reach empty state",
+    "description": "Verifies that combining filters can yield no matches and the UI shows an empty state message.",
+    "category": "Course Search",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to \"/courses\""
+      },
+      {
+        "type": "action",
+        "description": "Select \"Salsa\" from the \"Style\" dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Advanced\" from the \"Level\" dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"99999\" into the \"Min price\" field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Sonuç bulunamadı\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Courses list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC022",
+    "title": "Open a course detail from the search results",
+    "description": "Verifies that clicking a course in the results navigates to a course detail page.",
+    "category": "Course Search",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to \"/courses\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Courses list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first course card in the courses list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/courses/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Course details\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Course title\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC023",
+    "title": "Course detail page shows core course information",
+    "description": "Verifies a course detail page displays the key fields a user needs to evaluate the course.",
+    "category": "Course Detail",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /courses"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Kurslar\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first course card in the results list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Açıklama\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Fiyat\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Program\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC024",
+    "title": "Course detail page shows instructor information section",
+    "description": "Verifies instructor information is visible on the course detail page.",
+    "category": "Course Detail",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /courses"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first course card in the results list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Eğitmen\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor information section\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor name\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor profile link\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC025",
+    "title": "Authenticated user can enroll and sees confirmation",
+    "description": "Verifies a signed-in user can enroll/register from the course detail page and sees a confirmation message.",
+    "category": "Course Detail",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Giriş Yap\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL does not contain \"/signin\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Kurslar\" navigation link"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first course card in the results list"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Kayıt Ol\" or \"Enroll\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Kayıt\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Başarılı\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC026",
+    "title": "Enroll button is visible and actionable on course detail page",
+    "description": "Verifies the course detail page provides a visible enroll/register call-to-action.",
+    "category": "Course Detail",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /courses"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first course card in the results list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Kayıt Ol / Enroll button\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the bottom of the page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Kayıt Ol / Enroll button\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC027",
+    "title": "Course detail page schedule section is visible and readable",
+    "description": "Verifies the schedule information is visible on the course detail page and not hidden behind collapsed content.",
+    "category": "Course Detail",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /courses"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first course card in the results list"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the \"Program\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Program\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schedule details\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC028",
+    "title": "Open Instructors List and verify instructors are displayed",
+    "description": "Verifies that the instructors list page loads and shows a visible list of instructors.",
+    "category": "Instructors List",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /instructors"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/instructors\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Eğitmenler\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructors list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC029",
+    "title": "Filter instructors by dance style and verify results update",
+    "description": "Verifies filtering by dance style updates the visible instructor results.",
+    "category": "Instructors List",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /instructors"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Dance style filter\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Salsa\" from dropdown \"Dance style filter\""
+      },
+      {
+        "type": "action",
+        "description": "Wait for element \"Instructors list\" to be visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor card\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Salsa\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC030",
+    "title": "Filter instructors by location and verify results update",
+    "description": "Verifies filtering by location updates the visible instructor results.",
+    "category": "Instructors List",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /instructors"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Location filter\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select \"İstanbul\" from dropdown \"Location filter\""
+      },
+      {
+        "type": "action",
+        "description": "Wait for element \"Instructors list\" to be visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor card\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"İstanbul\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC031",
+    "title": "Apply both style and location filters together",
+    "description": "Verifies that applying both dance style and location filters narrows the instructor list accordingly.",
+    "category": "Instructors List",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /instructors"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Bachata\" from dropdown \"Dance style filter\""
+      },
+      {
+        "type": "action",
+        "description": "Select \"Ankara\" from dropdown \"Location filter\""
+      },
+      {
+        "type": "action",
+        "description": "Wait for element \"Instructors list\" to be visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor card\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Bachata\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC032",
+    "title": "Open an instructor profile from the list",
+    "description": "Verifies that clicking an instructor card navigates to that instructor’s profile page.",
+    "category": "Instructors List",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /instructors"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor card\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible \"Instructor card\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/instructors/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor profile header\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor details section\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC033",
+    "title": "Clear filters returns from empty state to results",
+    "description": "Verifies that clearing filters removes the empty state and shows instructors again.",
+    "category": "Instructors List",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /instructors"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Nonexistent Style\" from dropdown \"Dance style filter\""
+      },
+      {
+        "type": "action",
+        "description": "Wait for element \"Empty state\" to be visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Clear filters\""
+      },
+      {
+        "type": "action",
+        "description": "Wait for element \"Instructors list\" to be visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC034",
+    "title": "Filter UI remains usable after navigating back from a profile (via in-app link)",
+    "description": "Verifies the user can return to the instructors list using an in-app control and continue filtering.",
+    "category": "Instructors List",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /instructors"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible \"Instructor card\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/instructors/\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Back to instructors\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/instructors\""
+      },
+      {
+        "type": "action",
+        "description": "Select \"Kizomba\" from dropdown \"Dance style filter\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC035",
+    "title": "Open an instructor detail page and view core profile info",
+    "description": "Verifies that an instructor detail page shows the instructor bio, experience, and dance styles.",
+    "category": "Instructor Detail",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /instructors"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Eğitmenler\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first instructor in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Instructor profile header\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Bio\" section is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Experience\" section is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Dance styles\" section is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC036",
+    "title": "View instructor available lessons from the instructor detail page",
+    "description": "Verifies that lessons for the instructor are visible on the instructor detail page.",
+    "category": "Instructor Detail",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /instructors"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Eğitmenler\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first instructor in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Dersler\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Available lessons list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the \"Available lessons list\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Lesson card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC037",
+    "title": "View instructor ratings and reviews on the instructor detail page",
+    "description": "Verifies that the ratings/reviews area is present and viewable from the instructor detail page.",
+    "category": "Instructor Detail",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /instructors"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Eğitmenler\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first instructor in the list"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the \"Ratings and reviews\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Yorumlar\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Rating summary\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Review list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC038",
+    "title": "Send a message to an instructor when authenticated and see it in chat UI",
+    "description": "Verifies that a logged-in user can send a message to an instructor and see the sent message appear in the chat view.",
+    "category": "Instructor Detail",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Sign In\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Eğitmenler\" link in the main navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first instructor in the list"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Merhaba, dersleriniz hakkında bilgi alabilir miyim?\" into the message input field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Send\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Merhaba, dersleriniz hakkında bilgi alabilir miyim?\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC039",
+    "title": "Cancel sending a message using Escape key does not send content",
+    "description": "Verifies that dismissing/clearing the message composition does not send a message.",
+    "category": "Instructor Detail",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Sign In\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Eğitmenler\" link in the main navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first instructor in the list"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Bu mesaj gönderilmemeli\" into the message input field"
+      },
+      {
+        "type": "action",
+        "description": "Press \"Escape\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Bu mesaj gönderilmemeli\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC040",
+    "title": "Prevent sending an empty message to an instructor",
+    "description": "Verifies that the UI blocks sending a blank message and shows a visible validation/toast message.",
+    "category": "Instructor Detail",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Sign In\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Eğitmenler\" link in the main navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first instructor in the list"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Send\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Mesaj\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC041",
+    "title": "View schools list on Schools page",
+    "description": "Verifies the Schools page loads and displays a visible list section for dance schools.",
+    "category": "Schools List",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /schools"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Schools\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Okul\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Location filter\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Dance style filter\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC042",
+    "title": "Filter schools by location and see filtered results",
+    "description": "Verifies that applying a location filter updates the visible schools list.",
+    "category": "Schools List",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /schools"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Location\" filter control"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Istanbul\" from dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Istanbul\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC043",
+    "title": "Filter schools by dance style and see filtered results",
+    "description": "Verifies that applying a dance style filter updates the visible schools list.",
+    "category": "Schools List",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /schools"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Dance style\" filter control"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Salsa\" from dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Salsa\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC044",
+    "title": "Combine location and dance style filters",
+    "description": "Verifies that multiple filters can be applied together and the list remains consistent.",
+    "category": "Schools List",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /schools"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Location\" filter control"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Ankara\" from dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Dance style\" filter control"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Tango\" from dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Ankara\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Tango\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC045",
+    "title": "Open a school detail page from the list",
+    "description": "Verifies that clicking a school navigates to a school detail page.",
+    "category": "Schools List",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /schools"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first school card in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/schools/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"School details\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"School name\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC046",
+    "title": "No-results empty state when filters match no schools",
+    "description": "Verifies that an empty state is shown when filters produce no matching schools.",
+    "category": "Schools List",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /schools"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Location filter\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Location\" filter control"
+      },
+      {
+        "type": "action",
+        "description": "Select \"NoSuchCity\" from dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Dance style\" filter control"
+      },
+      {
+        "type": "action",
+        "description": "Select \"NoSuchStyle\" from dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No schools found\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC047",
+    "title": "Clear filters returns to showing results",
+    "description": "Verifies that clearing applied filters restores the list to a non-empty state (when data exists).",
+    "category": "Schools List",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /schools"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Location\" filter control"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Istanbul\" from dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Clear filters\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Istanbul\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC048",
+    "title": "Schools list remains usable after changing filters multiple times",
+    "description": "Verifies the page remains stable and list updates when the user changes filter selections repeatedly.",
+    "category": "Schools List",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /schools"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Dance style\" filter control"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Bachata\" from dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Dance style\" filter control"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Kizomba\" from dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Kizomba\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Schools list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC049",
+    "title": "Browse partner list on Partner Search page",
+    "description": "Verifies that a user can open the Partner Search page and see available partner results.",
+    "category": "Partner Search",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /partners"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Partner\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Dans\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Partner search filters\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Partners results list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Request to dance\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC050",
+    "title": "Filter partners by dance style",
+    "description": "Verifies that filtering by dance style updates the visible partner results.",
+    "category": "Partner Search",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /partners"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Dance style\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Salsa\" from dropdown \"Dance style\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Apply filters\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Partners results list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Salsa\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC051",
+    "title": "Filter partners by level",
+    "description": "Verifies that filtering by level updates the visible partner results.",
+    "category": "Partner Search",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /partners"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Level\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Beginner\" from dropdown \"Level\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Apply filters\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Partners results list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Beginner\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC052",
+    "title": "Filter partners by location",
+    "description": "Verifies that filtering by location updates the visible partner results.",
+    "category": "Partner Search",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /partners"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Location\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Istanbul\" into field \"Location\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Apply filters\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Partners results list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Istanbul\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC053",
+    "title": "Apply combined filters (style + level + location)",
+    "description": "Verifies that applying multiple filters together produces a narrowed result set or a no-results message.",
+    "category": "Partner Search",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /partners"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Bachata\" from dropdown \"Dance style\""
+      },
+      {
+        "type": "action",
+        "description": "Select \"Intermediate\" from dropdown \"Level\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"Ankara\" into field \"Location\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Apply filters\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Partners results list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"No partners found\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC054",
+    "title": "Send partner request as authenticated user and see confirmation",
+    "description": "Verifies that a logged-in user can request to dance with a partner and sees a confirmation message.",
+    "category": "Partner Search",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into field \"Email\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into field \"Password\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Sign in\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Partners\" in the main navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible \"Request to dance\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Request\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC055",
+    "title": "Clear or reset filters restores broader results",
+    "description": "Verifies that clearing filters returns the partner list to an unfiltered (or less filtered) state.",
+    "category": "Partner Search",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /partners"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Salsa\" from dropdown \"Dance style\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Apply filters\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Salsa\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Clear filters\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Partners results list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Dance style\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC056",
+    "title": "No-results state is displayed for unlikely filter combination",
+    "description": "Verifies that the UI shows a clear no-results message when filters return zero matches.",
+    "category": "Partner Search",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /partners"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Kizomba\" from dropdown \"Dance style\""
+      },
+      {
+        "type": "action",
+        "description": "Select \"Advanced\" from dropdown \"Level\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"NonexistentCity\" into field \"Location\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Apply filters\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"No partners found\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Partners results list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC057",
+    "title": "Submit instructor application with required info and styles (skip uploads)",
+    "description": "Verifies a user can complete and submit the instructor application with required personal info and style selections, and sees a success confirmation.",
+    "category": "Become Instructor",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-instructor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Eğitmen\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"Test User\" into the full name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"test.user+instructor@app.example\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"5551112233\" into the phone field"
+      },
+      {
+        "type": "action",
+        "description": "Select at least one dance style option from the dance styles section"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Submit\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Başvurunuz alındı\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC058",
+    "title": "Validation errors appear when submitting empty required fields",
+    "description": "Verifies the form blocks submission and shows validation messages when required fields are left blank.",
+    "category": "Become Instructor",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-instructor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Eğitmen\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Submit\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Zorunlu\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Lütfen\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC059",
+    "title": "Dance style selection is required (submit without styles)",
+    "description": "Verifies the user is prompted to select at least one dance style before submitting the application.",
+    "category": "Become Instructor",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-instructor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Dans\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"Style Missing\" into the full name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"style.missing@app.example\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"5552223344\" into the phone field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Submit\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"stil\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC060",
+    "title": "Email format validation rejects an invalid email",
+    "description": "Verifies the form shows an error when the email address is not in a valid format.",
+    "category": "Become Instructor",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-instructor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Email\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"Invalid Email User\" into the full name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"not-an-email\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"5553334455\" into the phone field"
+      },
+      {
+        "type": "action",
+        "description": "Select at least one dance style option from the dance styles section"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Submit\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"geçerli\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC061",
+    "title": "Phone input validation rejects clearly invalid phone value",
+    "description": "Verifies the form shows an error when the phone field contains an invalid value.",
+    "category": "Become Instructor",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-instructor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Telefon\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"Invalid Phone User\" into the full name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"invalid.phone@app.example\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"abc\" into the phone field"
+      },
+      {
+        "type": "action",
+        "description": "Select at least one dance style option from the dance styles section"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Submit\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Telefon\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC062",
+    "title": "Successful submission persists confirmation after page refresh",
+    "description": "Verifies that after a successful submission, the user still sees a confirmation state when revisiting the page in the same session (no duplicate immediate resubmission prompt).",
+    "category": "Become Instructor",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-instructor"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"Refresh Check\" into the full name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"refresh.check@app.example\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"5554445566\" into the phone field"
+      },
+      {
+        "type": "action",
+        "description": "Select at least one dance style option from the dance styles section"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Submit\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Başvurunuz\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /become-instructor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Başvurunuz\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC063",
+    "title": "Form allows clearing a selected dance style and requires re-selection before submit",
+    "description": "Verifies that if a user deselects all dance styles, the form prevents submission and prompts for at least one style.",
+    "category": "Become Instructor",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-instructor"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"Toggle Styles\" into the full name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"toggle.styles@app.example\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"5556667788\" into the phone field"
+      },
+      {
+        "type": "action",
+        "description": "Select one dance style option from the dance styles section"
+      },
+      {
+        "type": "action",
+        "description": "Click on the same selected dance style option to deselect it"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Submit\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"stil\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC064",
+    "title": "Submit a complete school application and see confirmation",
+    "description": "Verifies a user can complete the Become School form with valid details and see a submission confirmation.",
+    "category": "Become School",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-school"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Become School\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Test Dance School\" into the school name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Istiklal Cd. 123, Istanbul\" into the address field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"We offer beginner to advanced dance classes.\" into the description field"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Salsa\" from the offered dance styles selector"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Submit\" to submit the school registration application"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Application submitted\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC065",
+    "title": "Submit application with multiple dance styles selected",
+    "description": "Verifies the user can select more than one dance style and still submit successfully.",
+    "category": "Become School",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-school"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Become School\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Multi Style Dance Academy\" into the school name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Bagdat Cd. 45, Istanbul\" into the address field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Multiple styles taught by certified instructors.\" into the description field"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Bachata\" from the offered dance styles selector"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Kizomba\" from the offered dance styles selector"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Submit\" to submit the school registration application"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Application submitted\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC066",
+    "title": "Required-field validation when submitting an empty form",
+    "description": "Verifies required-field validation messages appear if the user submits without filling mandatory fields.",
+    "category": "Become School",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-school"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Become School\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Submit\" to submit the school registration application"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"School name is required\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Address is required\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Description is required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC067",
+    "title": "Submit with missing dance style selection shows validation error",
+    "description": "Verifies the form prevents submission and shows an error when no dance styles are selected.",
+    "category": "Become School",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-school"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Become School\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"No Style Selected School\" into the school name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Cumhuriyet Mh. 8, Izmir\" into the address field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Submitting without selecting styles should show an error.\" into the description field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Submit\" to submit the school registration application"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Select at least one dance style\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC068",
+    "title": "Description minimum length validation (too short)",
+    "description": "Verifies the description field validates minimum content and shows an error when too short.",
+    "category": "Become School",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-school"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Become School\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Short Desc School\" into the school name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Sehitler Sk. 3, Bursa\" into the address field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Hi\" into the description field"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Tango\" from the offered dance styles selector"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Submit\" to submit the school registration application"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Description is too short\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC069",
+    "title": "Form retains entered data after validation error on submit",
+    "description": "Verifies that when a validation error occurs, previously entered school information remains visible for correction.",
+    "category": "Become School",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-school"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Become School\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Retain Data School\" into the school name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Gaziosmanpasa 22, Istanbul\" into the address field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"A school application to verify data retention after errors.\" into the description field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Submit\" to submit the school registration application"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Select at least one dance style\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Retain Data School\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC070",
+    "title": "Cancel/clear behavior (if available) does not submit application",
+    "description": "Verifies that using a cancel or clear control (if present) does not submit and keeps the user on the form page.",
+    "category": "Become School",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /become-school"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Become School\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Cancel Button School\" into the school name field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Cancel\" if available"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/become-school\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Application submitted\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC071",
+    "title": "View profile page shows authenticated user information",
+    "description": "Verifies that a signed-in user can open the Profile page and see their own profile information rendered.",
+    "category": "User Profile",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the site navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/profile\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Profile\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC072",
+    "title": "Edit and save basic profile details (name and bio)",
+    "description": "Verifies that a signed-in user can edit name and bio and save changes successfully.",
+    "category": "User Profile",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the site navigation"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Test User\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"This is an updated bio for automated UI testing.\" into the bio field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Save\" button"
+      }
+    ]
+  },
+  {
+    "id": "TC073",
+    "title": "Update dance styles selection and save",
+    "description": "Verifies that a signed-in user can change dance styles and save the updated preferences.",
+    "category": "User Profile",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the site navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click on the dance styles field"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Salsa\" from the dance styles options"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Save\" button"
+      }
+    ]
+  },
+  {
+    "id": "TC074",
+    "title": "Save shows visible confirmation feedback",
+    "description": "Verifies that saving profile changes provides a visible success confirmation to the user.",
+    "category": "User Profile",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the site navigation"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Confirmation check update\" into the bio field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Save\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Saved\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC075",
+    "title": "Form validation prevents saving with empty required name",
+    "description": "Verifies that the profile cannot be saved when the name is cleared and a visible validation message appears.",
+    "category": "User Profile",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the site navigation"
+      },
+      {
+        "type": "action",
+        "description": "Type \"\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Save\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC076",
+    "title": "Unsaved edits persist in the form until saved",
+    "description": "Verifies that editing fields updates the visible form state immediately before saving.",
+    "category": "User Profile",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the site navigation"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Live edit check\" into the bio field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Live edit check\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC077",
+    "title": "Profile page loads without visible error state for authenticated user",
+    "description": "Verifies the profile page does not show an error message during normal authenticated loading.",
+    "category": "User Profile",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the site navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Profile\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Error\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC078",
+    "title": "Open chat panel and verify conversations list is visible",
+    "description": "Verifies an authenticated user can open the chat dialog from the floating button and see the conversations list.",
+    "category": "Chat / Messaging",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Click floating chat button (bottom-right)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Conversations\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Conversation list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC079",
+    "title": "Open a specific conversation from the chat list",
+    "description": "Verifies an authenticated user can open a conversation thread from the chat panel.",
+    "category": "Chat / Messaging",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click floating chat button (bottom-right)"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first conversation in the conversation list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Message thread\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Message input\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC080",
+    "title": "Send a text message and verify it appears in the conversation",
+    "description": "Verifies an authenticated user can send a text message and see it appear in the active conversation.",
+    "category": "Chat / Messaging",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click floating chat button (bottom-right)"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first conversation in the conversation list"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Test message {{UNIQUE}}\" into the message input field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Send\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Test message\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC081",
+    "title": "Unread badge is visible on chat button when there are unread messages",
+    "description": "Verifies the unread message count badge is displayed on the floating chat button when applicable.",
+    "category": "Chat / Messaging",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Unread message count badge\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click floating chat button (bottom-right)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Conversation list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC082",
+    "title": "Unread badge decreases or clears after opening the conversation",
+    "description": "Verifies unread message count updates after the user opens a conversation (marking messages as read).",
+    "category": "Chat / Messaging",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click floating chat button (bottom-right)"
+      },
+      {
+        "type": "action",
+        "description": "Click on a conversation that shows an unread indicator"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Message thread\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Close\" button on the chat panel"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Unread message count badge\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC083",
+    "title": "Attempt to send an empty message is prevented",
+    "description": "Verifies the chat UI prevents sending a blank message and does not add an empty bubble to the thread.",
+    "category": "Chat / Messaging",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click floating chat button (bottom-right)"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first conversation in the conversation list"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Send\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Message\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"No new message bubble\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC084",
+    "title": "Chat list empty state is shown when user has no conversations",
+    "description": "Verifies the chat panel shows an empty-state message when there are no conversations available.",
+    "category": "Chat / Messaging",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click floating chat button (bottom-right)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No conversations\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Conversation list\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC085",
+    "title": "Instructor can open Instructor Panel and see dashboard summary",
+    "description": "Verifies an authenticated instructor can access the Instructor Panel and see the earnings summary section.",
+    "category": "Instructor Panel",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Sign In\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Instructor\" link in the main navigation/menu"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/instructor\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Earnings\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC086",
+    "title": "Instructor can view list of active lessons",
+    "description": "Verifies the Instructor Panel shows a visible list/section for active lessons.",
+    "category": "Instructor Panel",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Instructor\" link in the main navigation/menu"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/instructor\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Active Lessons\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Active lessons list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC087",
+    "title": "Instructor can open Create New Lesson form from Instructor Panel",
+    "description": "Verifies the Create New Lesson action opens a lesson creation form in the instructor dashboard.",
+    "category": "Instructor Panel",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Instructor\" link in the main navigation/menu"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Create a new lesson\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Create Lesson\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Lesson form\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC088",
+    "title": "Instructor can create a new lesson and see it appear in the lessons list",
+    "description": "Verifies end-to-end lesson creation from the Instructor Panel and that the new lesson appears in the active lessons list.",
+    "category": "Instructor Panel",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Instructor\" link in the main navigation/menu"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Create a new lesson\" button"
+      },
+      {
+        "type": "action",
+        "description": "Type \"E2E Test Lesson\" into the lesson title field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Save\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"E2E Test Lesson\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC089",
+    "title": "Validation prevents saving a lesson with required fields missing",
+    "description": "Verifies the lesson form shows visible validation feedback and does not save when required fields are empty.",
+    "category": "Instructor Panel",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Instructor\" link in the main navigation/menu"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Create a new lesson\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Save\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC090",
+    "title": "Instructor can view student enrollments section",
+    "description": "Verifies the Instructor Panel provides access to student enrollments and the section is visible.",
+    "category": "Instructor Panel",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Instructor\" link in the main navigation/menu"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Student Enrollments\" tab/section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Enrollments\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Enrollments list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC091",
+    "title": "Authenticated non-instructor user cannot access Instructor Panel",
+    "description": "Verifies role restriction: a logged-in user without instructor role is redirected away or shown an access denied message.",
+    "category": "Instructor Panel",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"not_instructor_user@example.com\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"wrong-or-non-instructor-password\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /instructor"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/signin\""
+      }
+    ]
+  },
+  {
+    "id": "TC092",
+    "title": "Admin panel loads and displays platform statistics for an authenticated user",
+    "description": "Verifies that an authenticated user can open the Admin Panel and see key platform statistics sections.",
+    "category": "Admin Panel",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"platform statistics\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"users\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"schools\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC093",
+    "title": "View and open the users management section in Admin Panel",
+    "description": "Verifies that an admin can navigate to the user management area and see user list content.",
+    "category": "Admin Panel",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin\""
+      },
+      {
+        "type": "action",
+        "description": "Click \"View and manage all users\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Users\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"User list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC094",
+    "title": "Attempt to access Admin Panel with invalid credentials and confirm no admin access",
+    "description": "Verifies that a user who cannot authenticate does not reach the Admin Panel and remains on sign-in with an error.",
+    "category": "Admin Panel",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"not-a-real-user@example.com\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"WrongPassword123!\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/signin\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"invalid\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"password\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC095",
+    "title": "Non-admin user attempts to access Admin Panel and is blocked",
+    "description": "Verifies that an authenticated but non-admin user cannot access /admin and is redirected to sign-in or shown an access denied message.",
+    "category": "Admin Panel",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signin"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign In\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click the browser-visible navigation item that opens the Admin Panel"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/signin\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"access denied\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"admin\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC096",
+    "title": "Festivals page loads and shows upcoming festivals list",
+    "description": "Verifies that the festivals page loads successfully and renders a visible list of upcoming festivals when data exists.",
+    "category": "Festivals",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /festivals"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Festival\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Festivaller\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Upcoming festivals list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Festival list item\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC097",
+    "title": "Open a festival and view its key details",
+    "description": "Verifies that selecting a festival reveals its detail view including date, location, and dance styles.",
+    "category": "Festivals",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /festivals"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Festival list item\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Festival list item\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Festival details\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Tarih\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Konum\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Dans stilleri\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC098",
+    "title": "Festival details include a visible date value",
+    "description": "Verifies that the festival detail view shows a non-empty, human-readable date value.",
+    "category": "Festivals",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /festivals"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Festival list item\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Festival list item\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Festival date value\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Tarih\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC099",
+    "title": "Festival details include a visible location value",
+    "description": "Verifies that the festival detail view shows a non-empty location (city/venue) value.",
+    "category": "Festivals",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /festivals"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Festival list item\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Festival list item\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Festival location value\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Konum\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC100",
+    "title": "Festival details include at least one dance style",
+    "description": "Verifies that the festival detail view displays dance styles information for the selected festival.",
+    "category": "Festivals",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /festivals"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Festival list item\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Festival list item\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Dans stilleri\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Dance styles list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC101",
+    "title": "Empty state shown when no upcoming festivals exist",
+    "description": "Verifies that the festivals page shows a clear empty state message when there are no upcoming festivals.",
+    "category": "Festivals",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /festivals"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Festivals empty state\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Yaklaşan festival bulunamadı\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Upcoming festivals list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC102",
+    "title": "Festivals page remains usable after scrolling through the list",
+    "description": "Verifies that a longer festivals list remains visible and readable after scrolling, supporting browsing behavior.",
+    "category": "Festivals",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /festivals"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Upcoming festivals list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Bottom of festivals list\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Festival list item\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Top of festivals list\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Festivaller\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC103",
+    "title": "Nights page loads and shows upcoming nights list",
+    "description": "Verifies that the Nights page loads successfully and displays a list of upcoming dance nights when data exists.",
+    "category": "Nights",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /nights"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Nights\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Nights\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Upcoming nights list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Night event card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC104",
+    "title": "Open a night event and verify key details are visible",
+    "description": "Verifies that clicking a night event opens its details and shows date, venue, and music style.",
+    "category": "Nights",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /nights"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Night event card\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first \"Night event card\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Event details\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Date\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Venue\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Music style\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC105",
+    "title": "Event details show actual values (not placeholders)",
+    "description": "Verifies that the selected event details contain visible values for date, venue, and music style (not blank).",
+    "category": "Nights",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /nights"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first \"Night event card\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Event date value\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Event venue value\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Event music style value\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Event title\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC106",
+    "title": "Return from event details to the nights list using in-page navigation",
+    "description": "Verifies that the user can return to the nights list from an event details view using a visible UI control.",
+    "category": "Nights",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /nights"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first \"Night event card\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Event details\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Back\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Upcoming nights list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Night event card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC107",
+    "title": "Empty state is shown when no upcoming nights are available",
+    "description": "Verifies that an empty state message is displayed when there are no upcoming nights to list.",
+    "category": "Nights",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /nights"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Upcoming nights list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Night event card\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No upcoming nights\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Check back later\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC108",
+    "title": "Nights page remains usable when event cards take time to load",
+    "description": "Verifies that a visible loading state appears while nights are being fetched and then the content appears.",
+    "category": "Nights",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /nights"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Loading indicator\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Wait for element \"Upcoming nights list\" to appear"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Upcoming nights list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Loading indicator\" is not visible"
+      }
+    ]
+  }
+]
