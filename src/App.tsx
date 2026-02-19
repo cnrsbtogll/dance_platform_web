@@ -411,7 +411,7 @@ function App(): JSX.Element {
             )}
 
             <Navbar isAuthenticated={!!currentUser} user={currentUser} />
-            <div className={`${currentUser?.role === 'instructor' ? 'pt-20' : 'pt-16'}`}>
+            <div className={`${(currentUser?.role === 'instructor' || currentUser?.role === 'school') ? 'pt-20' : 'pt-16'}`}>
               <Routes>
                 <Route path="/" element={<HomePage isAuthenticated={isAuthenticated} user={currentUser} />} />
                 <Route path="/partners" element={<PartnerSearchPage />} />

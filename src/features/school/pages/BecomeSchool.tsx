@@ -409,7 +409,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[500px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school"></div>
         <span className="ml-3 text-gray-700">Yükleniyor...</span>
       </div>
     );
@@ -428,7 +428,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
           <p className="text-gray-600 mb-6">Dans okulu panelinize giderek okulunuzu yönetebilirsiniz.</p>
           <Button
             onClick={() => navigate('/school-admin')}
-            variant="primary"
+            variant="school"
           >
             Dans Okulu Paneline Git
           </Button>
@@ -450,7 +450,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
           <p className="text-gray-600 mb-6">Dans okulu başvurunuz halihazırda inceleniyor. Başvurunuz onaylandığında size e-posta ile bilgilendirme yapılacaktır.</p>
           <Button
             onClick={() => navigate('/')}
-            variant="primary"
+            variant="school"
           >
             Ana Sayfaya Dön
           </Button>
@@ -475,7 +475,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
           </p>
           <Button
             onClick={() => navigate('/')}
-            variant="primary"
+            variant="school"
           >
             Ana Sayfaya Dön
           </Button>
@@ -507,7 +507,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
           transition={{ duration: 0.5 }}
           className="text-center mb-10"
         >
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block py-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-school to-school-light bg-clip-text text-transparent leading-tight inline-block py-2">
             Dans Okulu Başvurusu
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
@@ -732,7 +732,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
             <div className="flex justify-end">
               <Button
                 type="submit"
-                variant="primary"
+                variant="school"
                 disabled={isSubmitting}
                 loading={isSubmitting}
               >
@@ -742,9 +742,9 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
           </form>
         </div>
 
-        <div className="mt-6 bg-blue-50 p-4 rounded-md">
-          <h3 className="text-blue-800 font-semibold">Bilgi</h3>
-          <p className="text-blue-700 text-sm mt-1">
+        <div className="mt-6 bg-school-bg p-4 rounded-md border border-school-lighter">
+          <h3 className="text-school-dark font-semibold">Bilgi</h3>
+          <p className="text-school text-sm mt-1">
             Dans okulu başvurunuz, platformumuz tarafından incelendikten sonra aktif hale gelecektir. Onay sürecinde ek bilgiler veya belge istemleri olabilir.
             Onay sonrası okul yönetici panelinize erişim sağlayabileceksiniz.
           </p>

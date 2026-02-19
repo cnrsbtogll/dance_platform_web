@@ -15,6 +15,13 @@ export default {
           lighter: '#94d2bd',
           dark: '#003d4a',
           bg: '#e9f5f7',
+        },
+        school: {
+          DEFAULT: '#b45309',
+          light: '#d97706',
+          lighter: '#fde68a',
+          dark: '#713f12',
+          bg: '#fffbeb',
         }
       },
       backgroundImage: {

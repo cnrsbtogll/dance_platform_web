@@ -144,6 +144,7 @@ interface CourseManagementProps {
   instructorId?: string;
   schoolId?: string;
   isAdmin?: boolean;
+  colorVariant?: 'instructor' | 'school';
 }
 
 // İletişim Modal bileşeni
@@ -241,7 +242,7 @@ const timestampToDate = (timestamp: any): string => {
   }
 };
 
-function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseManagementProps): JSX.Element {
+function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVariant = 'instructor' }: CourseManagementProps): JSX.Element {
   const [courses, setCourses] = useState<Course[]>([]);
   const [editMode, setEditMode] = useState<boolean>(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -1067,7 +1068,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
               placeholder="Kurs ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-instructor focus:border-transparent"
+              className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 ${colorVariant === 'school' ? 'focus:ring-school' : 'focus:ring-instructor'} focus:border-transparent`}
             />
             <span className="absolute right-3 top-2.5 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1078,7 +1079,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
           <Button
             onClick={addNewCourse}
             type="button"
-            variant="instructor"
+            variant={colorVariant}
           >
             Yeni Kurs Ekle
           </Button>
@@ -1243,7 +1244,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                           name="recurring"
                           checked={formData.recurring}
                           onChange={(e) => setFormData({ ...formData, recurring: true })}
-                          className="form-radio h-4 w-4 text-instructor"
+                          className={`form-radio h-4 w-4 ${colorVariant === 'school' ? 'text-school' : 'text-instructor'}`}
                         />
                         <span className="ml-2">Periyodik Kurs</span>
                       </label>
@@ -1253,7 +1254,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                           name="recurring"
                           checked={!formData.recurring}
                           onChange={(e) => setFormData({ ...formData, recurring: false })}
-                          className="form-radio h-4 w-4 text-instructor"
+                          className={`form-radio h-4 w-4 ${colorVariant === 'school' ? 'text-school' : 'text-instructor'}`}
                         />
                         <span className="ml-2">Tek Seferlik Kurs</span>
                       </label>
@@ -1289,7 +1290,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                                 newSchedule[index].time = e.target.value;
                                 setFormData({ ...formData, schedule: newSchedule });
                               }}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-instructor focus:ring-instructor sm:text-sm"
+                              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm ${colorVariant === 'school' ? 'focus:border-school focus:ring-school' : 'focus:border-instructor focus:ring-instructor'} sm:text-sm`}
                               required
                             />
                           </div>
@@ -1318,7 +1319,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                             schedule: [...formData.schedule, { day: 'Pazartesi', time: '18:00' }]
                           });
                         }}
-                        className="flex items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-instructor hover:text-instructor w-full"
+                        className={`flex items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg ${colorVariant === 'school' ? 'hover:border-school hover:text-school' : 'hover:border-instructor hover:text-instructor'} w-full`}
                       >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1371,7 +1372,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
               >
                 İptal
               </Button>
-              <Button type="submit" variant="instructor">
+              <Button type="submit" variant={colorVariant}>
                 {selectedCourse ? 'Güncelle' : 'Kaydet'}
               </Button>
             </div>
@@ -1426,8 +1427,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false }: CourseMan
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${course.status === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
                       }`}>
                       {course.status === 'active' ? 'Aktif' : 'Pasif'}
                     </span>
