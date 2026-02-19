@@ -8,6 +8,7 @@ import { generateInitialsAvatar } from '../../utils/imageUtils';
 import LoginRequiredModal from '../modals/LoginRequiredModal';
 import { eventBus, EVENTS } from '../../utils/eventBus';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 // Navbar bileşeni için prop tipleri
 interface NavbarProps {
@@ -17,6 +18,7 @@ interface NavbarProps {
 
 function Navbar({ isAuthenticated, user }: NavbarProps) {
   const { currentUser, logout: authLogout } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false);
   const [profilePhotoURL, setProfilePhotoURL] = useState<string>("");
@@ -331,7 +333,31 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
   return (
     <>
-      <nav className="bg-white shadow-md fixed w-full z-50 backdrop-blur-sm bg-white/90">
+      <nav className={`bg-white dark:bg-gray-900 shadow-md fixed w-full z-50 backdrop-blur-sm bg-white dark:bg-gray-900/90 transition-colors duration-300 ${hasInstructorRole ? 'border-b-2 border-instructor' : hasSchoolRole ? 'border-b-2 border-school' : 'border-b border-gray-200 dark:border-gray-700'}`}>
+        {/* Instructor mode banner */}
+        {hasInstructorRole && (
+          <div className="bg-gradient-to-r from-instructor-dark via-instructor to-instructor-light px-4 py-0.5 flex items-center justify-center gap-2">
+            <svg className="w-3 h-3 text-instructor-lighter" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="text-[11px] font-semibold tracking-widest text-white uppercase">Eğitmen Modu</span>
+            <svg className="w-3 h-3 text-instructor-lighter" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
+        {/* School mode banner */}
+        {hasSchoolRole && !hasInstructorRole && (
+          <div className="bg-gradient-to-r from-school-dark via-school to-school-light px-4 py-0.5 flex items-center justify-center gap-2">
+            <svg className="w-3 h-3 text-school-lighter" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+            </svg>
+            <span className="text-[11px] font-semibold tracking-widest text-white uppercase">Okul Yönetim Modu</span>
+            <svg className="w-3 h-3 text-school-lighter" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -360,7 +386,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       to="/partners"
                       className={`${isActive('/partners')
                         ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Partner Bul
                     </Link>
@@ -368,7 +394,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       to="/courses"
                       className={`${isActive('/courses')
                         ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Kurs Bul
                     </Link>
@@ -376,7 +402,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       to="/festivals"
                       className={`${isActive('/festivals')
                         ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Festivaller
                     </Link>
@@ -384,7 +410,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       to="/nights"
                       className={`${isActive('/nights')
                         ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                     >
                       Geceler
                     </Link>
@@ -393,6 +419,25 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
               </div>
             </div>
             <div className="hidden md:ml-4 md:flex md:items-center lg:space-x-2 md:space-x-1">
+              {/* Dark mode toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-pink"
+                title={isDark ? 'Aydınlık Mod' : 'Karanlık Mod'}
+                aria-label="Tema değiştir"
+              >
+                {isDark ? (
+                  // Sun icon
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  // Moon icon
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+              </button>
               {/* Kullanıcının rolüne göre butonları göster */}
               <div className="flex space-x-2">
                 {/* 'Eğitmen Ol' butonu */}
@@ -427,7 +472,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 {hasInstructorRole && (
                   <Link
                     to="/instructor"
-                    className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-instructor to-instructor-light hover:from-instructor-dark hover:to-instructor focus:outline-none focus:ring-2 focus:ring-instructor focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                     title="Eğitmen Paneli"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -455,7 +500,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   {hasSchoolRole && !hasSuperAdminRole && (
                     <Link
                       to="/school-admin"
-                      className="mr-1 lg:mr-3 inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                      className="mr-1 lg:mr-3 inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                       title="Okul Yönetim Paneli"
                     >
                       <span className="hidden lg:inline">Okul Yönetim Paneli</span>
@@ -466,8 +511,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     <div className="flex items-center">
                       {/* Kullanıcı Bilgileri - Masaüstü */}
                       <div className="hidden md:block mr-3 text-right">
-                        <div className="text-sm font-medium text-gray-800">{user?.displayName || 'Kullanıcı'}</div>
-                        <div className="text-xs text-gray-500 truncate max-w-[140px]">{user?.email || ''}</div>
+                        <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{user?.displayName || 'Kullanıcı'}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[140px]">{user?.email || ''}</div>
                       </div>
                       <button
                         onClick={toggleProfileMenu}
@@ -491,17 +536,17 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       <div
                         className="origin-top-right absolute right-0 mt-2 w-48 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 transition-all duration-200"
                       >
-                        <div className="rounded-lg bg-white shadow-xs py-1">
+                        <div className="rounded-lg bg-white dark:bg-gray-800 shadow-xs py-1">
                           {/* Kullanıcı Bilgileri - Dropdown */}
-                          <div className="block px-4 py-2 border-b border-gray-100">
-                            <div className="text-sm font-medium text-gray-800">{user?.displayName || 'Kullanıcı'}</div>
-                            <div className="text-xs text-gray-500 truncate">{user?.email || ''}</div>
+                          <div className="block px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+                            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{user?.displayName || 'Kullanıcı'}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email || ''}</div>
                           </div>
                           {/* Profil linki - rolüne göre farklı profil sayfasına yönlendirme */}
                           {hasSuperAdminRole ? (
                             <Link
                               to="/profile?type=admin"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-700 transition-colors duration-150"
+                              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-gray-700 hover:text-rose-700 transition-colors duration-150"
                               onClick={() => setIsProfileMenuOpen(false)}
                             >
                               Admin Profilim
@@ -510,13 +555,13 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                             <>
                               <Link
                                 to="/profile"
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-brand-pink transition-colors duration-150"
+                                className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-gray-700 hover:text-brand-pink transition-colors duration-150"
                                 onClick={() => setIsProfileMenuOpen(false)}
                               >
                                 Profilim
                               </Link>
                               <button
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-brand-pink transition-colors duration-150"
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-gray-700 hover:text-brand-pink transition-colors duration-150"
                                 onClick={() => {
                                   console.log('🎯 İlerleme Durumum butonuna tıklandı:', {
                                     isAuthenticated,
@@ -553,7 +598,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                               handleLogout();
                               setIsProfileMenuOpen(false);
                             }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-700 transition-colors duration-150"
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-gray-700 hover:text-rose-700 transition-colors duration-150"
                           >
                             Çıkış Yap
                           </button>
@@ -567,7 +612,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 <div className="flex items-center space-x-2 lg:space-x-3">
                   <Link
                     to="/signin"
-                    className="inline-flex items-center px-2 py-2 lg:px-4 lg:py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    className="inline-flex items-center px-2 py-2 lg:px-4 lg:py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-slate-800 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                     title="Giriş Yap"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -591,7 +636,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
             <div className="-mr-2 flex items-center md:hidden">
               <button
                 onClick={toggleMenu}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-brand-pink hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-pink transition duration-150 ease-in-out"
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-brand-pink hover:bg-gray-100 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-pink transition duration-150 ease-in-out"
               >
                 <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                   {isMenuOpen ? (
@@ -607,8 +652,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
         {/* Mobil için hamburger menüsü */}
         {isMenuOpen && (
-          <div className="md:hidden animate-fadeIn fixed top-16 left-0 right-0 z-40 bg-white shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
-            <div className="pt-2 pb-3 border-t border-gray-200 bg-gray-50/80 backdrop-blur-sm">
+          <div className={`md:hidden animate-fadeIn fixed top-16 left-0 right-0 z-40 bg-white dark:bg-gray-900 shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto transition-colors duration-300 ${hasInstructorRole ? 'border-t-2 border-instructor' : ''}`}>
+            <div className={`pt-2 pb-3 border-t border-gray-200 dark:border-gray-700 ${hasInstructorRole ? 'bg-instructor-bg/40' : 'bg-gray-50 dark:bg-slate-900/80 dark:bg-gray-800/80'} backdrop-blur-sm`}>
               {/* Her durumda gösterilecek butonlar */}
               <div className="px-4 space-y-2">
                 {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
@@ -662,13 +707,21 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   <Link
                     to="/instructor"
                     onClick={() => setIsMenuOpen(false)}
-                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
+                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-instructor to-instructor-light hover:from-instructor-dark hover:to-instructor focus:outline-none focus:ring-1 focus:ring-instructor focus:ring-offset-1 shadow-sm transition-all duration-200"
                   >
                     <div className="flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                       Eğitmen Paneli
+                    </div>
+
+                    {/* Eğitmen rozeti */}
+                    <div className="mt-0.5 flex items-center justify-center">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider text-instructor-lighter uppercase">
+                        <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                        Eğitmen Modu
+                      </span>
                     </div>
                   </Link>
                 )}
@@ -691,8 +744,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       />
                     </div>
                     <div className="ml-3">
-                      <div className="text-sm font-medium leading-none text-gray-800">{user?.displayName || 'Kullanıcı'}</div>
-                      <div className="text-xs font-medium leading-none text-gray-500 mt-1">{user?.email || ''}</div>
+                      <div className="text-sm font-medium leading-none text-gray-800 dark:text-gray-200">{user?.displayName || 'Kullanıcı'}</div>
+                      <div className="text-xs font-medium leading-none text-gray-500 dark:text-gray-400 mt-1">{user?.email || ''}</div>
                     </div>
                   </div>
                   <div className="mt-3 space-y-1 px-4">
@@ -700,28 +753,28 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       <>
                         <Link
                           to="/partners"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Partner Bul
                         </Link>
                         <Link
                           to="/courses"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Kurs Bul
                         </Link>
                         <Link
                           to="/festivals"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Festivaller
                         </Link>
                         <Link
                           to="/nights"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Geceler
@@ -730,8 +783,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     )}
 
                     {/* Ayırıcı çizgi */}
-                    <div className="my-4 border-t border-gray-200" />
-                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <div className="my-4 border-t border-gray-200 dark:border-gray-700" />
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Profil Menüsü
                     </div>
 
@@ -748,7 +801,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     {hasSchoolRole && !hasSuperAdminRole && (
                       <Link
                         to="/school-admin"
-                        className="block px-3 py-1 mt-2 rounded-md text-base font-medium text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 transition-colors duration-150"
+                        className="block px-3 py-1 mt-2 rounded-md text-base font-medium text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 transition-colors duration-150"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Okul Yönetim Paneli
@@ -762,7 +815,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     {hasSuperAdminRole ? (
                       <Link
                         to="/profile?type=admin"
-                        className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                        className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Admin Profilim
@@ -771,13 +824,13 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       <>
                         <Link
                           to="/profile"
-                          className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block px-3 py-1 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Profilim
                         </Link>
                         <button
-                          className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                          className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
                           onClick={() => {
                             console.log('🎯 İlerleme Durumum butonuna tıklandı:', {
                               isAuthenticated,
@@ -814,18 +867,41 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                         handleLogout();
                         setIsMenuOpen(false);
                       }}
-                      className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                      className="block w-full text-left px-3 py-1 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-gray-700 transition-colors duration-150"
                     >
                       Çıkış Yap
                     </button>
+                    {/* Dark mode toggle - Mobile */}
+                    <div className="pt-3 mt-1 border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        onClick={toggleTheme}
+                        className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-gray-800 transition-all duration-200"
+                      >
+                        {isDark ? (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            Aydınlık Mod
+                          </>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                            Karanlık Mod
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </>
               ) : (
                 /* Giriş yapmamış kullanıcılar için menü */
-                <div className="pt-1 mt-1 border-t border-gray-200 space-y-2">
+                <div className="pt-1 mt-1 border-t border-gray-200 dark:border-slate-700 space-y-2">
                   <Link
                     to="/signin"
-                    className="block w-full px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-brand-pink focus:ring-offset-1 shadow-sm transition-all duration-200"
+                    className="block w-full px-3 py-1 border border-gray-300 dark:border-slate-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-pink focus:ring-offset-1 shadow-sm transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="flex items-center justify-center">
@@ -837,7 +913,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   </Link>
                   <Link
                     to="/signup"
-                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-purple-500 focus:outline-none focus:ring-1 focus:ring-brand-pink focus:ring-offset-1 shadow-sm transition-all duration-200"
+                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-brand-pink to-rose-600 hover:from-brand-pink hover:to-rose-700 focus:outline-none focus:ring-1 focus:ring-brand-pink focus:ring-offset-1 shadow-sm transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="flex items-center justify-center">

@@ -27,8 +27,8 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div>
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Ders Programı</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Ders Programı</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             {isAdmin ? 'Okulunuzun' : 'Size ait'} haftalık ders programını görüntüleyin
           </p>
         </div>
@@ -70,15 +70,15 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                   key={day} 
                   id={`day-${day}`}
                   onClick={() => setSelectedDay(day === selectedDay ? '' : day)}
-                  className={`bg-white rounded-lg shadow-sm border p-3 min-h-[100px] sm:min-h-[200px] cursor-pointer hover:border-indigo-300 hover:ring-1 hover:ring-indigo-300 transition-all ${
+                  className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border p-3 min-h-[100px] sm:min-h-[200px] cursor-pointer hover:border-indigo-300 hover:ring-1 hover:ring-indigo-300 transition-all ${
                     selectedDay === day 
                       ? 'border-indigo-300 ring-1 ring-indigo-300' 
-                      : 'border-gray-200'
+                      : 'border-gray-200 dark:border-slate-700'
                   } ${
                     selectedDay && selectedDay !== day ? 'sm:block hidden' : ''
                   }`}
                 >
-                  <div className="text-center font-medium py-2 rounded-md mb-3 bg-gray-50 text-gray-700">
+                  <div className="text-center font-medium py-2 rounded-md mb-3 bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-gray-300">
                     {day}
                   </div>
                   
@@ -94,7 +94,7 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                           {course.schedule
                             .filter(s => s.day === day)
                             .map((schedule, index) => (
-                              <div key={index} className="flex items-center text-gray-600 text-sm">
+                              <div key={index} className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
                                 <svg className="w-4 h-4 mr-1.5 text-brand-pink flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -104,7 +104,7 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                         </div>
                       ))}
                     {courses.filter(course => course.schedule.some(s => s.day === day)).length === 0 && (
-                      <div className="text-center text-gray-500 text-sm py-4">
+                      <div className="text-center text-gray-500 dark:text-gray-400 text-sm py-4">
                         Bu güne ait ders bulunmuyor
                       </div>
                     )}
@@ -115,12 +115,12 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
           </div>
         </div>
       ) : (
-        <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Henüz Kurs Bulunmuyor</h3>
-          <p className="text-gray-500 mb-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Henüz Kurs Bulunmuyor</h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
             {isAdmin 
               ? 'Yeni bir kurs eklemek için "Kurslar" sekmesini kullanabilirsiniz.'
               : 'Henüz size atanmış bir kurs bulunmuyor.'}

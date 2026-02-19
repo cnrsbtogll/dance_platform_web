@@ -198,7 +198,7 @@ function SchoolRequests(): JSX.Element {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-        <span className="ml-3 text-gray-700">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
   }
@@ -219,46 +219,46 @@ function SchoolRequests(): JSX.Element {
 
   if (requests.length === 0) {
     return (
-      <div className="bg-gray-50 p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">Okul Başvuruları</h2>
-        <p className="text-gray-600">Şu anda bekleyen okul başvurusu bulunmamaktadır.</p>
+      <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-lg shadow-md">
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Okul Başvuruları</h2>
+        <p className="text-gray-600 dark:text-gray-400">Şu anda bekleyen okul başvurusu bulunmamaktadır.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-      <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-6">Okul Başvuruları</h2>
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 sm:p-6">
+      <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Okul Başvuruları</h2>
 
       <div className="-mx-4 sm:mx-0 overflow-hidden">
         <div className="inline-block min-w-full align-middle">
-          <div className="overflow-x-auto border border-gray-200 sm:rounded-lg shadow-sm">
+          <div className="overflow-x-auto border border-gray-200 dark:border-slate-700 sm:rounded-lg shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-slate-900">
                 <tr>
-                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Okul
                   </th>
-                  <th scope="col" className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     İletişim Kişisi
                   </th>
-                  <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     E-posta
                   </th>
-                  <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Telefon
                   </th>
-                  <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Dans Stilleri
                   </th>
-                  <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     İşlemler
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
                 {Array.isArray(requests) && requests.map((request) => (
-                  <tr key={request.id} className="hover:bg-gray-50">
+                  <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -269,25 +269,25 @@ function SchoolRequests(): JSX.Element {
                           />
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {request.schoolName}
                           </div>
-                          <div className="text-sm text-gray-500 sm:hidden">
+                          <div className="text-sm text-gray-500 dark:text-gray-400 sm:hidden">
                             {request.contactPerson}
                           </div>
-                          <div className="text-sm text-gray-500 md:hidden">
+                          <div className="text-sm text-gray-500 dark:text-gray-400 md:hidden">
                             {request.contactEmail}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="hidden sm:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500">
+                    <td className="hidden sm:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                       {request.contactPerson}
                     </td>
-                    <td className="hidden md:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500">
+                    <td className="hidden md:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                       {request.contactEmail}
                     </td>
-                    <td className="hidden lg:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500">
+                    <td className="hidden lg:table-cell px-4 sm:px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                       {request.contactPhone}
                     </td>
                     <td className="hidden xl:table-cell px-4 sm:px-6 py-4">
@@ -324,7 +324,7 @@ function SchoolRequests(): JSX.Element {
                         </button>
                         <button
                           onClick={() => handleViewDetails(request)}
-                          className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
+                          className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 dark:border-slate-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
                         >
                           Detaylar
                         </button>
@@ -334,7 +334,7 @@ function SchoolRequests(): JSX.Element {
                 ))}
                 {requests.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 sm:px-6 py-4 text-sm text-center text-gray-500">
+                    <td colSpan={6} className="px-4 sm:px-6 py-4 text-sm text-center text-gray-500 dark:text-gray-400">
                       Henüz okul başvurusu bulunmamaktadır.
                     </td>
                   </tr>
@@ -355,8 +355,8 @@ function SchoolRequests(): JSX.Element {
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                     <div className="flex items-center space-x-4 mb-6">
@@ -365,33 +365,33 @@ function SchoolRequests(): JSX.Element {
                         alt={selectedRequest.schoolName}
                         className="h-16 w-16 rounded-full"
                       />
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
                         {selectedRequest.schoolName}
                       </h3>
                     </div>
                     <div className="mt-2 space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">İletişim Kişisi</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedRequest.contactPerson}</p>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">İletişim Kişisi</label>
+                        <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedRequest.contactPerson}</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">E-posta</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedRequest.contactEmail}</p>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">E-posta</label>
+                        <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedRequest.contactEmail}</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Telefon</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedRequest.contactPhone}</p>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefon</label>
+                        <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedRequest.contactPhone}</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Adres</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedRequest.address}</p>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Adres</label>
+                        <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedRequest.address}</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Şehir</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedRequest.city}</p>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Şehir</label>
+                        <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedRequest.city}</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Dans Stilleri</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Dans Stilleri</label>
                         <div className="mt-1 flex flex-wrap gap-1">
                           {selectedRequest.danceStyles && Array.isArray(selectedRequest.danceStyles) ? (
                             selectedRequest.danceStyles.map((style, index) => (
@@ -408,16 +408,16 @@ function SchoolRequests(): JSX.Element {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Açıklama</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedRequest.schoolDescription}</p>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Açıklama</label>
+                        <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedRequest.schoolDescription}</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Kuruluş Yılı</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedRequest.establishedYear}</p>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Kuruluş Yılı</label>
+                        <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedRequest.establishedYear}</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Başvuru Tarihi</label>
-                        <p className="mt-1 text-sm text-gray-900">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Başvuru Tarihi</label>
+                        <p className="mt-1 text-sm text-gray-900 dark:text-white">
                           {selectedRequest.createdAt ? (
                             (selectedRequest.createdAt as any).toDate ? (
                               (selectedRequest.createdAt as any).toDate().toLocaleDateString('tr-TR')
@@ -431,7 +431,7 @@ function SchoolRequests(): JSX.Element {
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <div className="bg-gray-50 dark:bg-slate-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button
                   type="button"
                   onClick={() => setSelectedRequest(null)}

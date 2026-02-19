@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from 'react';
 // import { dansOkullari } from '../../data/dansVerileri'; // Artık buna ihtiyacımız yok
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  deleteDoc, 
-  getDoc, 
-  updateDoc, 
-  addDoc, 
-  query, 
-  orderBy, 
+import {
+  collection,
+  getDocs,
+  doc,
+  deleteDoc,
+  getDoc,
+  updateDoc,
+  addDoc,
+  query,
+  orderBy,
   serverTimestamp,
   where,
   setDoc,
   Timestamp
 } from 'firebase/firestore';
-import { 
-  createUserWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
   updateProfile,
-  sendEmailVerification 
+  sendEmailVerification
 } from 'firebase/auth';
 import { db, auth } from '../../../../api/firebase/firebase';
 import { motion } from 'framer-motion';
@@ -108,7 +108,7 @@ function InstructorManagement(): JSX.Element {
         const danceStylesRef = collection(db, 'danceStyles');
         const q = query(danceStylesRef, orderBy('label'));
         const querySnapshot = await getDocs(q);
-        
+
         const styles: DanceStyle[] = [];
         querySnapshot.forEach((doc) => {
           styles.push({
@@ -116,7 +116,7 @@ function InstructorManagement(): JSX.Element {
             ...doc.data()
           } as DanceStyle);
         });
-        
+
         if (styles.length === 0) {
           // Eğer Firestore'da stil yoksa varsayılan stilleri kullan
           setDanceStyles([
@@ -151,26 +151,26 @@ function InstructorManagement(): JSX.Element {
   useEffect(() => {
     const checkIfSuperAdmin = async () => {
       if (!auth.currentUser) return;
-      
+
       try {
         const userRef = doc(db, 'users', auth.currentUser.uid);
         const userSnap = await getDoc(userRef);
-        
+
         if (userSnap.exists()) {
           const userData = userSnap.data();
           let roles = userData.role || [];
-          
+
           if (!Array.isArray(roles)) {
             roles = [roles];
           }
-          
+
           setIsSuperAdmin(roles.includes('admin'));
         }
       } catch (err) {
         console.error('Süper admin kontrolü yapılırken hata oluştu:', err);
       }
     };
-    
+
     checkIfSuperAdmin();
   }, []);
 
@@ -183,14 +183,14 @@ function InstructorManagement(): JSX.Element {
   const fetchInstructors = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       console.log('1. Eğitmenler getiriliyor...');
       const instructorsRef = collection(db, 'instructors');
-      
+
       const querySnapshot = await getDocs(instructorsRef);
       console.log('3. Veriler alındı, döküman sayısı:', querySnapshot.size);
-      
+
       // Tüm dökümanları logla
       console.log('Firestore\'daki tüm dökümanlar:');
       querySnapshot.forEach((doc) => {
@@ -201,7 +201,7 @@ function InstructorManagement(): JSX.Element {
       const instructorsData: Egitmen[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        
+
         // Her dökümanı detaylı logla
         console.log('4. Döküman işleniyor:', {
           id: doc.id,
@@ -234,20 +234,20 @@ function InstructorManagement(): JSX.Element {
 
         instructorsData.push(instructorData);
       });
-      
+
       // Client-side sıralama
       instructorsData.sort((a, b) => {
         return a.ad.localeCompare(b.ad, 'tr');
       });
-      
+
       console.log('5. Toplam işlenen eğitmen:', instructorsData.length);
-      console.log('6. Tüm eğitmenler:', instructorsData.map(e => ({ 
-        id: e.id, 
+      console.log('6. Tüm eğitmenler:', instructorsData.map(e => ({
+        id: e.id,
         ad: e.ad,
         email: e.email,
-        okul: e.okul_id 
+        okul: e.okul_id
       })));
-      
+
       setEgitmenler(instructorsData);
       setLoading(false);
     } catch (error: any) {
@@ -271,9 +271,9 @@ function InstructorManagement(): JSX.Element {
         const okullarRef = collection(db, 'schools');
         const q = query(okullarRef, orderBy('ad'));
         const querySnapshot = await getDocs(q);
-        
+
         console.log('Dans okulları snapshot alındı, sayı:', querySnapshot.size);
-        
+
         const okullarData: Okul[] = [];
         querySnapshot.forEach((doc) => {
           console.log('Okul işleniyor, ID:', doc.id);
@@ -282,7 +282,7 @@ function InstructorManagement(): JSX.Element {
             ...doc.data()
           } as Okul);
         });
-        
+
         console.log('İşlenen toplam okul sayısı:', okullarData.length);
         setDansOkullari(okullarData);
       } catch (err) {
@@ -294,7 +294,7 @@ function InstructorManagement(): JSX.Element {
         setError('Dans okulları yüklenirken bir hata oluştu.');
       }
     };
-    
+
     fetchDansOkullari();
   }, []);
 
@@ -335,7 +335,7 @@ function InstructorManagement(): JSX.Element {
   // Form alanı değişikliği
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>): void => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       const checkbox = e.target as HTMLInputElement;
       setFormVeri(prev => ({
@@ -354,7 +354,7 @@ function InstructorManagement(): JSX.Element {
   const handleImageChange = async (base64Image: string | null): Promise<void> => {
     try {
       setLoading(true);
-      
+
       // Eğer fotoğraf silindiyse
       if (base64Image === null) {
         setFormVeri(prev => ({
@@ -364,50 +364,50 @@ function InstructorManagement(): JSX.Element {
         setLoading(false);
         return;
       }
-      
+
       // Görüntü boyutunu küçültmek için resizeImageFromBase64 kullan
       const resizedImage = await resizeImageFromBase64(base64Image, 400, 400, 0.75);
-      
+
       // Form state'ini güncelle
       setFormVeri(prev => ({
         ...prev,
         gorsel: resizedImage
       }));
-      
+
       // Eğer mevcut bir eğitmen düzenleniyorsa, doğrudan Firebase'e kaydet
       if (seciliEgitmen) {
         const egitmenRef = doc(db, 'instructors', seciliEgitmen.id);
-        
+
         // Eğitmen dokümanının görsel alanını güncelle
         await updateDoc(egitmenRef, {
           gorsel: resizedImage,
           updatedAt: serverTimestamp()
         });
-        
+
         // Eğitmene ait kullanıcı varsa, onun photoURL'ini de güncelle
         const egitmenDoc = await getDoc(egitmenRef);
         if (egitmenDoc.exists() && egitmenDoc.data().userId) {
           const userId = egitmenDoc.data().userId;
-          
+
           try {
             // Kullanıcı belgesini güncelle
             await updateDoc(doc(db, 'users', userId), {
               photoURL: resizedImage,
               updatedAt: serverTimestamp()
             });
-            
+
             console.log('Kullanıcı fotoğrafı da güncellendi');
           } catch (userError) {
             console.error('Kullanıcı fotoğrafı güncellenirken hata:', userError);
           }
         }
-        
+
         setSuccess('Fotoğraf başarıyla yüklendi ve kaydedildi.');
       } else {
         // Yeni eğitmen ekleme durumunda sadece form state'i güncellenir
         setSuccess('Fotoğraf başarıyla yüklendi. Eğitmen kaydedildiğinde fotoğraf da kaydedilecek.');
       }
-      
+
       // 3 saniye sonra başarı mesajını temizle
       setTimeout(() => {
         setSuccess(null);
@@ -443,7 +443,7 @@ function InstructorManagement(): JSX.Element {
     try {
       // Benzersiz bir davet kodu oluştur
       const invitationId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Remove undefined values from invitationData
       const cleanedInvitationData = Object.fromEntries(
         Object.entries({
@@ -462,7 +462,7 @@ function InstructorManagement(): JSX.Element {
       // Eğitmeni instructors koleksiyonuna ekle
       const instructorId = `instructor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const now = Timestamp.now();
-      
+
       const instructorData = {
         id: instructorId,
         ad: invitationData.displayName,
@@ -486,7 +486,7 @@ function InstructorManagement(): JSX.Element {
 
       // Kullanıcıyı users koleksiyonuna ekle
       const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       const userData = {
         id: userId,
         email,
@@ -530,12 +530,12 @@ function InstructorManagement(): JSX.Element {
     setLoading(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       if (seciliEgitmen) {
         // Mevcut eğitmeni güncelle
         const egitmenRef = doc(db, 'instructors', seciliEgitmen.id);
-        
+
         await updateDoc(egitmenRef, {
           ad: formVeri.ad,
           uzmanlık: formVeri.uzmanlık,
@@ -547,11 +547,11 @@ function InstructorManagement(): JSX.Element {
           phoneNumber: formVeri.phoneNumber,
           updatedAt: serverTimestamp()
         });
-        
+
         // State'i güncelle
-        const guncellenenEgitmenler = egitmenler.map(egitmen => 
-          egitmen.id === seciliEgitmen.id ? { 
-            ...egitmen, 
+        const guncellenenEgitmenler = egitmenler.map(egitmen =>
+          egitmen.id === seciliEgitmen.id ? {
+            ...egitmen,
             ad: formVeri.ad,
             uzmanlık: formVeri.uzmanlık,
             tecrube: formVeri.tecrube,
@@ -569,14 +569,14 @@ function InstructorManagement(): JSX.Element {
         if (!formVeri.email || !formVeri.ad) {
           throw new Error('E-posta ve ad alanları zorunludur.');
         }
-        
+
         // E-posta kontrolü
         const emailQuery = query(
-          collection(db, 'users'), 
+          collection(db, 'users'),
           where('email', '==', formVeri.email)
         );
         const emailCheckSnapshot = await getDocs(emailQuery);
-        
+
         if (!emailCheckSnapshot.empty) {
           throw new Error('Bu e-posta adresi zaten kullanılıyor.');
         }
@@ -598,13 +598,13 @@ function InstructorManagement(): JSX.Element {
           schoolName: schoolName,
           phoneNumber: formVeri.phoneNumber
         });
-        
+
         setSuccess('Eğitmen başarıyla eklendi ve davet e-postası gönderildi.');
       }
-      
+
       setDuzenlemeModu(false);
       setSeciliEgitmen(null);
-      
+
     } catch (err: any) {
       console.error('İşlem sırasında hata oluştu:', err);
       setError('İşlem sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
@@ -621,7 +621,7 @@ function InstructorManagement(): JSX.Element {
       try {
         // Firestore'dan sil
         await deleteDoc(doc(db, 'instructors', id));
-        
+
         // State'i güncelle
         const filtrelenmisEgitmenler = egitmenler.filter(egitmen => egitmen.id !== id);
         setEgitmenler(filtrelenmisEgitmenler);
@@ -640,9 +640,9 @@ function InstructorManagement(): JSX.Element {
     const okul = dansOkullari.find(okul => okul.id === okul_id);
     return okul ? okul.ad : 'Bilinmeyen Okul';
   };
-  
+
   // Filtrelenmiş eğitmenler
-  const filtrelenmisEgitmenler = egitmenler.filter(egitmen => 
+  const filtrelenmisEgitmenler = egitmenler.filter(egitmen =>
     egitmen.ad.toLowerCase().includes(aramaTerimi.toLowerCase()) ||
     getOkulAdi(egitmen.okul_id).toLowerCase().includes(aramaTerimi.toLowerCase())
   );
@@ -651,7 +651,7 @@ function InstructorManagement(): JSX.Element {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-        <span className="ml-3 text-gray-700">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
   }
@@ -664,17 +664,17 @@ function InstructorManagement(): JSX.Element {
           <p>{error}</p>
         </div>
       )}
-      
+
       {success && (
         <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 whitespace-pre-line" role="alert">
           <p>{success}</p>
         </div>
       )}
-      
+
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Eğitmen Yönetimi</h2>
         {!duzenlemeModu && (
-          <button 
+          <button
             onClick={yeniEgitmenEkle}
             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
             disabled={loading}
@@ -683,17 +683,17 @@ function InstructorManagement(): JSX.Element {
           </button>
         )}
       </div>
-      
+
       {duzenlemeModu ? (
-        <div className="bg-gray-50 p-6 rounded-lg">
+        <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-lg">
           <h3 className="text-lg font-semibold mb-4">
             {seciliEgitmen ? 'Eğitmen Düzenle' : 'Yeni Eğitmen Ekle'}
           </h3>
-          
+
           <form onSubmit={formGonder}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label htmlFor="ad" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="ad" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Eğitmen Adı*
                 </label>
                 <input
@@ -703,10 +703,10 @@ function InstructorManagement(): JSX.Element {
                   required
                   value={formVeri.ad}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
                 />
               </div>
-              
+
               <div>
                 <CustomSelect
                   label="Uzmanlık Alanı"
@@ -720,9 +720,9 @@ function InstructorManagement(): JSX.Element {
                   error={loadingStyles ? "Dans stilleri yükleniyor..." : undefined}
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="tecrube" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="tecrube" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Tecrübe
                 </label>
                 <input
@@ -731,11 +731,11 @@ function InstructorManagement(): JSX.Element {
                   name="tecrube"
                   value={formVeri.tecrube}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
                   placeholder="Örn: 5 yıl"
                 />
               </div>
-              
+
               <div>
                 <CustomSelect
                   label="Çalıştığı Okul"
@@ -749,9 +749,9 @@ function InstructorManagement(): JSX.Element {
                   error={dansOkullari.length === 0 ? "Henüz hiç dans okulu bulunmamaktadır. Önce dans okulu eklemelisiniz." : undefined}
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   E-posta*
                 </label>
                 <input
@@ -761,20 +761,20 @@ function InstructorManagement(): JSX.Element {
                   required={!seciliEgitmen}
                   value={formVeri.email}
                   onChange={handleInputChange}
-                  className={`w-full p-2 border border-gray-300 rounded-md ${seciliEgitmen ? 'bg-gray-100' : ''}`}
+                  className={`w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md ${seciliEgitmen ? 'bg-gray-100 dark:bg-slate-800' : ''}`}
                   readOnly={seciliEgitmen !== null}
                 />
                 {seciliEgitmen ? (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     E-posta adresi değiştirilemez.
                   </p>
                 ) : (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Eğitmen için otomatik olarak bir kullanıcı hesabı oluşturulacaktır.
                   </p>
                 )}
               </div>
-              
+
               <div>
                 <CustomPhoneInput
                   id="phoneNumber"
@@ -784,11 +784,11 @@ function InstructorManagement(): JSX.Element {
                   label="Telefon"
                 />
               </div>
-              
+
               {!seciliEgitmen && (
                 <div className="md:col-span-2">
                   <div className="mt-3">
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Şifre
                     </label>
                     <input
@@ -797,18 +797,18 @@ function InstructorManagement(): JSX.Element {
                       name="password"
                       value={formVeri.password}
                       onChange={handleInputChange}
-                      className="w-full p-2 border border-gray-300 rounded-md"
+                      className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
                       placeholder="Boş bırakırsanız otomatik şifre oluşturulur"
                     />
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       Şifre belirtilmezse, eğitmenin adına göre otomatik bir şifre oluşturulacaktır.
                     </p>
                   </div>
                 </div>
               )}
-              
+
               <div className="md:col-span-2">
-                <label htmlFor="biyografi" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="biyografi" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Biyografi
                 </label>
                 <textarea
@@ -817,12 +817,12 @@ function InstructorManagement(): JSX.Element {
                   rows={4}
                   value={formVeri.biyografi}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
                 ></textarea>
               </div>
-              
+
               <div className="md:col-span-2">
-                <label htmlFor="gorsel" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="gorsel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Eğitmen Fotoğrafı
                 </label>
                 <ImageUploader
@@ -835,12 +835,12 @@ function InstructorManagement(): JSX.Element {
                 />
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={() => setDuzenlemeModu(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+                className="px-4 py-2 bg-gray-300 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 transition-colors"
                 disabled={loading}
               >
                 İptal
@@ -863,53 +863,53 @@ function InstructorManagement(): JSX.Element {
               placeholder="Eğitmen adı veya uzmanlık ara..."
               value={aramaTerimi}
               onChange={(e) => setAramaTerimi(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
+              className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:border-brand-pink"
             />
           </div>
-          
+
           {loading && (
             <div className="flex justify-center my-4">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-pink"></div>
             </div>
           )}
-          
+
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-slate-900">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Eğitmen
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Uzmanlık
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Okul
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Tecrübe
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     İşlemler
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
                 {filtrelenmisEgitmenler.length > 0 ? (
                   filtrelenmisEgitmenler.map((egitmen) => (
-                    <motion.tr 
+                    <motion.tr
                       key={egitmen.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.3 }}
-                      className="hover:bg-gray-50"
+                      className="hover:bg-gray-50 dark:hover:bg-slate-800"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 relative bg-blue-100 rounded-full overflow-hidden">
                             {egitmen.gorsel ? (
-                              <img 
-                                className="h-10 w-10 rounded-full object-cover absolute inset-0" 
+                              <img
+                                className="h-10 w-10 rounded-full object-cover absolute inset-0"
                                 src={egitmen.gorsel}
                                 alt={egitmen.ad}
                                 onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -920,28 +920,28 @@ function InstructorManagement(): JSX.Element {
                                 }}
                               />
                             ) : (
-                              <img 
-                                className="h-10 w-10 rounded-full object-cover" 
+                              <img
+                                className="h-10 w-10 rounded-full object-cover"
                                 src={generateInitialsAvatar(egitmen.ad, 'instructor')}
                                 alt={egitmen.ad}
                               />
                             )}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{egitmen.ad}</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">{egitmen.ad}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-white">
                           {danceStyles.find(style => style.value === egitmen.uzmanlık)?.label || egitmen.uzmanlık}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{getOkulAdi(egitmen.okul_id)}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{getOkulAdi(egitmen.okul_id)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{egitmen.tecrube}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{egitmen.tecrube}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
@@ -961,7 +961,7 @@ function InstructorManagement(): JSX.Element {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                       {aramaTerimi ? 'Aramanıza uygun eğitmen bulunamadı.' : 'Henüz hiç eğitmen kaydı bulunmuyor.'}
                     </td>
                   </tr>

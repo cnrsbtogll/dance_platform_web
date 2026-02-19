@@ -1,0 +1,409 @@
+version: "2"
+type: frontend
+tech_stack:
+  - TypeScript
+  - React 18
+  - Vite
+  - React Router DOM 6
+  - Firebase (Auth + Firestore + Storage)
+  - TailwindCSS
+  - MUI (Material UI)
+  - Framer Motion
+  - react-hot-toast
+
+routes:
+  - path: /
+    file: src/pages/home/HomePage.tsx
+    auth_required: false
+    description: Ana sayfa - Dans platformu giriş sayfası, öne çıkan kurslar ve eğitmenler
+
+  - path: /signin
+    file: src/pages/auth/SignIn.tsx
+    auth_required: false
+    description: Kullanıcı giriş sayfası - Email/şifre ile Firebase Auth
+
+  - path: /signup
+    file: src/pages/auth/SignUp.tsx
+    auth_required: false
+    description: Kullanıcı kayıt sayfası
+
+  - path: /courses
+    file: src/pages/courses/CourseSearchPage.tsx
+    auth_required: false
+    description: Dans kurslarını arama ve filtreleme sayfası
+
+  - path: /courses/:id
+    file: src/pages/courses/CourseDetailPage.tsx
+    auth_required: false
+    description: Belirli bir kursun detay sayfası
+
+  - path: /instructors
+    file: src/pages/instructors/InstructorsListPage.tsx
+    auth_required: false
+    description: Tüm eğitmenlerin listelendiği sayfa
+
+  - path: /instructors/:id
+    file: src/pages/instructors/InstructorDetailPage.tsx
+    auth_required: false
+    description: Belirli bir eğitmenin profil detay sayfası
+
+  - path: /schools
+    file: src/pages/schools/SchoolsListPage.tsx
+    auth_required: false
+    description: Dans okullarının listelendiği sayfa
+
+  - path: /schools/:id
+    file: src/pages/schools/SchoolDetailPage.tsx
+    auth_required: false
+    description: Belirli bir dans okulunun detay sayfası
+
+  - path: /partners
+    file: src/pages/partners/PartnerSearchPage.tsx
+    auth_required: false
+    description: Dans partneri arama sayfası
+
+  - path: /festivals
+    file: src/pages/festivals/Festivals.tsx
+    auth_required: false
+    description: Dans festivalleri listesi
+
+  - path: /nights
+    file: src/pages/nights/Nights.tsx
+    auth_required: false
+    description: Dans geceleri listesi
+
+  - path: /progress
+    file: src/pages/progress/ProgressPage.tsx
+    auth_required: true
+    description: Kullanıcı gelişim takip sayfası (giriş gerektirir)
+
+  - path: /profile
+    file: src/pages/profile/ProfilePage.tsx
+    auth_required: true
+    description: Kullanıcı profil sayfası (giriş gerektirir)
+
+  - path: /admin
+    file: src/features/admin/pages/AdminPanel.tsx
+    auth_required: true
+    description: Admin paneli - sadece admin rolündeki kullanıcılar için
+
+  - path: /instructor
+    file: src/features/instructor/pages/InstructorPanel.tsx
+    auth_required: true
+    description: Eğitmen paneli - sadece instructor rolündeki kullanıcılar için
+
+  - path: /school-admin
+    file: src/features/school/pages/SchoolAdmin.tsx
+    auth_required: true
+    description: Okul yönetici paneli - sadece school rolündeki kullanıcılar için
+
+  - path: /become-instructor
+    file: src/features/instructor/pages/BecomeInstructor.tsx
+    auth_required: false
+    description: Eğitmen başvuru formu sayfası
+
+  - path: /become-school
+    file: src/features/school/pages/BecomeSchool.tsx
+    auth_required: false
+    description: Dans okulu başvuru formu sayfası
+
+features:
+  - name: User Authentication - Sign In
+    description: Firebase Auth ile email/şifre kullanarak kullanıcı girişi
+    files:
+      - src/pages/auth/SignIn.tsx
+      - src/common/hooks/useAuth.ts
+      - src/api/firebase/firebase.ts
+    entry_route: /signin
+    user_interactions:
+      - Navigate to /signin page
+      - Fill in email input field
+      - Fill in password input field
+      - Click the sign in / login button
+      - See error message on invalid credentials
+      - Redirect to home page on successful login
+    api_calls:
+      - method: POST
+        endpoint: Firebase Auth signInWithEmailAndPassword
+    auth_required: false
+
+  - name: User Authentication - Sign Up
+    description: Firebase Auth ile yeni kullanıcı kaydı
+    files:
+      - src/pages/auth/SignUp.tsx
+      - src/common/hooks/useAuth.ts
+    entry_route: /signup
+    user_interactions:
+      - Navigate to /signup page
+      - Fill in name, email, and password fields
+      - Click the sign up / register button
+      - See validation error messages
+      - Redirect to home on successful registration
+    api_calls:
+      - method: POST
+        endpoint: Firebase Auth createUserWithEmailAndPassword
+    auth_required: false
+
+  - name: Home Page
+    description: Ana sayfa - öne çıkan kurslar, eğitmenler ve platform bilgisi
+    files:
+      - src/pages/home/HomePage.tsx
+    entry_route: /
+    user_interactions:
+      - View featured dance courses
+      - View featured instructors
+      - Click on navigation links (courses, instructors, schools)
+      - Click sign in / sign up buttons when not authenticated
+    api_calls:
+      - method: GET
+        endpoint: Firestore - lessons collection
+      - method: GET
+        endpoint: Firestore - instructors collection
+    auth_required: false
+
+  - name: Course Search
+    description: Dans kurslarını arama, filtreleme ve listeleme
+    files:
+      - src/pages/courses/CourseSearchPage.tsx
+    entry_route: /courses
+    user_interactions:
+      - View list of available dance courses
+      - Search courses by keyword
+      - Filter courses by dance style, level, price range
+      - Click on a course to see its details
+    api_calls:
+      - method: GET
+        endpoint: Firestore - lessons collection
+    auth_required: false
+
+  - name: Course Detail
+    description: Belirli bir dans kursunun detail görüntüleme ve kayıt
+    files:
+      - src/pages/courses/CourseDetailPage.tsx
+    entry_route: /courses/:id
+    user_interactions:
+      - View course details (name, description, price, schedule)
+      - View instructor information
+      - Click enroll / register button
+      - See login prompt if not authenticated when trying to enroll
+    api_calls:
+      - method: GET
+        endpoint: Firestore - lessons/:id document
+    auth_required: false
+
+  - name: Instructors List
+    description: Tüm eğitmenlerin listelenmesi ve filtrelenmesi
+    files:
+      - src/pages/instructors/InstructorsListPage.tsx
+    entry_route: /instructors
+    user_interactions:
+      - View list of dance instructors
+      - Filter instructors by dance style or location
+      - Click on an instructor to view their profile
+    api_calls:
+      - method: GET
+        endpoint: Firestore - instructors collection
+    auth_required: false
+
+  - name: Instructor Detail
+    description: Eğitmen profili ve derslerinin görüntülenmesi
+    files:
+      - src/pages/instructors/InstructorDetailPage.tsx
+    entry_route: /instructors/:id
+    user_interactions:
+      - View instructor bio, experience, and dance styles
+      - View instructor's available lessons
+      - Send message to instructor (if authenticated)
+      - View instructor ratings and reviews
+    api_calls:
+      - method: GET
+        endpoint: Firestore - instructors/:id document
+      - method: GET
+        endpoint: Firestore - lessons (filtered by instructor)
+    auth_required: false
+
+  - name: Schools List
+    description: Dans okullarının listelenmesi
+    files:
+      - src/pages/schools/SchoolsListPage.tsx
+    entry_route: /schools
+    user_interactions:
+      - View list of dance schools
+      - Filter schools by location or dance style
+      - Click on a school to view details
+    api_calls:
+      - method: GET
+        endpoint: Firestore - schools collection
+    auth_required: false
+
+  - name: Partner Search
+    description: Dans partneri arama ve eşleşme
+    files:
+      - src/pages/partners/PartnerSearchPage.tsx
+    entry_route: /partners
+    user_interactions:
+      - View available dance partners
+      - Filter partners by dance style, level, location
+      - Request to dance with a partner
+    api_calls:
+      - method: GET
+        endpoint: Firestore - users collection (partner search)
+    auth_required: false
+
+  - name: Become Instructor
+    description: Eğitmen başvuru formu
+    files:
+      - src/features/instructor/pages/BecomeInstructor.tsx
+    entry_route: /become-instructor
+    user_interactions:
+      - Fill in personal information form
+      - Select dance styles
+      - Upload profile photo and certificates
+      - Submit the application form
+    api_calls:
+      - method: POST
+        endpoint: Firestore - instructorRequests collection
+    auth_required: false
+
+  - name: Become School
+    description: Dans okulu başvuru formu
+    files:
+      - src/features/school/pages/BecomeSchool.tsx
+    entry_route: /become-school
+    user_interactions:
+      - Fill in school information (name, address, description)
+      - Upload school photos
+      - Select offered dance styles
+      - Submit school registration application
+    api_calls:
+      - method: POST
+        endpoint: Firestore - schoolRequests collection
+    auth_required: false
+
+  - name: User Profile
+    description: Kullanıcı profili görüntüleme ve düzenleme
+    files:
+      - src/pages/profile/ProfilePage.tsx
+    entry_route: /profile
+    user_interactions:
+      - View own profile information
+      - Edit profile details (name, bio, dance styles)
+      - Upload/change profile photo
+      - Save profile changes
+    api_calls:
+      - method: GET
+        endpoint: Firestore - users/:id document
+      - method: PUT
+        endpoint: Firestore - users/:id document
+      - method: POST
+        endpoint: Firebase Storage - profile photos
+    auth_required: true
+
+  - name: Festivals
+    description: Dans festivallerinin listelenmesi
+    files:
+      - src/pages/festivals/Festivals.tsx
+    entry_route: /festivals
+    user_interactions:
+      - View list of upcoming dance festivals
+      - View festival details (date, location, dance styles)
+    api_calls:
+      - method: GET
+        endpoint: Firestore - festivals collection
+    auth_required: false
+
+  - name: Nights
+    description: Dans gecelerinin listelenmesi
+    files:
+      - src/pages/nights/Nights.tsx
+    entry_route: /nights
+    user_interactions:
+      - View list of upcoming dance nights / social events
+      - View event details (date, venue, music style)
+    api_calls:
+      - method: GET
+        endpoint: Firestore - nights collection
+    auth_required: false
+
+  - name: Chat / Messaging
+    description: Kullanıcılar arası mesajlaşma sistemi
+    files:
+      - src/features/chat/components/ChatDialog.tsx
+      - src/features/chat/components/ChatList.tsx
+    entry_route: /
+    user_interactions:
+      - Click floating chat button (bottom-right)
+      - View list of conversations in the chat panel
+      - Open a specific conversation
+      - Send a text message
+      - View unread message count badge
+    api_calls:
+      - method: GET
+        endpoint: Firestore - messages collection (real-time)
+      - method: POST
+        endpoint: Firestore - messages collection
+    auth_required: true
+
+  - name: Instructor Panel
+    description: Eğitmen yönetim paneli - ders oluşturma, öğrenci yönetimi
+    files:
+      - src/features/instructor/pages/InstructorPanel.tsx
+    entry_route: /instructor
+    user_interactions:
+      - View instructor dashboard with earnings summary
+      - View list of active lessons
+      - Create a new lesson
+      - Edit or deactivate existing lessons
+      - View student enrollments
+    api_calls:
+      - method: GET
+        endpoint: Firestore - lessons (filtered by instructor)
+      - method: POST
+        endpoint: Firestore - lessons collection
+      - method: PUT
+        endpoint: Firestore - lessons/:id document
+    auth_required: true
+
+  - name: Admin Panel
+    description: Platform yönetici paneli
+    files:
+      - src/features/admin/pages/AdminPanel.tsx
+    entry_route: /admin
+    user_interactions:
+      - View platform statistics (users, lessons, schools)
+      - Manage instructor requests (approve/reject)
+      - Manage school requests (approve/reject)
+      - View and manage all users
+    api_calls:
+      - method: GET
+        endpoint: Firestore - instructorRequests collection
+      - method: GET
+        endpoint: Firestore - schoolRequests collection
+      - method: PUT
+        endpoint: Firestore - instructorRequests/:id document
+    auth_required: true
+
+  - name: Navigation
+    description: Üst navigasyon bar ile sayfa gezinme
+    files:
+      - src/common/components/layout/Navbar.tsx
+    entry_route: /
+    user_interactions:
+      - Click on logo to go to home page
+      - Click on navigation links (Kurslar, Eğitmenler, Okullar, etc.)
+      - Click Sign In button when not authenticated
+      - Click on user avatar to access profile when authenticated
+      - Toggle dark/light theme
+    api_calls: []
+    auth_required: false
+
+known_limitations:
+  - issue: Admin CRUD operations depend on Firebase Firestore - some may not work without proper auth roles
+    location: src/features/admin/pages/AdminPanel.tsx
+    impact: Only admin-role users can access the panel
+  - issue: Chat feature requires Firestore real-time listeners which need proper security rules
+    location: src/features/chat/components/ChatList.tsx
+    impact: Messages may not load if security rules are not configured
+  - issue: Instructor Panel is restricted to instructor-role users only
+    location: src/features/instructor/pages/InstructorPanel.tsx
+    impact: Regular users get redirected to sign-in when trying to access /instructor

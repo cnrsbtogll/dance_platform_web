@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ButtonVariant = 'primary' | 'secondary';
+type ButtonVariant = 'primary' | 'secondary' | 'instructor' | 'school';
 
 export interface ButtonProps {
   children: React.ReactNode;
@@ -12,11 +12,11 @@ export interface ButtonProps {
   loading?: boolean;
 }
 
-function Button({ 
-  children, 
-  onClick, 
-  type = 'button', 
-  variant = 'primary', 
+function Button({
+  children,
+  onClick,
+  type = 'button',
+  variant = 'primary',
   fullWidth = false,
   disabled = false,
   loading = false
@@ -24,7 +24,9 @@ function Button({
   const baseClasses = 'px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2';
   const variantClasses = {
     primary: 'bg-brand-pink text-white hover:bg-rose-700 focus:ring-brand-pink',
-    secondary: 'bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-500'
+    secondary: 'bg-gray-200 text-gray-700 dark:text-gray-300 hover:bg-gray-300 focus:ring-gray-500',
+    instructor: 'bg-instructor text-white hover:bg-instructor-dark focus:ring-instructor',
+    school: 'bg-school text-white hover:bg-school-dark focus:ring-school',
   };
   const widthClass = fullWidth ? 'w-full' : '';
   const disabledClass = (disabled || loading) ? 'opacity-50 cursor-not-allowed' : '';

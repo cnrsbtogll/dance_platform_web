@@ -14,9 +14,9 @@ const SchoolCard: React.FC<SchoolCardProps> = ({ school, className = '' }) => {
   return (
     <Link
       to={`/schools/${school.id}`}
-      className={`bg-white rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 overflow-hidden ${className}`}
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 overflow-hidden ${className}`}
     >
-      <div className="relative w-full h-48 bg-gray-100 overflow-hidden rounded-t-lg">
+      <div className="relative w-full h-48 bg-gray-100 dark:bg-gray-700 overflow-hidden rounded-t-lg">
         {school.photoURL ? (
           <img
             src={school.photoURL}
@@ -35,9 +35,9 @@ const SchoolCard: React.FC<SchoolCardProps> = ({ school, className = '' }) => {
       </div>
       <div className="p-6">
         <div className="flex flex-col gap-2">
-          <h3 className="text-lg font-semibold truncate">{school.displayName}</h3>
-          <p className="text-sm text-gray-600 line-clamp-2">{school.description}</p>
-          <div className="flex items-center gap-4 text-sm text-gray-600">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">{school.displayName}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{school.description}</p>
+          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex items-center gap-1">
               <FaStar className="text-yellow-400" />
               <span>{school.rating?.toFixed(1) || '0.0'}</span>
@@ -51,13 +51,13 @@ const SchoolCard: React.FC<SchoolCardProps> = ({ school, className = '' }) => {
             {school.danceStyles?.slice(0, 3).map((style, index) => (
               <span
                 key={index}
-                className="px-2 py-1 text-xs bg-gray-100 rounded-full text-gray-600"
+                className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300"
               >
                 {style}
               </span>
             ))}
             {school.danceStyles && school.danceStyles.length > 3 && (
-              <span className="px-2 py-1 text-xs bg-gray-100 rounded-full text-gray-600">
+              <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300">
                 +{school.danceStyles.length - 3} daha
               </span>
             )}

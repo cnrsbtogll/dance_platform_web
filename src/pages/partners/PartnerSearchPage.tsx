@@ -1006,7 +1006,7 @@ function PartnerSearchPage(): JSX.Element {
 
           {/* Modal panel */}
           <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-          <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+          <div className="inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
             <div>
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
                 <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1014,11 +1014,11 @@ function PartnerSearchPage(): JSX.Element {
                 </svg>
               </div>
               <div className="mt-3 text-center sm:mt-5">
-                <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
                   Üyelik Gerekli
                 </h3>
                 <div className="mt-2">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     İletişime geçmek için lütfen üye olun veya giriş yapın. Dans partnerlerinizle iletişime geçmek ve diğer özellikleri kullanabilmek için üyelik gereklidir.
                   </p>
                 </div>
@@ -1027,7 +1027,7 @@ function PartnerSearchPage(): JSX.Element {
             <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
               <button
                 type="button"
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-brand-pink to-rose-600 text-base font-medium text-white hover:from-rose-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink sm:col-start-2 sm:text-sm"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-brand-pink to-rose-600 text-base font-medium text-white hover:from-rose-700 hover:to-rose-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink sm:col-start-2 sm:text-sm"
                 onClick={() => {
                   setShowLoginPrompt(false);
                   navigate('/signup');
@@ -1037,7 +1037,7 @@ function PartnerSearchPage(): JSX.Element {
               </button>
               <button
                 type="button"
-                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink sm:mt-0 sm:col-start-1 sm:text-sm"
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink sm:mt-0 sm:col-start-1 sm:text-sm"
                 onClick={() => {
                   setShowLoginPrompt(false);
                   navigate('/signin');
@@ -1071,14 +1071,14 @@ function PartnerSearchPage(): JSX.Element {
     });
 
     return (
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col h-full">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col h-full">
         {/* Profil fotoğrafı ve üst kısım */}
         <div className="relative h-64 overflow-hidden">
           {/* Profil fotoğrafı */}
           <img
             src={partner.foto || generateInitialsAvatar(partner.ad, userType)}
             alt={partner.ad}
-            className={`h-full w-full ${partner.foto ? 'object-cover' : 'object-cover bg-gray-50'}`}
+            className={`h-full w-full ${partner.foto ? 'object-cover' : 'object-cover bg-gray-50 dark:bg-gray-700'}`}
             style={{ objectPosition: 'center center' }}
             onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
               const target = e.currentTarget;
@@ -1090,7 +1090,7 @@ function PartnerSearchPage(): JSX.Element {
                 generatedAvatar: generateInitialsAvatar(partner.ad, userType)
               });
               target.src = generateInitialsAvatar(partner.ad, userType);
-              target.className = 'h-full w-full object-cover bg-gray-50';
+              target.className = 'h-full w-full object-cover bg-gray-50 dark:bg-gray-700';
             }}
           />
 
@@ -1160,22 +1160,22 @@ function PartnerSearchPage(): JSX.Element {
           {/* Fiziksel özellikler */}
           {(partner.boy || partner.kilo) && (
             <div className="mb-4">
-              <h3 className="font-medium text-gray-700 mb-2">Fiziksel Özellikler</h3>
+              <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-2">Fiziksel Özellikler</h3>
               <div className="flex flex-wrap gap-4">
                 {partner.boy && (
                   <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
                     </svg>
-                    <span className="text-sm">{partner.boy} cm</span>
+                    <span className="text-sm dark:text-gray-300">{partner.boy} cm</span>
                   </div>
                 )}
                 {partner.kilo && (
                   <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                     </svg>
-                    <span className="text-sm">{partner.kilo} kg</span>
+                    <span className="text-sm dark:text-gray-300">{partner.kilo} kg</span>
                   </div>
                 )}
               </div>
@@ -1183,44 +1183,44 @@ function PartnerSearchPage(): JSX.Element {
           )}
 
           <div className="mb-4">
-            <h3 className="font-medium text-gray-700 mb-2">Dans Stilleri</h3>
+            <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-2">Dans Stilleri</h3>
             <div className="flex flex-wrap gap-1">
               {partner.dans.length > 0 ? (
                 partner.dans.map((dansTuru, index) => (
                   <span
                     key={index}
-                    className="bg-rose-100 text-brand-pink text-xs px-2 py-1 rounded-full"
+                    className="bg-rose-100 dark:bg-rose-900/30 text-brand-pink dark:text-rose-300 text-xs px-2 py-1 rounded-full"
                   >
                     {dansTuru}
                   </span>
                 ))
               ) : (
-                <span className="text-gray-400 text-sm">Belirtilmemiş</span>
+                <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm">Belirtilmemiş</span>
               )}
             </div>
           </div>
 
           <div className="mb-4">
-            <h3 className="font-medium text-gray-700 mb-2">Uygun Zamanlar</h3>
+            <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-2">Uygun Zamanlar</h3>
             <div className="flex flex-wrap gap-1">
               {partner.saatler.length > 0 ? (
                 partner.saatler.map((saat, index) => (
                   <span
                     key={index}
-                    className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                    className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs px-2 py-1 rounded-full"
                   >
                     {saat}
                   </span>
                 ))
               ) : (
-                <span className="text-gray-400 text-sm">Belirtilmemiş</span>
+                <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm">Belirtilmemiş</span>
               )}
             </div>
           </div>
 
           <div className="mt-auto">
             <button
-              className="w-full py-3 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-lg hover:from-rose-700 hover:to-purple-700 transition-colors duration-300 flex items-center justify-center font-medium shadow-md"
+              className="w-full py-3 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-lg hover:from-rose-700 hover:to-rose-800 transition-colors duration-300 flex items-center justify-center font-medium shadow-md"
               onClick={() => handleContact(partner)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1266,7 +1266,7 @@ function PartnerSearchPage(): JSX.Element {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 py-8">
       <div className="container mx-auto px-4">
         {/* Login Required Modal */}
         <LoginRequiredModal
@@ -1289,7 +1289,7 @@ function PartnerSearchPage(): JSX.Element {
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight inline-block">
               Dans Partneri Bul
             </h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Stilinize ve seviyenize uygun dans partnerleri bulun. Beraber dans etmek, teknik geliştirmek veya dans etkinliklerine katılmak için harika bir yol!
             </p>
           </motion.div>
@@ -1298,7 +1298,7 @@ function PartnerSearchPage(): JSX.Element {
           <div className="lg:hidden mb-4">
             <button
               onClick={() => setIsFilterVisible(!isFilterVisible)}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 font-medium"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm text-gray-700 dark:text-gray-200 font-medium"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -1310,9 +1310,9 @@ function PartnerSearchPage(): JSX.Element {
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filter panel - Responsive */}
             <div className={`lg:w-1/4 ${isFilterVisible || window.innerWidth >= 1024 ? 'block' : 'hidden'}`}>
-              <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-4">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sticky top-4">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-800">Partner Filtrele</h2>
+                  <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Partner Filtrele</h2>
                   <button
                     onClick={resetFilters}
                     className="text-brand-pink hover:text-rose-800 text-sm font-medium flex items-center"
@@ -1326,9 +1326,9 @@ function PartnerSearchPage(): JSX.Element {
 
                 <form onSubmit={partnerAra} className="space-y-5">
                   {loadingStyles ? (
-                    <div className="bg-gray-50 p-3 rounded-xl flex items-center justify-center">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl flex items-center justify-center">
                       <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-pink mr-2"></div>
-                      <span className="text-gray-600 text-sm">Dans stilleri yükleniyor...</span>
+                      <span className="text-gray-600 dark:text-gray-300 text-sm">Dans stilleri yükleniyor...</span>
                     </div>
                   ) : (
                     <CustomSelect
@@ -1360,7 +1360,7 @@ function PartnerSearchPage(): JSX.Element {
                   />
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Konum
                     </label>
                     <div className="relative">
@@ -1374,13 +1374,13 @@ function PartnerSearchPage(): JSX.Element {
                         value={konum}
                         onChange={handleKonumChange}
                         placeholder="Şehir, semt..."
-                        className="w-full pl-10 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-pink focus:border-brand-pink"
+                        className="w-full pl-10 p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-pink focus:border-brand-pink dark:focus:ring-brand-pink dark:placeholder-gray-400"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Uygun Saatler
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -1391,7 +1391,7 @@ function PartnerSearchPage(): JSX.Element {
                           onClick={() => handleSaatChange(saat)}
                           className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${uygunSaatler.includes(saat)
                             ? 'bg-brand-pink text-white shadow-md'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                         >
                           {saat}
@@ -1402,7 +1402,7 @@ function PartnerSearchPage(): JSX.Element {
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-lg hover:from-rose-700 hover:to-purple-700 shadow-md flex items-center justify-center font-medium transition-all duration-300"
+                    className="w-full py-3 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-lg hover:from-rose-700 hover:to-rose-800 shadow-md flex items-center justify-center font-medium transition-all duration-300"
                     disabled={loading}
                   >
                     {loading ? (
@@ -1431,19 +1431,19 @@ function PartnerSearchPage(): JSX.Element {
               {initialLoading ? (
                 <div className="flex justify-center items-center min-h-[300px]">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-                  <span className="ml-3 text-lg text-gray-600">Partnerler yükleniyor...</span>
+                  <span className="ml-3 text-lg text-gray-600 dark:text-gray-400">Partnerler yükleniyor...</span>
                 </div>
               ) : (
                 <>
                   {aramaTamamlandi && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
                       <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold text-gray-800">
+                        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
                           {partnerler.length > 0
                             ? `${partnerler.length} Dans Partneri Bulundu`
                             : "Uygun dans partneri bulunamadı"}
                         </h2>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
@@ -1489,19 +1489,19 @@ function PartnerSearchPage(): JSX.Element {
 
                   {/* Empty state */}
                   {aramaTamamlandi && partnerler.length === 0 && (
-                    <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-                      <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center">
+                      <div className="w-24 h-24 mx-auto bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-6">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">Partner bulunamadı</h3>
-                      <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Partner bulunamadı</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
                         Seçtiğiniz kriterlere uygun dans partneri şu anda mevcut değil. Filtreleri değiştirerek tekrar deneyebilirsiniz.
                       </p>
                       <button
                         onClick={resetFilters}
-                        className="px-4 py-2 bg-rose-100 text-rose-700 rounded-lg font-medium hover:bg-rose-200 transition-colors"
+                        className="px-4 py-2 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 rounded-lg font-medium hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors"
                       >
                         Tüm Partnerleri Göster
                       </button>

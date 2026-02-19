@@ -18,20 +18,20 @@ const Festivals = () => {
   }, [location]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent leading-tight py-2 inline-block">
             Dans Festivalleri
           </h1>
-          <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+          <p className="mt-3 max-w-md mx-auto text-base text-gray-500 dark:text-gray-400 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
             Türkiye'nin en kapsamlı dans festivalleri platformu!
             Tüm dans festivallerini tek bir platformda keşfedin.
           </p>
           <div className="mt-8 flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 justify-center">
             <button
               onClick={() => setShowTicketForm(false)}
-              className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md ${!showTicketForm ? 'text-white bg-brand-pink hover:bg-rose-700' : 'text-brand-pink bg-white hover:bg-gray-50'
+              className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md ${!showTicketForm ? 'text-white bg-brand-pink hover:bg-rose-700' : 'text-brand-pink bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-slate-800 dark:hover:bg-gray-700'
                 }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -41,7 +41,7 @@ const Festivals = () => {
             </button>
             <button
               onClick={() => setShowTicketForm(true)}
-              className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md ${showTicketForm ? 'text-white bg-brand-pink hover:bg-rose-700' : 'text-brand-pink bg-white hover:bg-gray-50'
+              className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md ${showTicketForm ? 'text-white bg-brand-pink hover:bg-rose-700' : 'text-brand-pink bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-slate-800 dark:hover:bg-gray-700'
                 }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

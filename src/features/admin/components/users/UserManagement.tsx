@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  deleteDoc, 
-  getDoc, 
-  updateDoc, 
-  setDoc, 
-  query, 
-  orderBy, 
+import {
+  collection,
+  getDocs,
+  doc,
+  deleteDoc,
+  getDoc,
+  updateDoc,
+  setDoc,
+  query,
+  orderBy,
   serverTimestamp,
   where,
   Timestamp,
   writeBatch
 } from 'firebase/firestore';
-import { 
-  createUserWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
   updateProfile,
   sendEmailVerification,
   deleteUser,
@@ -24,11 +24,11 @@ import {
 } from 'firebase/auth';
 import { db, auth } from '../../../../api/firebase/firebase';
 import { motion } from 'framer-motion';
-import { 
-  User, 
-  UserRole, 
-  DanceLevel, 
-  DanceStyle, 
+import {
+  User,
+  UserRole,
+  DanceLevel,
+  DanceStyle,
   FirebaseUser,
   StudentFormData,
   InstructorFormData,
@@ -186,20 +186,20 @@ export const UserManagement: React.FC = () => {
         console.log('No current user found');
         return;
       }
-      
+
       try {
         const userRef = doc(db, 'users', auth.currentUser.uid);
         const userSnap = await getDoc(userRef);
-        
+
         if (userSnap.exists()) {
           const userData = userSnap.data();
           console.log('Current user data:', userData);
           let roles = userData.role || [];
-          
+
           if (!Array.isArray(roles)) {
             roles = [roles];
           }
-          
+
           const isAdmin = roles.includes('admin');
           console.log('Setting admin status to:', isAdmin);
           setIsSuperAdmin(isAdmin);
@@ -208,7 +208,7 @@ export const UserManagement: React.FC = () => {
         console.error('Süper admin kontrolü yapılırken hata oluştu:', err);
       }
     };
-    
+
     checkIfSuperAdmin();
   }, []);
 
@@ -224,15 +224,15 @@ export const UserManagement: React.FC = () => {
     console.log('Fetching all users...');
     console.log('Current user:', currentUser?.uid);
     console.log('Is super admin:', isSuperAdmin);
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       // Get all users from Firestore
       const usersRef = collection(db, 'users');
       let q;
-      
+
       if (isSuperAdmin) {
         // Admin sees all users except other admins
         console.log('Fetching as admin - all users');
@@ -245,38 +245,38 @@ export const UserManagement: React.FC = () => {
         // Instructors only see their students
         console.log('Fetching as instructor - only assigned students');
         q = query(
-          usersRef, 
+          usersRef,
           where('instructorId', '==', currentUser?.uid),
           orderBy('createdAt', 'desc')
         );
       }
-      
+
       const querySnapshot = await getDocs(q);
       console.log('Query snapshot size:', querySnapshot.size);
-      
+
       const usersData: FirebaseUser[] = [];
       const instructorsData: Instructor[] = [];
       const schoolsData: School[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         const rawData = doc.data();
-        const data = { 
-          ...rawData, 
+        const data = {
+          ...rawData,
           id: doc.id,
           role: normalizeRole(rawData.role)
         } as FirebaseUser;
-        
+
         console.log('Processing user:', data.email, 'with role:', data.role);
-        
+
         // For admin, filter out admin users in memory
         if (isSuperAdmin && data.role === 'admin') {
           console.log('Skipping admin user:', data.email);
           return;
         }
-        
+
         // Add to users list
         usersData.push(data);
-        
+
         // Add to specific role lists
         if (data.role === 'instructor') {
           instructorsData.push({
@@ -285,7 +285,7 @@ export const UserManagement: React.FC = () => {
             email: data.email || ''
           });
         }
-        
+
         if (data.role === 'school') {
           schoolsData.push({
             id: doc.id,
@@ -294,17 +294,17 @@ export const UserManagement: React.FC = () => {
           });
         }
       });
-      
+
       console.log('Setting state with:', {
         users: usersData.length,
         instructors: instructorsData.length,
         schools: schoolsData.length
       });
-      
+
       setStudents(usersData);
       setInstructors(instructorsData);
       setSchools(schoolsData);
-      
+
       // Show index creation message if admin
       if (isSuperAdmin) {
         console.log('For better performance, please create the following index:');
@@ -312,7 +312,7 @@ export const UserManagement: React.FC = () => {
         console.log('Fields: role (Ascending), createdAt (Descending)');
         console.log('You can create it here: https://console.firebase.google.com/project/danceplatform-7924a/firestore/indexes');
       }
-      
+
     } catch (err) {
       console.error('Kullanıcılar yüklenirken hata oluştu:', err);
       if (err instanceof Error && err.message.includes('requires an index')) {
@@ -331,12 +331,12 @@ export const UserManagement: React.FC = () => {
   // Filter students based on search term
   const filteredStudents = useMemo(() => {
     if (!students.length) return [];
-    
+
     if (!searchTerm) return students;
-    
+
     const term = searchTerm.toLowerCase();
-    return students.filter(student => 
-      student.displayName.toLowerCase().includes(term) || 
+    return students.filter(student =>
+      student.displayName.toLowerCase().includes(term) ||
       student.email.toLowerCase().includes(term)
     );
   }, [searchTerm, students]);
@@ -417,11 +417,11 @@ export const UserManagement: React.FC = () => {
   // Edit student
   const editStudent = (student: FirebaseUser): void => {
     setSelectedStudent(student);
-    
+
     // Artık role her zaman string
     const userType = student.role;
     setSelectedUserType(userType as 'student' | 'instructor' | 'school');
-    
+
     const baseFormData = {
       id: student.id,
       displayName: student.displayName,
@@ -512,7 +512,7 @@ export const UserManagement: React.FC = () => {
   const sendInvitationEmail = async (email: string, invitationData: InvitationData) => {
     try {
       const invitationId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Create the data to be stored in Firestore
       const invitationDataWithEmail = {
         ...invitationData,
@@ -598,7 +598,7 @@ export const UserManagement: React.FC = () => {
   // Update the handleSubmit function
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    
+
     if (Object.keys(formErrors).length > 0) {
       setError('Lütfen form hatalarını düzeltin.');
       return;
@@ -608,15 +608,15 @@ export const UserManagement: React.FC = () => {
       setError('Kullanıcı rolü seçilmemiş.');
       return;
     }
-    
+
     setLoading(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       if (selectedStudent) {
         const batch = writeBatch(db);
-        
+
         // Common fields to update
         const commonFields = {
           displayName: formData.displayName,
@@ -648,7 +648,7 @@ export const UserManagement: React.FC = () => {
           }
           case 'instructor': {
             const instructorData = formData as InstructorFormData;
-            
+
             // First update the user document
             const userUpdateData = {
               ...commonFields,
@@ -660,15 +660,15 @@ export const UserManagement: React.FC = () => {
               schoolName: schools.find(s => s.id === instructorData.schoolId)?.displayName || null,
               availability: instructorData.availability || { days: [], hours: [] }
             };
-            
+
             batch.update(userRef, userUpdateData);
-            
+
             try {
               // Query for instructor document using userId
               const instructorsRef = collection(db, 'instructors');
               const q = query(instructorsRef, where('userId', '==', selectedStudent.id));
               const querySnapshot = await getDocs(q);
-              
+
               if (querySnapshot.empty) {
                 // If no instructor document exists, create one
                 const newInstructorRef = doc(collection(db, 'instructors'));
@@ -686,7 +686,7 @@ export const UserManagement: React.FC = () => {
               console.error('Eğitmen belgesi güncellenirken hata:', err);
               throw new Error('Eğitmen bilgileri güncellenirken hata oluştu. Lütfen tekrar deneyin.');
             }
-            
+
             break;
           }
           case 'school': {
@@ -715,32 +715,32 @@ export const UserManagement: React.FC = () => {
           prevStudents.map(student =>
             student.id === selectedStudent.id
               ? {
-                  ...student,
-                  ...commonFields,
-                  ...(formData.role === 'student' && {
-                    level: (formData as StudentFormData).level,
-                    danceStyles: (formData as StudentFormData).danceStyles,
-                    instructorId: (formData as StudentFormData).instructorId,
-                    schoolId: (formData as StudentFormData).schoolId
-                  }),
-                  ...(formData.role === 'instructor' && {
-                    level: (formData as InstructorFormData).level,
-                    specialties: (formData as InstructorFormData).specialties,
-                    experience: (formData as InstructorFormData).experience,
-                    bio: (formData as InstructorFormData).bio,
-                    availability: (formData as InstructorFormData).availability,
-                    schoolId: (formData as InstructorFormData).schoolId
-                  }),
-                  ...(formData.role === 'school' && {
-                    address: (formData as SchoolFormData).address,
-                    city: (formData as SchoolFormData).city,
-                    district: (formData as SchoolFormData).district,
-                    description: (formData as SchoolFormData).description,
-                    facilities: (formData as SchoolFormData).facilities,
-                    contactPerson: (formData as SchoolFormData).contactPerson,
-                    website: (formData as SchoolFormData).website
-                  })
-                } as FirebaseUser
+                ...student,
+                ...commonFields,
+                ...(formData.role === 'student' && {
+                  level: (formData as StudentFormData).level,
+                  danceStyles: (formData as StudentFormData).danceStyles,
+                  instructorId: (formData as StudentFormData).instructorId,
+                  schoolId: (formData as StudentFormData).schoolId
+                }),
+                ...(formData.role === 'instructor' && {
+                  level: (formData as InstructorFormData).level,
+                  specialties: (formData as InstructorFormData).specialties,
+                  experience: (formData as InstructorFormData).experience,
+                  bio: (formData as InstructorFormData).bio,
+                  availability: (formData as InstructorFormData).availability,
+                  schoolId: (formData as InstructorFormData).schoolId
+                }),
+                ...(formData.role === 'school' && {
+                  address: (formData as SchoolFormData).address,
+                  city: (formData as SchoolFormData).city,
+                  district: (formData as SchoolFormData).district,
+                  description: (formData as SchoolFormData).description,
+                  facilities: (formData as SchoolFormData).facilities,
+                  contactPerson: (formData as SchoolFormData).contactPerson,
+                  website: (formData as SchoolFormData).website
+                })
+              } as FirebaseUser
               : student
           )
         );
@@ -755,14 +755,14 @@ export const UserManagement: React.FC = () => {
         if (!formData.email || !formData.displayName) {
           throw new Error('E-posta ve ad soyad alanları zorunludur.');
         }
-        
+
         // Check if email is already in use
         const emailQuery = query(
-          collection(db, 'users'), 
+          collection(db, 'users'),
           where('email', '==', formData.email)
         );
         const emailCheckSnapshot = await getDocs(emailQuery);
-        
+
         if (!emailCheckSnapshot.empty) {
           throw new Error('Bu e-posta adresi zaten kullanılıyor.');
         }
@@ -802,12 +802,12 @@ export const UserManagement: React.FC = () => {
           }]);
 
           setStudents(prev => [...prev, newSchool]);
-          
+
           setSuccess('Dans okulu başarıyla eklendi.');
         } else {
           const invitationData = createInvitationData(formData);
           await sendInvitationEmail(formData.email, invitationData);
-          
+
           // Create new user object based on form data type
           const newUser: FirebaseUser = {
             id: `pending_${Date.now()}`,
@@ -840,14 +840,14 @@ export const UserManagement: React.FC = () => {
           setSuccess('Davet e-postası başarıyla gönderildi.');
         }
       }
-      
+
       setEditMode(false);
       setSelectedStudent(null);
       setSelectedUserType(null);
-      
+
       // Formu sıfırla
       resetForm();
-      
+
     } catch (err) {
       console.error('İşlem sırasında hata oluştu:', err);
       setError('İşlem sırasında bir hata oluştu: ' + (err instanceof Error ? err.message : 'Bilinmeyen hata'));
@@ -861,19 +861,19 @@ export const UserManagement: React.FC = () => {
     if (!window.confirm('Bu öğrenciyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       // Delete from Firestore
       await deleteDoc(doc(db, 'users', studentId));
-      
+
       // Remove from state
       const updatedStudents = students.filter(student => student.id !== studentId);
       setStudents(updatedStudents);
       setSuccess('Öğrenci başarıyla silindi.');
-      
+
       // Note: Deleting the auth user would require admin SDK or reauthentication,
       // so we're only deleting the Firestore document here.
     } catch (err) {
@@ -896,7 +896,7 @@ export const UserManagement: React.FC = () => {
       case 'student':
         return 'bg-green-100 text-green-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200';
     }
   };
 
@@ -935,19 +935,19 @@ export const UserManagement: React.FC = () => {
   // Render student row
   const renderStudent = (student: FirebaseUser) => {
     return (
-      <motion.tr 
+      <motion.tr
         key={student.id}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="hover:bg-gray-50"
+        className="hover:bg-gray-50 dark:hover:bg-slate-800"
       >
         <td className="px-6 py-4 whitespace-nowrap">
           <div className="flex items-center">
             <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
               {student.photoURL ? (
-                <img 
-                  className="h-10 w-10 rounded-full object-cover absolute inset-0" 
+                <img
+                  className="h-10 w-10 rounded-full object-cover absolute inset-0"
                   src={student.photoURL}
                   alt={student.displayName}
                   onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -958,29 +958,29 @@ export const UserManagement: React.FC = () => {
                   }}
                 />
               ) : (
-                <img 
-                  className="h-10 w-10 rounded-full object-cover" 
+                <img
+                  className="h-10 w-10 rounded-full object-cover"
                   src={generateInitialsAvatar(student.displayName, getAvatarType(student.role))}
                   alt={student.displayName}
                 />
               )}
             </div>
             <div className="ml-4">
-              <div className="text-sm font-medium text-gray-900">{student.displayName}</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">{student.displayName}</div>
               {student.phoneNumber && (
-                <div className="text-sm text-gray-500">{student.phoneNumber}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{student.phoneNumber}</div>
               )}
             </div>
           </div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">{student.email}</div>
+          <div className="text-sm text-gray-900 dark:text-white">{student.email}</div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
           {renderRoleBadges(student.role)}
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">
+          <div className="text-sm text-gray-900 dark:text-white">
             {student.level === 'beginner' && 'Başlangıç'}
             {student.level === 'intermediate' && 'Orta'}
             {student.level === 'advanced' && 'İleri'}
@@ -989,12 +989,12 @@ export const UserManagement: React.FC = () => {
           </div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">
+          <div className="text-sm text-gray-900 dark:text-white">
             {student.instructorName || '-'}
           </div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">
+          <div className="text-sm text-gray-900 dark:text-white">
             {student.schoolName || '-'}
           </div>
         </td>
@@ -1151,7 +1151,7 @@ export const UserManagement: React.FC = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-        <span className="ml-3 text-gray-700">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
   }
@@ -1164,32 +1164,32 @@ export const UserManagement: React.FC = () => {
           <p className="text-sm sm:text-base">{error}</p>
         </div>
       )}
-      
+
       {success && (
         <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
           <p className="text-sm sm:text-base">{success}</p>
         </div>
       )}
-      
+
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <h2 className="text-lg sm:text-xl font-semibold">Kullanıcı Yönetimi</h2>
         {!editMode && (
           <div className="flex flex-wrap gap-2">
-            <button 
+            <button
               onClick={() => handleAddNewUser('student')}
               className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
               disabled={loading}
             >
               {loading ? 'Yükleniyor...' : 'Yeni Öğrenci'}
             </button>
-            <button 
+            <button
               onClick={() => handleAddNewUser('instructor')}
               className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               disabled={loading}
             >
               {loading ? 'Yükleniyor...' : 'Yeni Eğitmen'}
             </button>
-            <button 
+            <button
               onClick={() => handleAddNewUser('school')}
               className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-rose-600 text-white rounded-md hover:bg-purple-700 transition-colors"
               disabled={loading}
@@ -1199,19 +1199,18 @@ export const UserManagement: React.FC = () => {
           </div>
         )}
       </div>
-      
+
       {editMode ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-              {selectedStudent ? 'Kullanıcı Düzenle' : `Yeni ${
-                selectedUserType === 'student' ? 'Öğrenci' :
-                selectedUserType === 'instructor' ? 'Eğitmen' :
-                'Dans Okulu'
-              } Ekle`}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+              {selectedStudent ? 'Kullanıcı Düzenle' : `Yeni ${selectedUserType === 'student' ? 'Öğrenci' :
+                  selectedUserType === 'instructor' ? 'Eğitmen' :
+                    'Dans Okulu'
+                } Ekle`}
             </h3>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
             <UserForm
               formData={formData}
@@ -1223,8 +1222,8 @@ export const UserManagement: React.FC = () => {
               onInputChange={handleInputChange}
               onPhotoChange={handlePhotoChange}
             />
-            
-            <div className="p-4 sm:p-6 bg-gray-50 border-t border-gray-200">
+
+            <div className="p-4 sm:p-6 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700">
               <div className="flex flex-col sm:flex-row-reverse gap-3 sm:gap-4">
                 <Button
                   type="submit"
@@ -1262,7 +1261,7 @@ export const UserManagement: React.FC = () => {
                 placeholder="Ad veya e-posta ile ara..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:border-brand-pink"
               />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -1270,31 +1269,30 @@ export const UserManagement: React.FC = () => {
                 <button
                   key={role}
                   onClick={() => handleRoleFilter(role)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    filterConfig.roles.includes(role)
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${filterConfig.roles.includes(role)
                       ? 'bg-brand-pink text-white'
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
+                      : 'bg-gray-200 text-gray-700 dark:text-gray-300'
+                    }`}
                 >
                   {role}
                 </button>
               ))}
             </div>
           </div>
-          
+
           {loading && (
             <div className="flex justify-center my-4">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-pink"></div>
             </div>
           )}
-          
+
           <div className="-mx-4 sm:mx-0 overflow-hidden">
             <div className="inline-block min-w-full align-middle">
-              <div className="overflow-x-auto border border-gray-200 sm:rounded-lg shadow-sm">
+              <div className="overflow-x-auto border border-gray-200 dark:border-slate-700 sm:rounded-lg shadow-sm">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 dark:bg-slate-900">
                     <tr>
-                      <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'displayName'}
                           direction={sortConfig.field === 'displayName' ? sortConfig.direction : 'asc'}
@@ -1303,7 +1301,7 @@ export const UserManagement: React.FC = () => {
                           Kullanıcı
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'email'}
                           direction={sortConfig.field === 'email' ? sortConfig.direction : 'asc'}
@@ -1312,7 +1310,7 @@ export const UserManagement: React.FC = () => {
                           E-posta
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'role'}
                           direction={sortConfig.field === 'role' ? sortConfig.direction : 'asc'}
@@ -1321,7 +1319,7 @@ export const UserManagement: React.FC = () => {
                           Roller
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'level'}
                           direction={sortConfig.field === 'level' ? sortConfig.direction : 'asc'}
@@ -1330,7 +1328,7 @@ export const UserManagement: React.FC = () => {
                           Dans Seviyesi
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'instructorName'}
                           direction={sortConfig.field === 'instructorName' ? sortConfig.direction : 'asc'}
@@ -1339,7 +1337,7 @@ export const UserManagement: React.FC = () => {
                           Eğitmen
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'schoolName'}
                           direction={sortConfig.field === 'schoolName' ? sortConfig.direction : 'asc'}
@@ -1348,21 +1346,21 @@ export const UserManagement: React.FC = () => {
                           Okul
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         İşlemler
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
                     {paginatedStudents.length > 0 ? (
                       paginatedStudents.map((student) => (
-                        <tr key={student.id} className="hover:bg-gray-50">
+                        <tr key={student.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
                           <td className="px-4 sm:px-6 py-4">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 relative bg-green-100 rounded-full overflow-hidden">
                                 {student.photoURL ? (
-                                  <img 
-                                    className="h-full w-full rounded-full object-cover absolute inset-0" 
+                                  <img
+                                    className="h-full w-full rounded-full object-cover absolute inset-0"
                                     src={student.photoURL}
                                     alt={student.displayName}
                                     onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -1372,30 +1370,30 @@ export const UserManagement: React.FC = () => {
                                     }}
                                   />
                                 ) : (
-                                  <img 
-                                    className="h-full w-full rounded-full object-cover" 
+                                  <img
+                                    className="h-full w-full rounded-full object-cover"
                                     src={generateInitialsAvatar(student.displayName, getAvatarType(student.role))}
                                     alt={student.displayName}
                                   />
                                 )}
                               </div>
                               <div className="ml-3 sm:ml-4">
-                                <div className="text-xs sm:text-sm font-medium text-gray-900">{student.displayName}</div>
-                                <div className="text-xs text-gray-500 sm:hidden">{student.email}</div>
+                                <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{student.displayName}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">{student.email}</div>
                                 {student.phoneNumber && (
-                                  <div className="text-xs text-gray-500">{student.phoneNumber}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">{student.phoneNumber}</div>
                                 )}
                               </div>
                             </div>
                           </td>
                           <td className="hidden sm:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900">{student.email}</div>
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">{student.email}</div>
                           </td>
                           <td className="hidden md:table-cell px-4 sm:px-6 py-4">
                             {renderRoleBadges(student.role)}
                           </td>
                           <td className="hidden lg:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900">
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">
                               {student.level === 'beginner' && 'Başlangıç'}
                               {student.level === 'intermediate' && 'Orta'}
                               {student.level === 'advanced' && 'İleri'}
@@ -1404,12 +1402,12 @@ export const UserManagement: React.FC = () => {
                             </div>
                           </td>
                           <td className="hidden xl:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900">
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">
                               {student.instructorName || '-'}
                             </div>
                           </td>
                           <td className="hidden xl:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900">
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">
                               {student.schoolName || '-'}
                             </div>
                           </td>
@@ -1433,7 +1431,7 @@ export const UserManagement: React.FC = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} className="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm text-gray-500">
+                        <td colSpan={7} className="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                           {searchTerm || filterConfig.roles.length > 0
                             ? 'Aramanıza veya seçtiğiniz filtrelere uygun kullanıcı bulunamadı.'
                             : 'Henüz hiç kullanıcı kaydı bulunmuyor.'}

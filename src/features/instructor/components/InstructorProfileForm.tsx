@@ -113,9 +113,9 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
       const danceStylesRef = collection(db, 'danceStyles');
       const q = query(danceStylesRef, orderBy('label'));
       const querySnapshot = await getDocs(q);
-      
+
       const styles: DanceStyleOption[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         const styleData = doc.data() as Omit<DanceStyleOption, 'id'>;
         styles.push({
@@ -213,7 +213,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             countryCode: instructorData.countryCode || '+90',
             location: instructorData.location || '',
             photoURL: instructorData.photoURL || userData.photoURL || '',
-            
+
             // User koleksiyonundan gelen veriler
             gender: userData.gender || '',
             age: userData.age,
@@ -223,7 +223,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             weight: userData.weight,
             danceStyles: userData.danceStyles || [],
             availableTimes: userData.availableTimes || [],
-            
+
             // Diğer alanlar
             createdAt: instructorData.createdAt || '',
             updatedAt: instructorData.updatedAt || '',
@@ -239,7 +239,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
           toast.success('Profil bilgileri yüklendi');
         } else {
           console.log('ℹ️ No instructor profile found, creating new instructor profile');
-          
+
           // Yeni eğitmen profili oluştur
           const newInstructorData: Partial<InstructorProfileFormData> = {
             displayName: userData.displayName || '',
@@ -268,12 +268,12 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
           try {
             await setDoc(instructorRef, newInstructorData);
             console.log('✅ New instructor profile created:', newInstructorData);
-            
+
             reset(newInstructorData as InstructorProfileFormData);
             setSelectedSpecialties([]);
             setProfilePhotoURL(userData.photoURL || '');
             toast.success('Yeni eğitmen profili oluşturuldu');
-            
+
             // User dokümanını da güncelle
             await updateDoc(userRef, {
               role: 'instructor',
@@ -421,7 +421,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
     }
 
     console.log('🖼️ Starting profile photo update:', { userId: user.id, hasImage: !!base64Image });
-    
+
     try {
       // Önce UI state'ini güncelle
       setProfilePhotoURL(base64Image);
@@ -483,7 +483,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
   const renderDanceStylesSelect = () => {
     if (loadingStyles) {
       return (
-        <div className="flex items-center space-x-2 text-gray-500">
+        <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
           <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -507,25 +507,23 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
   };
 
   const renderTabs = () => (
-    <div className="mb-8 border-b border-gray-200">
+    <div className="mb-8 border-b border-gray-200 dark:border-slate-700">
       <nav className="-mb-px flex space-x-8" aria-label="Tabs">
         <button
           onClick={() => setActiveTab('user')}
-          className={`${
-            activeTab === 'user'
-              ? 'border-brand-pink text-brand-pink'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          className={`${activeTab === 'user'
+              ? 'border-instructor text-instructor'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
         >
           Kullanıcı Bilgileri
         </button>
         <button
           onClick={() => setActiveTab('instructor')}
-          className={`${
-            activeTab === 'instructor'
-              ? 'border-brand-pink text-brand-pink'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          className={`${activeTab === 'instructor'
+              ? 'border-instructor text-instructor'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
         >
           Eğitmen Bilgileri
         </button>
@@ -536,8 +534,8 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
   const renderUserInfoForm = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Temel Bilgiler</h3>
-        <p className="text-sm text-gray-500 mb-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Temel Bilgiler</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
           Bu bilgiler profilinizde görüntülenecek ve öğrencilerinizle eşleşmeniz için kullanılacaktır.
         </p>
       </div>
@@ -651,15 +649,15 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
   const renderInstructorInfoForm = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Eğitmen Bilgileri</h3>
-        <p className="text-sm text-gray-500 mb-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Eğitmen Bilgileri</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
           Bu bilgiler eğitmenlik profilinizde görüntülenecek ve öğrencilerinizle eşleşmeniz için kullanılacaktır.
         </p>
       </div>
 
       <div>
         {renderDanceStylesSelect()}
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Seçtiğiniz dans stilleri hem uzmanlık alanlarınız hem de dans stilleriniz olarak kaydedilecektir.
         </p>
       </div>
@@ -711,27 +709,27 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
 
   if (initialLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] bg-white rounded-lg shadow-sm p-6">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-        <p className="mt-4 text-gray-600">Profil bilgileri yükleniyor...</p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-instructor"></div>
+        <p className="mt-4 text-gray-600 dark:text-gray-400">Profil bilgileri yükleniyor...</p>
       </div>
     );
   }
 
   if (fetchError) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
         <div className="text-center">
           <div className="text-red-500 mb-4">
             <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Hata Oluştu</h3>
-          <p className="text-gray-600 mb-4">{fetchError}</p>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Hata Oluştu</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{fetchError}</p>
           <button
             onClick={() => window.location.reload()}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-instructor hover:bg-instructor-dark dark:bg-instructor-light dark:text-instructor-dark dark:hover:bg-instructor-lighter focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-instructor dark:focus:ring-instructor-light"
           >
             Yeniden Dene
           </button>
@@ -743,23 +741,23 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {renderTabs()}
-      
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {activeTab === 'user' ? renderUserInfoForm() : renderInstructorInfoForm()}
-        
-        <div className="flex justify-between pt-6 border-t border-gray-200">
+
+        <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-slate-700">
           <button
             type="button"
             onClick={() => setActiveTab(activeTab === 'user' ? 'instructor' : 'user')}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-instructor dark:focus:ring-instructor-light"
           >
             {activeTab === 'user' ? 'Eğitmen Bilgilerine Geç' : 'Kullanıcı Bilgilerine Dön'}
           </button>
-          
+
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink disabled:opacity-50"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-instructor hover:bg-instructor-dark dark:bg-instructor-light dark:text-instructor-dark dark:hover:bg-instructor-lighter focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-instructor dark:focus:ring-instructor-light disabled:opacity-50"
           >
             {loading ? (
               <>

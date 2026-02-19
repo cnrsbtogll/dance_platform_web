@@ -25,10 +25,11 @@ import useAuth from './common/hooks/useAuth';
 import { auth } from './api/firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider as AppThemeProvider, useTheme } from './contexts/ThemeContext';
 import SchoolAdmin from './features/school/pages/SchoolAdmin';
 import NotificationsCenter from './common/components/badges/NotificationsCenter';
 import { ThemeProvider } from '@mui/material/styles';
-import theme from './styles/theme';
+import createAppTheme from './styles/theme';
 import { collection, query, where, onSnapshot, writeBatch, getDocs } from 'firebase/firestore';
 import { db } from './api/firebase/firebase';
 import { ChatDialog } from './features/chat/components/ChatDialog';
@@ -63,9 +64,9 @@ const InstructorRedirect: React.FC<{ user: any }> = ({ user }) => {
   return null;
 };
 
-function App(): JSX.Element {
-  console.log('🔍 App bileşeni render ediliyor');
-
+function AppContent(): JSX.Element {
+  const { isDark } = useTheme();
+  const appTheme = createAppTheme(isDark ? 'dark' : 'light');
   const { user, loading, error, isOffline } = useAuth();
   const [currentUser, setCurrentUser] = useState<User | null>(user);
   console.log('🔍 useAuth hook sonuçları:', { user: !!user, loading, error, isOffline });
@@ -328,9 +329,9 @@ function App(): JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
-        <span className="ml-3 text-gray-700">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
   }
@@ -339,12 +340,12 @@ function App(): JSX.Element {
   if (firebaseInitError) {
     return (
       <div className="flex flex-col justify-center items-center h-screen bg-red-50">
-        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg max-w-md w-full">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Firebase Bağlantı Hatası</h2>
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-700 dark:text-gray-300 mb-4">
             {getUserFriendlyErrorMessage(firebaseInitError)}
           </p>
-          <div className="bg-gray-100 p-3 rounded text-sm font-mono overflow-auto">
+          <div className="bg-gray-100 dark:bg-slate-800 p-3 rounded text-sm font-mono overflow-auto">
             {firebaseInitError}
           </div>
           <div className="mt-6 flex flex-col space-y-2">
@@ -367,7 +368,7 @@ function App(): JSX.Element {
   }
 
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={appTheme}>
       <AuthProvider>
         <Router>
           <NotificationsCenter />
@@ -396,7 +397,7 @@ function App(): JSX.Element {
               },
             }}
           />
-          <div className="min-h-screen bg-gray-50">
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
             {isAuthenticated && <InstructorRedirect user={user} />}
             {isOffline && (
               <div className="bg-yellow-500 text-white text-center py-2 px-4 fixed top-0 left-0 w-full z-50">
@@ -411,7 +412,7 @@ function App(): JSX.Element {
             )}
 
             <Navbar isAuthenticated={!!currentUser} user={currentUser} />
-            <div className="pt-16">
+            <div className={`${(currentUser?.role === 'instructor' || currentUser?.role === 'school') ? 'pt-20' : 'pt-16'}`}>
               <Routes>
                 <Route path="/" element={<HomePage isAuthenticated={isAuthenticated} user={currentUser} />} />
                 <Route path="/partners" element={<PartnerSearchPage />} />
@@ -494,7 +495,7 @@ function App(): JSX.Element {
               </Routes>
             </div>
 
-            <footer className="bg-gray-800 text-white py-8">
+            <footer className="bg-gray-800 dark:bg-gray-950 text-white py-8 transition-colors duration-300">
               <div className="container mx-auto px-4">
                 <div className="flex flex-col md:flex-row justify-between">
                   <div className="mb-6 md:mb-0">
@@ -592,7 +593,7 @@ function App(): JSX.Element {
                       className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
                       onClick={handleCloseChatList}
                     />
-                    <div className="fixed inset-y-0 right-0 max-w-md w-full bg-white shadow-xl">
+                    <div className="fixed inset-y-0 right-0 max-w-md w-full bg-white dark:bg-slate-800 shadow-xl">
                       <div className="h-full flex flex-col">
                         <div className="px-4 py-6 bg-gradient-to-r from-brand-pink to-rose-600">
                           <div className="flex items-center justify-between">
@@ -622,6 +623,14 @@ function App(): JSX.Element {
         </Router>
       </AuthProvider>
     </ThemeProvider>
+  );
+}
+
+function App(): JSX.Element {
+  return (
+    <AppThemeProvider>
+      <AppContent />
+    </AppThemeProvider>
   );
 }
 
