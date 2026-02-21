@@ -22,12 +22,7 @@ import ImageUploader from '../../../common/components/ui/ImageUploader';
 import { motion } from 'framer-motion';
 import { getAuthErrorMessage } from '../../../pages/auth/services/authService';
 import { generateInitialsAvatar } from '../../../common/utils/imageUtils';
-
-interface DanceStyle {
-  id: string;
-  label: string;
-  value: string;
-}
+import FileUploader from '../../../common/components/ui/FileUploader';
 
 interface FormData {
   schoolName: string;
@@ -36,16 +31,10 @@ interface FormData {
   contactEmail: string;
   contactPhone: string;
   address: string;
-  city: string;
-  district: string;
-  zipCode: string;
-  country: string;
-  website: string;
-  danceStyles: string[];
-  establishedYear: string;
   password: string;
-  facilities: string[];
   photoURL: string;
+  schoolDocument: string;
+  schoolDocumentName: string;
 }
 
 interface BecomeSchoolProps {
@@ -72,16 +61,10 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
     contactEmail: currentUser?.email || '',
     contactPhone: '',
     address: '',
-    city: '',
-    district: '',
-    zipCode: '',
-    country: 'Türkiye',
-    website: '',
-    danceStyles: [],
-    establishedYear: '',
     password: '',
-    facilities: [],
-    photoURL: ''
+    photoURL: '',
+    schoolDocument: '',
+    schoolDocumentName: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,87 +74,23 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
   const [hasExistingApplication, setHasExistingApplication] = useState(false);
   const [isAlreadySchool, setIsAlreadySchool] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [danceStyles, setDanceStyles] = useState<DanceStyle[]>([]);
-  const [loadingStyles, setLoadingStyles] = useState(true);
 
   useEffect(() => {
     onMount?.();
   }, [onMount]);
 
-  // Fetch dance styles from Firestore
-  useEffect(() => {
-    const fetchDanceStyles = async () => {
-      setLoadingStyles(true);
-      try {
-        const danceStylesRef = collection(db, 'danceStyles');
-        const querySnapshot = await getDocs(danceStylesRef);
-
-        const styles: DanceStyle[] = [];
-        querySnapshot.forEach((doc) => {
-          styles.push({
-            id: doc.id,
-            ...doc.data()
-          } as DanceStyle);
-        });
-
-        if (styles.length === 0) {
-          // If no styles in Firestore, use default styles
-          setDanceStyles([
-            { id: 'default-1', label: 'Salsa', value: 'salsa' },
-            { id: 'default-2', label: 'Bachata', value: 'bachata' },
-            { id: 'default-3', label: 'Kizomba', value: 'kizomba' },
-            { id: 'default-4', label: 'Tango', value: 'tango' },
-            { id: 'default-5', label: 'Vals', value: 'vals' }
-          ]);
-        } else {
-          setDanceStyles(styles);
-        }
-      } catch (err) {
-        console.error('Error fetching dance styles:', err);
-        // Fallback to default styles on error
-        setDanceStyles([
-          { id: 'default-1', label: 'Salsa', value: 'salsa' },
-          { id: 'default-2', label: 'Bachata', value: 'bachata' },
-          { id: 'default-3', label: 'Kizomba', value: 'kizomba' },
-          { id: 'default-4', label: 'Tango', value: 'tango' },
-          { id: 'default-5', label: 'Vals', value: 'vals' }
-        ]);
-      } finally {
-        setLoadingStyles(false);
-      }
-    };
-
-    fetchDanceStyles();
-  }, []);
-
   useEffect(() => {
     const checkUserStatus = async () => {
-      console.log('🔍 Kullanıcı durumu kontrolü başladı:', {
-        currentUser: currentUser?.uid,
-        timestamp: new Date().toISOString()
-      });
-
       try {
         if (currentUser) {
-          console.log('👤 Giriş yapmış kullanıcı kontrolü:', {
-            uid: currentUser.uid,
-            email: currentUser.email
-          });
-
           const userDocRef = doc(db, 'users', currentUser.uid);
           const userDoc = await getDoc(userDocRef);
 
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            console.log('📄 Kullanıcı dokümanı bulundu:', {
-              userData: userData,
-              roles: userData.role
-            });
-
             const roles = userData.role || [];
 
             if (Array.isArray(roles) && roles.includes('school')) {
-              console.log('⚠️ Kullanıcı zaten okul sahibi');
               setIsAlreadySchool(true);
               setIsLoading(false);
               return;
@@ -201,7 +120,6 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
           const querySnapshot = await getDocs(q);
 
           if (!querySnapshot.empty) {
-            console.log('⏳ Kullanıcının bekleyen başvurusu var');
             setHasExistingApplication(true);
           }
 
@@ -209,8 +127,6 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
             ...prev,
             contactEmail: currentUser.email || ''
           }));
-        } else {
-          console.log('⚠️ Giriş yapmamış kullanıcı');
         }
 
         setIsLoading(false);
@@ -240,38 +156,18 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
     }
   };
 
-  const handleDanceStyleChange = (value: string | string[]) => {
-    const danceStylesArray = Array.isArray(value) ? value : [value];
-    const filteredStyles = value === '' ? [] : danceStylesArray.filter(style => style !== '');
-
-    setFormData(prev => ({
-      ...prev,
-      danceStyles: filteredStyles
-    }));
-
-    if (formErrors.danceStyles) {
-      setFormErrors(prev => {
-        const updated = { ...prev };
-        delete updated.danceStyles;
-        return updated;
-      });
-    }
-  };
-
-  const handleFacilitiesChange = (value: string | string[]) => {
-    const facilitiesArray = Array.isArray(value) ? value : [value];
-    const filteredFacilities = value === '' ? [] : facilitiesArray.filter(facility => facility !== '');
-
-    setFormData(prev => ({
-      ...prev,
-      facilities: filteredFacilities
-    }));
-  };
-
   const handleImageChange = (base64Image: string | null) => {
     setFormData(prev => ({
       ...prev,
       photoURL: base64Image || ''
+    }));
+  };
+
+  const handleDocumentChange = (base64: string | null, fileName: string | null) => {
+    setFormData(prev => ({
+      ...prev,
+      schoolDocument: base64 || '',
+      schoolDocumentName: fileName || ''
     }));
   };
 
@@ -360,15 +256,9 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
         contactEmail: formData.contactEmail,
         contactPhone: formData.contactPhone,
         address: formData.address,
-        city: formData.city,
-        district: formData.district,
-        zipCode: formData.zipCode,
-        country: formData.country,
-        website: formData.website,
-        danceStyles: formData.danceStyles,
-        establishedYear: formData.establishedYear,
-        facilities: formData.facilities,
         photoURL: formData.photoURL,
+        schoolDocument: formData.schoolDocument,
+        schoolDocumentName: formData.schoolDocumentName,
         userId: userId,
         userEmail: userEmail,
         status: 'pending',
@@ -384,16 +274,10 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
         contactEmail: '',
         contactPhone: '',
         address: '',
-        city: '',
-        district: '',
-        zipCode: '',
-        country: 'Türkiye',
-        website: '',
-        danceStyles: [],
-        establishedYear: '',
         password: '',
-        facilities: [],
-        photoURL: ''
+        photoURL: '',
+        schoolDocument: '',
+        schoolDocumentName: ''
       });
 
     } catch (err) {
@@ -481,20 +365,6 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
       </div>
     );
   }
-
-  const danceStyleOptions = danceStyles.map(style => ({
-    value: style.value,
-    label: style.label
-  }));
-
-  const facilitiesOptions = [
-    { value: 'parking', label: 'Otopark' },
-    { value: 'shower', label: 'Duş' },
-    { value: 'locker', label: 'Soyunma Odası' },
-    { value: 'cafe', label: 'Kafeterya' },
-    { value: 'airCondition', label: 'Klima' },
-    { value: 'wifi', label: 'Wifi' }
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
@@ -633,6 +503,17 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
             </div>
 
             <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4 border-b pb-2">Okul Belgeleri</h3>
+              <FileUploader
+                label="Okul Belgesi (Resmi evrak, ruhsat vb.)"
+                helperText="Okulunuzun geçerli ruhsat veya resmi evraklarını PDF veya görsel formatında yükleyin."
+                onFileChange={handleDocumentChange}
+                accept="application/pdf,image/*"
+                maxSizeMB={10}
+              />
+            </div>
+
+            <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4 border-b pb-2">Okul Fotoğrafı</h3>
               <ImageUploader
                 currentPhotoURL={formData.photoURL}
@@ -665,8 +546,8 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
             Onay sonrası okul yönetici panelinize erişim sağlayabileceksiniz.
           </p>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
 
