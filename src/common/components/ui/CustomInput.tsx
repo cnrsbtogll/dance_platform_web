@@ -43,7 +43,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
   const labelColor = isDark ? '#94a3b8' : '#6B7280';
   const borderColor = isDark ? '#475569' : '#E5E7EB';
   const borderHover = isDark ? '#64748b' : '#9CA3AF';
-  const borderFocus = isDark ? '#818cf8' : '#6366F1';
+  const borderFocus = isDark ? '#a78bfa' : '#7c3aed'; // Violet-400 / Violet-600
   const disabledBg = isDark ? '#0f172a' : '#f9fafb';
   const disabledText = isDark ? '#64748b' : '#9CA3AF';
 

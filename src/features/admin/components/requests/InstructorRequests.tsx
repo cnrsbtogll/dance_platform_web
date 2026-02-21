@@ -250,7 +250,7 @@ function InstructorRequests() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-600"></div>
         <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
@@ -345,6 +345,19 @@ function InstructorRequests() {
                           <div className="text-sm text-gray-500 dark:text-gray-400 md:hidden">
                             {request.userEmail}
                           </div>
+                          {request.createdAt && (
+                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1">
+                              <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              {(() => {
+                                const d = (request.createdAt as any).toDate
+                                  ? (request.createdAt as any).toDate()
+                                  : new Date(request.createdAt as any);
+                                return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                              })()}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -499,7 +512,7 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                 <div className="mt-4 space-y-6">
                   {/* İletişim Bilgileri */}
                   <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
-                    <h4 className="text-sm font-semibold text-brand-pink uppercase tracking-wider mb-3">İletişim Bilgileri</h4>
+                    <h4 className="text-sm font-semibold text-violet-600 uppercase tracking-wider mb-3">İletişim Bilgileri</h4>
                     <div className="space-y-2">
                       <div className="flex items-center text-sm">
                         <span className="text-gray-500 dark:text-gray-400 w-24">E-posta:</span>
@@ -524,11 +537,24 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                         <span className="block text-xs text-gray-500 dark:text-gray-400">Deneyim</span>
                         <span className="text-sm text-gray-900 dark:text-white">{request.experience}</span>
                       </div>
+                      {request.createdAt && (
+                        <div>
+                          <span className="block text-xs text-gray-500 dark:text-gray-400">Başvuru Tarihi</span>
+                          <span className="text-sm text-gray-900 dark:text-white">
+                            {(() => {
+                              const d = (request.createdAt as any).toDate
+                                ? (request.createdAt as any).toDate()
+                                : new Date(request.createdAt as any);
+                              return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                            })()}
+                          </span>
+                        </div>
+                      )}
                       <div>
                         <span className="block text-xs text-gray-500 dark:text-gray-400">Dans Stilleri</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {(request.danceStyles || []).map((style, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-rose-100 text-brand-pink rounded text-xs">
+                            <span key={idx} className="px-2 py-0.5 bg-rose-100 text-violet-600 rounded text-xs">
                               {style}
                             </span>
                           ))}

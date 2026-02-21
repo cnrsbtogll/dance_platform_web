@@ -67,7 +67,8 @@ const dayOptions = [
 // Durum options
 const statusOptions = [
   { label: 'Aktif', value: 'active' },
-  { label: 'Pasif', value: 'inactive' }
+  { label: 'Pasif', value: 'inactive' },
+  { label: 'Taslak', value: 'draft' }
 ];
 
 interface Location {
@@ -99,7 +100,7 @@ interface Course {
   duration: number;
   price: number;
   currency: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'draft';
   recurring: boolean;
   schedule: Schedule[];
   date: any;
@@ -129,7 +130,7 @@ interface FormData {
   duration: number;
   price: number;
   currency: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'draft';
   recurring: boolean;
   schedule: Schedule[];
   date: any;
@@ -289,6 +290,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const [loadingInstructors, setLoadingInstructors] = useState<boolean>(true);
   const [loadingSchools, setLoadingSchools] = useState<boolean>(true);
   const [selectedContactCourse, setSelectedContactCourse] = useState<Course | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'draft'>('all');
 
   // Dans stillerini getir
   const fetchDanceStyles = async () => {
@@ -718,7 +720,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
     return (
       <div className="space-y-4 md:col-span-2">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Temel Bilgiler</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
+          Temel Bilgiler
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <CustomInput
@@ -1062,6 +1066,34 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Kurslarınızı ekleyin, düzenleyin ve yönetin</p>
         </div>
         <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+          <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden text-sm h-9">
+            {([
+              { value: 'all', label: 'Tümü' },
+              { value: 'active', label: 'Aktif' },
+              { value: 'inactive', label: 'Pasif' },
+              { value: 'draft', label: 'Taslak' },
+            ] as const).map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setStatusFilter(value)}
+                className={`px-3 py-1.5 font-medium transition-colors whitespace-nowrap ${statusFilter === value
+                  ? value === 'active'
+                    ? 'bg-green-600 text-white'
+                    : value === 'inactive'
+                      ? 'bg-gray-500 text-white'
+                      : value === 'draft'
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-violet-600 text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
+                  }`}
+              >
+                {label}
+                <span className="ml-1.5 text-xs opacity-75">
+                  ({courses.filter(c => value === 'all' ? true : c.status === value).length})
+                </span>
+              </button>
+            ))}
+          </div>
           <div className="relative flex-grow sm:max-w-[200px]">
             <input
               type="text"
@@ -1079,9 +1111,14 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           <Button
             onClick={addNewCourse}
             type="button"
-            variant={colorVariant}
+            variant={isAdmin ? 'violet' : colorVariant}
           >
-            Yeni Kurs Ekle
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Yeni Kurs Ekle
+            </div>
           </Button>
         </div>
       </div>
@@ -1096,8 +1133,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
               {/* Program ve Kapasite */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Program ve Kapasite</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
+                  Program ve Kapasite
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <CustomSelect
                       name="level"
@@ -1126,24 +1165,28 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
               {/* Fiyat ve Süre */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Fiyat ve Süre</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
+                  Fiyat ve Süre
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <div className="flex items-stretch max-w-[200px]">
-                      <CustomInput
-                        type="text"
-                        name="price"
-                        label="Fiyat"
-                        value={formData.price.toString()}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          price: parseFloat(e.target.value) || 0
-                        })}
-                        className="w-24 !rounded-r-none"
-                        required
-                      />
-                      <div className="flex items-center h-[45px] px-3 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-md bg-gray-50 dark:bg-slate-900">
-                        <span className="text-gray-500 dark:text-gray-400 text-sm">₺</span>
+                    <div className="flex flex-col">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fiyat</label>
+                      <div className="flex items-stretch">
+                        <input
+                          type="text"
+                          name="price"
+                          value={formData.price.toString()}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            price: parseFloat(e.target.value) || 0
+                          })}
+                          className={`flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 sm:text-sm border-r-0 outline-none transition-all`}
+                          required
+                        />
+                        <div className="flex items-center px-3 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-md bg-gray-50 dark:bg-slate-900 h-[38px] mt-[1px]">
+                          <span className="text-gray-500 dark:text-gray-400 text-sm">₺</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1165,8 +1208,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
               {/* Durum ve Tekrar */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Durum</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
+                  Durum
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <CustomSelect
                       name="status"
@@ -1175,7 +1220,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       value={formData.status}
                       onChange={(value) => setFormData({
                         ...formData,
-                        status: value as 'active' | 'inactive'
+                        status: value as 'active' | 'inactive' | 'draft'
                       })}
                       placeholder="Durum Seçin"
                       required
@@ -1186,8 +1231,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
               {/* Lokasyon */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Lokasyon</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
+                  Lokasyon
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <CustomSelect
                       name="city"
@@ -1232,8 +1279,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               </div>
 
               {/* Program Seçimi */}
-              <div className="md:col-span-2 space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Program</h3>
+              <div className="md:col-span-2 space-y-4 mt-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
+                  Program Detayları
+                </h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kurs Tipi</label>
@@ -1372,7 +1421,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               >
                 İptal
               </Button>
-              <Button type="submit" variant={colorVariant}>
+              <Button
+                type="submit"
+                variant={isAdmin ? 'violet' : colorVariant}
+              >
                 {selectedCourse ? 'Güncelle' : 'Kaydet'}
               </Button>
             </div>
@@ -1395,8 +1447,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
             </thead>
             <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
               {courses.filter(course =>
-                course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase())
+                (statusFilter === 'all' || course.status === statusFilter) &&
+                (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase()))
               ).map((course) => (
                 <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
                   <td className="px-4 py-4 whitespace-nowrap">
@@ -1428,21 +1481,23 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                   <td className="px-4 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${course.status === 'active'
                       ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
+                      : course.status === 'draft'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-red-100 text-red-800'
                       }`}>
-                      {course.status === 'active' ? 'Aktif' : 'Pasif'}
+                      {course.status === 'active' ? 'Aktif' : course.status === 'draft' ? 'Taslak' : 'Pasif'}
                     </span>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => editCourse(course)}
-                        className="text-instructor hover:text-instructor-dark"
+                        className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm active:scale-95 ${isAdmin
+                            ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/40'
+                            : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-slate-600'
+                          }`}
                       >
-                        <span className="sr-only">Düzenle</span>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
+                        Düzenle
                       </button>
                       <button
                         onClick={() => {
@@ -1450,12 +1505,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                             deleteCourse(course.id);
                           }
                         }}
-                        className="text-red-600 hover:text-red-900"
+                        className="inline-flex items-center px-3 py-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-md text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/20 transition-all shadow-sm active:scale-95"
                       >
-                        <span className="sr-only">Sil</span>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                        Sil
                       </button>
                     </div>
                   </td>

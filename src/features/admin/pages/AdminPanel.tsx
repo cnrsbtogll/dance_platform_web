@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  InstructorRequests, 
-  DanceStyleManagement, 
+  InstructorRequests,
+  DanceStyleManagement,
   ContactRequests,
   SchoolRequests,
   UserManagement
@@ -36,35 +36,35 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
   const [activeRequestType, setActiveRequestType] = useState<RequestType>('egitmen-talepleri');
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+
   // Check if the current user should be promoted to super admin
   useEffect(() => {
     const checkAndUpdateSuperAdmin = async () => {
       if (user?.id === 'HyH991wAtrU2E6JlTt711A6zHoL2' && user.email === 'super@admin.com') {
         const userRef = doc(db, 'users', user.id);
         const userSnap = await getDoc(userRef);
-        
+
         if (userSnap.exists()) {
           const userData = userSnap.data();
           let roles = userData.role || [];
-          
+
           if (!Array.isArray(roles)) {
             roles = [roles];
           }
-          
+
           if (!roles.includes('admin')) {
             roles.push('admin');
             await updateDoc(userRef, { role: roles });
             console.log('Super admin role added to user');
           }
-          
+
           setIsSuperAdmin(true);
         }
       } else if (user?.role?.includes('admin')) {
         setIsSuperAdmin(true);
       }
     };
-    
+
     if (user) {
       checkAndUpdateSuperAdmin();
     }
@@ -72,32 +72,32 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="text-center mb-6 sm:mb-10"
       >
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 inline-block relative bg-gradient-to-r from-brand-pink to-rose-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 inline-block relative bg-gradient-to-r from-violet-600 to-purple-700 bg-clip-text text-transparent">
           Yönetim Paneli
         </h1>
         <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">
           Dans okulları, eğitmenler ve dans stilleri gibi sistem genelindeki içerikleri yönetin ve platformu kontrol edin.
         </p>
       </motion.div>
-      
+
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
         {/* Mobile Menu Button */}
         <div className="md:hidden border-b border-gray-200 dark:border-slate-700 p-4">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
+            className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
           >
             <span>{
               activeTab === 'kullanicilar' ? 'Tüm Kullanıcılar' :
-              activeTab === 'kurslar' ? 'Kurslar' :
-              activeTab === 'talepler' ? 'Talepler' :
-              'Örnek Veri'
+                activeTab === 'kurslar' ? 'Kurslar' :
+                  activeTab === 'talepler' ? 'Talepler' :
+                    'Örnek Veri'
             }</span>
             <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -113,11 +113,10 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 setActiveTab('kullanicilar');
                 setIsMobileMenuOpen(false);
               }}
-              className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
-                activeTab === 'kullanicilar'
-                  ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
+              className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${activeTab === 'kullanicilar'
+                  ? 'border-violet-600 text-violet-600 bg-violet-50 md:bg-transparent'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-              }`}
+                }`}
             >
               Tüm Kullanıcılar
             </button>
@@ -126,11 +125,10 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 setActiveTab('kurslar');
                 setIsMobileMenuOpen(false);
               }}
-              className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
-                activeTab === 'kurslar'
-                  ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
+              className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${activeTab === 'kurslar'
+                  ? 'border-violet-600 text-violet-600 bg-violet-50 md:bg-transparent'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-              }`}
+                }`}
             >
               Kurslar
             </button>
@@ -139,11 +137,10 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 setActiveTab('talepler');
                 setIsMobileMenuOpen(false);
               }}
-              className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
-                activeTab === 'talepler'
-                  ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
+              className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${activeTab === 'talepler'
+                  ? 'border-violet-600 text-violet-600 bg-violet-50 md:bg-transparent'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-              }`}
+                }`}
             >
               Talepler
             </button>
@@ -153,18 +150,17 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                   setActiveTab('ornek-veri');
                   setIsMobileMenuOpen(false);
                 }}
-                className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${
-                  activeTab === 'ornek-veri'
-                    ? 'border-brand-pink text-brand-pink bg-rose-50 md:bg-transparent'
+                className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${activeTab === 'ornek-veri'
+                    ? 'border-violet-600 text-violet-600 bg-violet-50 md:bg-transparent'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                }`}
+                  }`}
               >
                 Örnek Veri
               </button>
             )}
           </nav>
         </div>
-        
+
         <div className="p-4 sm:p-6">
           {activeTab === 'kullanicilar' && <UserManagement />}
           {activeTab === 'kurslar' && <CourseManagement isAdmin={true} />}
@@ -198,15 +194,15 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
               <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-slate-700">
                 <h2 className="text-lg sm:text-xl font-semibold mb-4">Örnek Veri Ekleme</h2>
                 <p className="mb-4 text-sm sm:text-base text-gray-700 dark:text-gray-300">
-                  Bu panel ile veritabanına örnek kullanıcılar ekleyebilirsiniz. Eklenen kullanıcılar dans partneri eşleştirme 
-                  sistemi için kullanılabilir. Her bir örnek kullanıcı çeşitli dans stilleri, seviyeler, boy, kilo ve konum 
+                  Bu panel ile veritabanına örnek kullanıcılar ekleyebilirsiniz. Eklenen kullanıcılar dans partneri eşleştirme
+                  sistemi için kullanılabilir. Her bir örnek kullanıcı çeşitli dans stilleri, seviyeler, boy, kilo ve konum
                   bilgileri içerir.
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <SeedUsersButton />
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-slate-700">
                 <h2 className="text-lg sm:text-xl font-semibold mb-4">Örnek Dans Kursları</h2>
                 <p className="mb-4 text-sm sm:text-base text-gray-700 dark:text-gray-300">
@@ -216,7 +212,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                   <SeedCoursesButton courseCount={25} />
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-slate-700">
                 <h2 className="text-lg sm:text-xl font-semibold mb-4">İlerleme Durumu Koleksiyonları</h2>
                 <p className="mb-4 text-sm sm:text-base text-gray-700 dark:text-gray-300">
@@ -226,7 +222,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                   <CreateProgressCollectionsButton />
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-slate-700">
                 <h2 className="text-lg sm:text-xl font-semibold mb-4">Veri Migrasyon Araçları</h2>
                 <p className="mb-4 text-sm sm:text-base text-gray-700 dark:text-gray-300">
@@ -240,17 +236,17 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
           )}
         </div>
       </div>
-      
+
       {isSuperAdmin && (
         <div className="mt-6 sm:mt-8 bg-purple-50 rounded-lg p-4 sm:p-6">
           <h2 className="text-base sm:text-lg font-semibold text-purple-800">Süper Admin Yetkileri</h2>
           <p className="mt-2 text-sm sm:text-base text-purple-700">
-            Süper admin olarak, tüm dans okullarını, eğitmenleri, kursları ve kullanıcıları yönetebilirsiniz. 
+            Süper admin olarak, tüm dans okullarını, eğitmenleri, kursları ve kullanıcıları yönetebilirsiniz.
             Eğitmen başvurularını onaylayabilir veya reddedebilirsiniz. Dans stillerini de yönetebilirsiniz.
           </p>
         </div>
       )}
-      
+
       <div className="mt-4 sm:mt-6 bg-blue-50 rounded-lg p-4 sm:p-6">
         <h2 className="text-base sm:text-lg font-semibold text-blue-800">Yönetici İpuçları</h2>
         <ul className="mt-2 space-y-2 text-sm sm:text-base text-blue-700">

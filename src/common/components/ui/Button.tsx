@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'instructor' | 'school';
+type ButtonVariant = 'primary' | 'secondary' | 'instructor' | 'school' | 'violet';
 
 export interface ButtonProps {
   children: React.ReactNode;
@@ -10,6 +10,7 @@ export interface ButtonProps {
   fullWidth?: boolean;
   disabled?: boolean;
   loading?: boolean;
+  className?: string; // Eklenen satır
 }
 
 function Button({
@@ -19,7 +20,8 @@ function Button({
   variant = 'primary',
   fullWidth = false,
   disabled = false,
-  loading = false
+  loading = false,
+  className = '' // Eklenen satır
 }: ButtonProps) {
   const baseClasses = 'px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2';
   const variantClasses = {
@@ -27,7 +29,8 @@ function Button({
     secondary: 'bg-gray-200 text-gray-700 dark:text-gray-300 hover:bg-gray-300 focus:ring-gray-500',
     instructor: 'bg-instructor text-white hover:bg-instructor-dark focus:ring-instructor',
     school: 'bg-school text-white hover:bg-school-dark focus:ring-school',
-  };
+    violet: 'bg-gradient-to-r from-violet-600 to-purple-700 text-white hover:from-violet-500 hover:to-purple-600 focus:ring-violet-500 border-none shadow-sm',
+  } as const;
   const widthClass = fullWidth ? 'w-full' : '';
   const disabledClass = (disabled || loading) ? 'opacity-50 cursor-not-allowed' : '';
 
@@ -36,7 +39,7 @@ function Button({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`${baseClasses} ${variantClasses[variant]} ${widthClass} ${disabledClass}`}
+      className={`${baseClasses} ${variantClasses[variant]} ${widthClass} ${disabledClass} ${className}`}
     >
       {loading ? (
         <span className="flex items-center justify-center">

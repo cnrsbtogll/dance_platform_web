@@ -208,7 +208,7 @@ function SchoolRequests(): JSX.Element {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-600"></div>
         <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
@@ -320,6 +320,19 @@ function SchoolRequests(): JSX.Element {
                           <div className="text-sm text-gray-500 dark:text-gray-400 md:hidden">
                             {request.contactEmail || request.userEmail}
                           </div>
+                          {request.createdAt && (
+                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1">
+                              <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              {(() => {
+                                const d = (request.createdAt as any).toDate
+                                  ? (request.createdAt as any).toDate()
+                                  : new Date(request.createdAt as any);
+                                return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                              })()}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -492,7 +505,7 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
 
                 <div className="mt-2 space-y-4">
                   <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg space-y-3">
-                    <h4 className="text-sm font-semibold text-brand-pink uppercase tracking-wider">İletişim Bilgileri</h4>
+                    <h4 className="text-sm font-semibold text-violet-600 uppercase tracking-wider">İletişim Bilgileri</h4>
                     {(request.contactPerson || request.firstName) && (
                       <div>
                         <span className="block text-xs text-gray-500 dark:text-gray-400">Yetkili Kişi</span>
@@ -541,7 +554,7 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
                       <span className="block text-xs text-gray-500 dark:text-gray-400">Dans Stilleri</span>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {(request.danceStyles || []).map((style, index) => (
-                          <span key={index} className="px-2 py-0.5 bg-rose-100 text-brand-pink rounded text-xs">
+                          <span key={index} className="px-2 py-0.5 bg-rose-100 text-violet-600 rounded text-xs">
                             {style}
                           </span>
                         ))}

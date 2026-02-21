@@ -1001,7 +1001,7 @@ export const UserManagement: React.FC = () => {
         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
           <button
             onClick={() => editStudent(student)}
-            className="text-brand-pink hover:text-indigo-900 mr-2"
+            className="text-violet-600 hover:text-indigo-900 mr-2"
           >
             Düzenle
           </button>
@@ -1150,7 +1150,7 @@ export const UserManagement: React.FC = () => {
   if (loading && students.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-600"></div>
         <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
@@ -1171,33 +1171,44 @@ export const UserManagement: React.FC = () => {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <h2 className="text-lg sm:text-xl font-semibold">Kullanıcı Yönetimi</h2>
-        {!editMode && (
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => handleAddNewUser('student')}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              disabled={loading}
-            >
-              {loading ? 'Yükleniyor...' : 'Yeni Öğrenci'}
-            </button>
-            <button
-              onClick={() => handleAddNewUser('instructor')}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              disabled={loading}
-            >
-              {loading ? 'Yükleniyor...' : 'Yeni Eğitmen'}
-            </button>
-            <button
-              onClick={() => handleAddNewUser('school')}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-rose-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-              disabled={loading}
-            >
-              {loading ? 'Yükleniyor...' : 'Yeni Dans Okulu'}
-            </button>
-          </div>
-        )}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 sm:p-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200">Kullanıcı Yönetimi</h2>
+          {!editMode && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleAddNewUser('student')}
+                disabled={loading}
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none transition-colors disabled:opacity-50"
+              >
+                <svg className="h-3.5 w-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Yeni Öğrenci
+              </button>
+              <button
+                onClick={() => handleAddNewUser('instructor')}
+                disabled={loading}
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition-colors disabled:opacity-50"
+              >
+                <svg className="h-3.5 w-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Yeni Eğitmen
+              </button>
+              <button
+                onClick={() => handleAddNewUser('school')}
+                disabled={loading}
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-violet-600 hover:bg-violet-700 focus:outline-none transition-colors disabled:opacity-50"
+              >
+                <svg className="h-3.5 w-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Yeni Dans Okulu
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {editMode ? (
@@ -1205,8 +1216,8 @@ export const UserManagement: React.FC = () => {
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700">
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
               {selectedStudent ? 'Kullanıcı Düzenle' : `Yeni ${selectedUserType === 'student' ? 'Öğrenci' :
-                  selectedUserType === 'instructor' ? 'Eğitmen' :
-                    'Dans Okulu'
+                selectedUserType === 'instructor' ? 'Eğitmen' :
+                  'Dans Okulu'
                 } Ekle`}
             </h3>
           </div>
@@ -1254,27 +1265,36 @@ export const UserManagement: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="mb-4 flex flex-col sm:flex-row gap-4">
+          <div className="mb-4 flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Ad veya e-posta ile ara..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:border-brand-pink"
-              />
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Ad veya e-posta ile ara..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {availableRoles.map(role => (
+            <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden text-sm h-9 self-start">
+              {[
+                { value: 'student', label: 'Öğrenci', color: 'bg-emerald-600' },
+                { value: 'instructor', label: 'Eğitmen', color: 'bg-blue-600' },
+                { value: 'school', label: 'Okul', color: 'bg-violet-600' },
+              ].map(({ value, label, color }) => (
                 <button
-                  key={role}
-                  onClick={() => handleRoleFilter(role)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${filterConfig.roles.includes(role)
-                      ? 'bg-brand-pink text-white'
-                      : 'bg-gray-200 text-gray-700 dark:text-gray-300'
+                  key={value}
+                  onClick={() => handleRoleFilter(value)}
+                  className={`px-3 py-1.5 font-medium transition-colors whitespace-nowrap ${filterConfig.roles.includes(value)
+                      ? `${color} text-white`
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
                     }`}
                 >
-                  {role}
+                  {label}
                 </button>
               ))}
             </div>
@@ -1282,7 +1302,7 @@ export const UserManagement: React.FC = () => {
 
           {loading && (
             <div className="flex justify-center my-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-pink"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-violet-600"></div>
             </div>
           )}
 
@@ -1411,17 +1431,17 @@ export const UserManagement: React.FC = () => {
                               {student.schoolName || '-'}
                             </div>
                           </td>
-                          <td className="px-4 sm:px-6 py-4 text-right text-xs sm:text-sm font-medium whitespace-nowrap">
+                          <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => editStudent(student)}
-                                className="text-brand-pink hover:text-indigo-900"
+                                className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 dark:border-slate-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none transition-colors"
                               >
                                 Düzenle
                               </button>
                               <button
                                 onClick={() => deleteStudentHandler(student.id)}
-                                className="text-red-600 hover:text-red-900"
+                                className="inline-flex items-center px-2.5 py-1.5 border border-red-200 dark:border-red-800 text-xs font-medium rounded text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 focus:outline-none transition-colors"
                               >
                                 Sil
                               </button>

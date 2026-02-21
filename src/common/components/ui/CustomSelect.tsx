@@ -42,7 +42,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   const labelColor = isDark ? '#94a3b8' : '#6B7280';
   const borderColor = isDark ? '#475569' : '#E5E7EB';
   const borderHover = isDark ? '#64748b' : '#9CA3AF';
-  const borderFocus = isDark ? '#818cf8' : '#6366F1';
+  const borderFocus = isDark ? '#a78bfa' : '#7c3aed'; // Violet-400 / Violet-600
   const placeholderColor = isDark ? '#64748b' : '#9CA3AF';
 
   const handleChange = (event: any) => {
@@ -106,9 +106,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                   backgroundColor: bgHover,
                 },
                 '&.Mui-selected': {
-                  backgroundColor: isDark ? '#334155' : '#ede9fe',
+                  backgroundColor: isDark ? '#334155' : '#f5f3ff',
                   '&:hover': {
-                    backgroundColor: isDark ? '#475569' : '#ddd6fe',
+                    backgroundColor: isDark ? '#475569' : '#ede9fe',
                   },
                 },
               },
