@@ -375,7 +375,12 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   <img
                     src="/logoname.png"
                     alt="Feriha"
-                    className="h-8 w-auto object-contain"
+                    className="h-8 w-auto object-contain dark:hidden"
+                  />
+                  <img
+                    src="/darklogoname.png"
+                    alt="Feriha"
+                    className="h-8 w-auto object-contain hidden dark:block"
                   />
                 </Link>
               </div>
