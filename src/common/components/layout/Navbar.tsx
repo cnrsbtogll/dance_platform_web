@@ -380,42 +380,40 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 </Link>
               </div>
               <div className="hidden lg:ml-8 md:ml-4 md:flex items-center lg:space-x-4 md:space-x-1">
-                {!hasSchoolRole && !hasInstructorRole && (
-                  <>
-                    <Link
-                      to="/partners"
-                      className={`${isActive('/partners')
-                        ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
-                    >
-                      Partner Bul
-                    </Link>
-                    <Link
-                      to="/courses"
-                      className={`${isActive('/courses')
-                        ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
-                    >
-                      Kurs Bul
-                    </Link>
-                    <Link
-                      to="/festivals"
-                      className={`${isActive('/festivals')
-                        ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
-                    >
-                      Festivaller
-                    </Link>
-                    <Link
-                      to="/nights"
-                      className={`${isActive('/nights')
-                        ? 'border-brand-pink text-brand-pink font-medium'
-                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
-                    >
-                      Geceler
-                    </Link>
-                  </>
-                )}
+                <>
+                  <Link
+                    to="/partners"
+                    className={`${isActive('/partners')
+                      ? 'border-brand-pink text-brand-pink font-medium'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                  >
+                    Partner Bul
+                  </Link>
+                  <Link
+                    to="/courses"
+                    className={`${isActive('/courses')
+                      ? 'border-brand-pink text-brand-pink font-medium'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                  >
+                    Kurs Bul
+                  </Link>
+                  <Link
+                    to="/festivals"
+                    className={`${isActive('/festivals')
+                      ? 'border-brand-pink text-brand-pink font-medium'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                  >
+                    Festivaller
+                  </Link>
+                  <Link
+                    to="/nights"
+                    className={`${isActive('/nights')
+                      ? 'border-brand-pink text-brand-pink font-medium'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                  >
+                    Geceler
+                  </Link>
+                </>
               </div>
             </div>
             <div className="hidden md:ml-4 md:flex md:items-center lg:space-x-2 md:space-x-1">
@@ -727,6 +725,38 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 )}
               </div>
 
+              {/* Ana Kategori Linkleri - Mobil (Herkese Açık) */}
+              <div className="px-4 py-2 space-y-1 border-b border-gray-200 dark:border-gray-700">
+                <Link
+                  to="/partners"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Partner Bul
+                </Link>
+                <Link
+                  to="/courses"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Kurs Bul
+                </Link>
+                <Link
+                  to="/festivals"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Festivaller
+                </Link>
+                <Link
+                  to="/nights"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Geceler
+                </Link>
+              </div>
+
               {isAuthenticated ? (
                 <>
                   <div className="flex items-center px-4 py-2">
@@ -749,41 +779,6 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     </div>
                   </div>
                   <div className="mt-3 space-y-1 px-4">
-                    {!hasSchoolRole && !hasInstructorRole && (
-                      <>
-                        <Link
-                          to="/partners"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Partner Bul
-                        </Link>
-                        <Link
-                          to="/courses"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Kurs Bul
-                        </Link>
-                        <Link
-                          to="/festivals"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Festivaller
-                        </Link>
-                        <Link
-                          to="/nights"
-                          className="block px-3 py-1 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-700 hover:bg-rose-50 transition-colors duration-150"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Geceler
-                        </Link>
-                      </>
-                    )}
-
-                    {/* Ayırıcı çizgi */}
-                    <div className="my-4 border-t border-gray-200 dark:border-gray-700" />
                     <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Profil Menüsü
                     </div>
