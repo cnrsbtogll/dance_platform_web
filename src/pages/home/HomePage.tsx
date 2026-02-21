@@ -316,23 +316,23 @@ function HomePage({ isAuthenticated, user }: HomePageProps) {
 
       {/* Call to Action */}
       {!isAuthenticated && (
-        <div className="bg-rose-700 text-white py-16">
+        <div className="bg-brand-pink text-white py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center">
               <h2 className="text-3xl font-bold mb-4">Dans Topluluğumuza Katılın</h2>
-              <p className="text-indigo-200 mb-8">
+              <p className="text-pink-100 mb-8">
                 Hemen kayıt olun ve dans dünyasının tüm avantajlarından yararlanmaya başlayın.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/signup"
-                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-slate-800 px-6 py-3 text-base font-medium text-rose-700 shadow-md hover:bg-rose-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-rose-700"
+                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-slate-800 px-6 py-3 text-base font-medium text-brand-pink shadow-md hover:bg-pink-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-brand-pink"
                 >
                   Ücretsiz Kayıt Ol
                 </Link>
                 <Link
                   to="/signin"
-                  className="inline-flex items-center justify-center rounded-md bg-brand-pink border border-white px-6 py-3 text-base font-medium text-white hover:bg-indigo-800 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-rose-700"
+                  className="inline-flex items-center justify-center rounded-md bg-transparent border border-white px-6 py-3 text-base font-medium text-white hover:bg-white hover:text-brand-pink transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-brand-pink"
                 >
                   Giriş Yap
                 </Link>
