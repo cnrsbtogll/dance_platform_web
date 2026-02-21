@@ -892,7 +892,7 @@ export const UserManagement: React.FC = () => {
       case 'instructor':
         return 'bg-blue-100 text-blue-800';
       case 'school':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-indigo-100 text-indigo-800';
       case 'student':
         return 'bg-green-100 text-green-800';
       default:
@@ -1001,7 +1001,7 @@ export const UserManagement: React.FC = () => {
         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
           <button
             onClick={() => editStudent(student)}
-            className="text-violet-600 hover:text-indigo-900 mr-2"
+            className="text-indigo-600 hover:text-indigo-900 mr-2"
           >
             Düzenle
           </button>
@@ -1150,7 +1150,7 @@ export const UserManagement: React.FC = () => {
   if (loading && students.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
         <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
@@ -1199,7 +1199,7 @@ export const UserManagement: React.FC = () => {
               <button
                 onClick={() => handleAddNewUser('school')}
                 disabled={loading}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-violet-600 hover:bg-violet-700 focus:outline-none transition-colors disabled:opacity-50"
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-colors disabled:opacity-50"
               >
                 <svg className="h-3.5 w-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -1284,14 +1284,14 @@ export const UserManagement: React.FC = () => {
               {[
                 { value: 'student', label: 'Öğrenci', color: 'bg-emerald-600' },
                 { value: 'instructor', label: 'Eğitmen', color: 'bg-blue-600' },
-                { value: 'school', label: 'Okul', color: 'bg-violet-600' },
+                { value: 'school', label: 'Okul', color: 'bg-indigo-600' },
               ].map(({ value, label, color }) => (
                 <button
                   key={value}
                   onClick={() => handleRoleFilter(value)}
                   className={`px-3 py-1.5 font-medium transition-colors whitespace-nowrap ${filterConfig.roles.includes(value)
-                      ? `${color} text-white`
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
+                    ? `${color} text-white`
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
                     }`}
                 >
                   {label}
@@ -1302,7 +1302,7 @@ export const UserManagement: React.FC = () => {
 
           {loading && (
             <div className="flex justify-center my-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-violet-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
             </div>
           )}
 

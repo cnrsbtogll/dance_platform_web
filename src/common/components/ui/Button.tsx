@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'instructor' | 'school' | 'violet';
+type ButtonVariant = 'primary' | 'secondary' | 'instructor' | 'school' | 'indigo';
 
 export interface ButtonProps {
   children: React.ReactNode;
@@ -29,7 +29,7 @@ function Button({
     secondary: 'bg-gray-200 text-gray-700 dark:text-gray-300 hover:bg-gray-300 focus:ring-gray-500',
     instructor: 'bg-instructor text-white hover:bg-instructor-dark focus:ring-instructor',
     school: 'bg-school text-white hover:bg-school-dark focus:ring-school',
-    violet: 'bg-gradient-to-r from-violet-600 to-purple-700 text-white hover:from-violet-500 hover:to-purple-600 focus:ring-violet-500 border-none shadow-sm',
+    indigo: 'bg-gradient-to-r from-indigo-600 to-blue-700 text-white hover:from-indigo-500 hover:to-blue-600 focus:ring-indigo-500 border-none shadow-sm',
   } as const;
   const widthClass = fullWidth ? 'w-full' : '';
   const disabledClass = (disabled || loading) ? 'opacity-50 cursor-not-allowed' : '';

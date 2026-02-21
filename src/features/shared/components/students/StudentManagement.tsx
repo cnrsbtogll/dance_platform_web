@@ -58,6 +58,7 @@ interface FormData {
   displayName: string;
   email: string;
   phone: string;
+  password?: string; // New field
   level: DanceLevel;
   photoURL: string;
   instructorId: string;
@@ -351,6 +352,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     displayName: '',
     email: '',
     phone: '',
+    password: '', // Initialize password
     level: 'beginner',
     photoURL: '',
     instructorId: '',
@@ -506,6 +508,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       displayName: student.displayName,
       email: student.email,
       phone: student.phoneNumber || '',
+      password: '', // Reset password when editing
       level: student.level || 'beginner',
       photoURL: student.photoURL || '',
       instructorId: student.instructorId || '',
@@ -522,6 +525,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       displayName: '',
       email: '',
       phone: '',
+      password: '', // Initialize password
       level: 'beginner',
       photoURL: generateInitialsAvatar('?', 'student'),
       instructorId: isAdmin ? '' : currentUser?.uid || '',
@@ -592,6 +596,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     displayName: string;
     level?: DanceLevel;
     phoneNumber?: string;
+    password?: string; // Add password here
     instructorId?: string;
     instructorName?: string;
     schoolId?: string;
@@ -642,6 +647,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
 
       await setDoc(doc(db, 'users', userId), {
         ...userData,
+        password: invitationData.password || null, // Temporarily store password for easier rollout
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
@@ -870,7 +876,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           schoolId: userRole.includes('school') ? currentUser?.uid : formData.schoolId,
           schoolName: schoolName,
           photoURL: formData.photoURL,
-          courseIds: formData.courseIds
+          courseIds: formData.courseIds,
+          password: formData.password // Pass the password from form
         });
 
         setSuccess('Öğrenci başarıyla eklendi ve davet e-postası gönderildi.');
@@ -1182,19 +1189,21 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
 
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              {/* Profil Fotoğrafı */}
-              <div className="md:col-span-2">
-                <ImageUploader
-                  currentPhotoURL={formData.photoURL}
-                  onImageChange={handlePhotoChange}
-                  displayName={formData.displayName || '?'}
-                  userType="student"
-                  shape="circle"
-                  width={96}
-                  height={96}
-                  maxSizeKB={5120}
-                />
-              </div>
+              {/* Profil Fotoğrafı - Hide for new student in school mode */}
+              {(!userRole.includes('school') || !!selectedStudent) && (
+                <div className="md:col-span-2">
+                  <ImageUploader
+                    currentPhotoURL={formData.photoURL}
+                    onImageChange={handlePhotoChange}
+                    displayName={formData.displayName || '?'}
+                    userType="student"
+                    shape="circle"
+                    width={96}
+                    height={96}
+                    maxSizeKB={5120}
+                  />
+                </div>
+              )}
 
               <div>
                 <CustomInput
@@ -1236,26 +1245,43 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 />
               </div>
 
-              <div>
-                <CustomSelect
-                  name="level"
-                  label="Dans Seviyesi"
-                  value={formData.level}
-                  onChange={(value: string | string[]) => {
-                    if (typeof value === 'string') {
-                      handleSelectChange(value, 'level');
-                    }
-                  }}
-                  options={[
-                    { value: 'beginner', label: 'Başlangıç' },
-                    { value: 'intermediate', label: 'Orta' },
-                    { value: 'advanced', label: 'İleri' },
-                    { value: 'professional', label: 'Profesyonel' }
-                  ]}
-                  fullWidth
-                  required
-                />
-              </div>
+              {/* Password field - show only for new student in school mode */}
+              {(userRole.includes('school') && !selectedStudent) && (
+                <div>
+                  <CustomInput
+                    label="Şifre"
+                    name="password"
+                    type="password"
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    fullWidth
+                    required
+                    colorVariant="school"
+                  />
+                </div>
+              )}
+              {(!userRole.includes('school') || !!selectedStudent) && (
+                <div>
+                  <CustomSelect
+                    name="level"
+                    label="Dans Seviyesi"
+                    value={formData.level}
+                    onChange={(value: string | string[]) => {
+                      if (typeof value === 'string') {
+                        handleSelectChange(value, 'level');
+                      }
+                    }}
+                    options={[
+                      { value: 'beginner', label: 'Başlangıç' },
+                      { value: 'intermediate', label: 'Orta' },
+                      { value: 'advanced', label: 'İleri' },
+                      { value: 'professional', label: 'Profesyonel' }
+                    ]}
+                    fullWidth
+                    required
+                  />
+                </div>
+              )}
 
               {isAdmin && (
                 <div>
@@ -1281,8 +1307,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 </div>
               )}
 
-              {/* School selection - only show for admin */}
-              {isAdmin ? (
+              {/* School selection - Hide for new student in school mode */}
+              {isAdmin && (
                 <div>
                   <CustomSelect
                     name="schoolId"
@@ -1302,7 +1328,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                     required
                   />
                 </div>
-              ) : userRole.includes('school') && (
+              )}
+              {(!isAdmin && userRole.includes('school') && !!selectedStudent) && (
                 <div>
                   <span className="text-gray-500 dark:text-gray-400">Okul:</span>
                   <SchoolProfile
@@ -1316,31 +1343,32 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 </div>
               )}
 
-              {/* Course selection */}
-              <div>
-                <CustomSelect
-                  name="courseIds"
-                  label="Kurslar"
-                  value={formData.courseIds}
-                  onChange={(value: string | string[]) => {
-                    if (Array.isArray(value)) {
-                      console.log('Course selection changed to:', value);
-                      console.log('Selected courses:', courses.filter(c => value.includes(c.id)));
-                      setFormData(prev => ({
-                        ...prev,
-                        courseIds: value
-                      }));
-                    }
-                  }}
-                  options={courses.map(course => ({
-                    value: course.id,
-                    label: course.name
-                  }))}
-                  fullWidth
-                  multiple
-                  required
-                />
-              </div>
+              {/* Course selection - Show for school admin adding or editing */}
+              {(userRole.includes('school') || isAdmin) && (
+                <div>
+                  <CustomSelect
+                    name="courseIds"
+                    label="Kurslar"
+                    value={formData.courseIds}
+                    onChange={(value: string | string[]) => {
+                      if (Array.isArray(value)) {
+                        console.log('Course selection changed to:', value);
+                        setFormData(prev => ({
+                          ...prev,
+                          courseIds: value
+                        }));
+                      }
+                    }}
+                    options={courses.map(course => ({
+                      value: course.id,
+                      label: course.name
+                    }))}
+                    fullWidth
+                    multiple
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end space-x-3">

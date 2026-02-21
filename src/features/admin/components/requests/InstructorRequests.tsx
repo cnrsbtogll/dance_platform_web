@@ -250,7 +250,7 @@ function InstructorRequests() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
         <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
@@ -512,7 +512,7 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                 <div className="mt-4 space-y-6">
                   {/* İletişim Bilgileri */}
                   <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
-                    <h4 className="text-sm font-semibold text-violet-600 uppercase tracking-wider mb-3">İletişim Bilgileri</h4>
+                    <h4 className="text-sm font-semibold text-indigo-600 uppercase tracking-wider mb-3">İletişim Bilgileri</h4>
                     <div className="space-y-2">
                       <div className="flex items-center text-sm">
                         <span className="text-gray-500 dark:text-gray-400 w-24">E-posta:</span>
@@ -554,7 +554,7 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                         <span className="block text-xs text-gray-500 dark:text-gray-400">Dans Stilleri</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {(request.danceStyles || []).map((style, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-rose-100 text-violet-600 rounded text-xs">
+                            <span key={idx} className="px-2 py-0.5 bg-rose-100 text-indigo-600 rounded text-xs">
                               {style}
                             </span>
                           ))}

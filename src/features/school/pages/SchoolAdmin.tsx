@@ -269,7 +269,7 @@ const SchoolAdmin: React.FC = () => {
 
         <div className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600 dark:text-purple-400">
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400">
               <MenuBookRoundedIcon />
             </div>
             <span className="inline-flex items-center text-xs font-medium text-slate-500 bg-slate-50 dark:bg-slate-800 dark:text-slate-400 px-2 py-1 rounded-full">

@@ -492,7 +492,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   {hasSuperAdminRole && (
                     <Link
                       to="/admin"
-                      className="mr-1 lg:mr-3 inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                      className="mr-1 lg:mr-3 inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                       title="Admin Panel"
                     >
                       <span className="hidden lg:inline">Admin Panel</span>
@@ -792,7 +792,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     {hasSuperAdminRole && (
                       <Link
                         to="/admin"
-                        className="block px-3 py-1 mt-2 rounded-md text-base font-medium text-white bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 transition-colors duration-150"
+                        className="block px-3 py-1 mt-2 rounded-md text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-150"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Admin Panel

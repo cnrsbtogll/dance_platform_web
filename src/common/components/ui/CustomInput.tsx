@@ -8,7 +8,7 @@ export interface CustomInputProps {
   label: string;
   value: string;
   onChange: (e: ChangeEvent<HTMLInputElement> | { target: { name: string; value: any } }) => void;
-  type?: 'text' | 'email' | 'password' | 'checkbox';
+  type?: 'text' | 'email' | 'password' | 'checkbox' | 'number' | 'time';
   error?: boolean;
   helperText?: string;
   fullWidth?: boolean;

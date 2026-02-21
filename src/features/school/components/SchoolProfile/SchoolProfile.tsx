@@ -1,6 +1,6 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { School } from '../../../../types';
-import { Button } from '@mui/material';
+import Button from '../../../../common/components/ui/Button';
 import CustomInput from '../../../../common/components/ui/CustomInput';
 
 interface SchoolProfileProps {
@@ -85,8 +85,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
       <div className="flex justify-end mb-4">
         {!isEditing ? (
           <Button
-            variant="contained"
-            color="primary"
+            variant="school"
             onClick={() => setIsEditing(true)}
           >
             Düzenle
@@ -94,8 +93,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
         ) : (
           <div className="space-x-2">
             <Button
-              variant="outlined"
-              color="secondary"
+              variant="secondary"
               onClick={() => {
                 setIsEditing(false);
                 setEditedSchool(school);
@@ -106,8 +104,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
               İptal
             </Button>
             <Button
-              variant="contained"
-              color="primary"
+              variant="school"
               onClick={handleSave}
             >
               Kaydet

@@ -78,7 +78,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
         transition={{ duration: 0.5 }}
         className="text-center mb-6 sm:mb-10"
       >
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 inline-block relative bg-gradient-to-r from-violet-600 to-purple-700 bg-clip-text text-transparent">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 inline-block relative bg-gradient-to-r from-indigo-600 to-blue-700 bg-clip-text text-transparent">
           Yönetim Paneli
         </h1>
         <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">
@@ -91,7 +91,7 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
         <div className="md:hidden border-b border-gray-200 dark:border-slate-700 p-4">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
+            className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             <span>{
               activeTab === 'kullanicilar' ? 'Tüm Kullanıcılar' :
@@ -114,8 +114,8 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 setIsMobileMenuOpen(false);
               }}
               className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${activeTab === 'kullanicilar'
-                  ? 'border-violet-600 text-violet-600 bg-violet-50 md:bg-transparent'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
+                ? 'border-indigo-600 text-indigo-600 bg-indigo-50 md:bg-transparent'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                 }`}
             >
               Tüm Kullanıcılar
@@ -126,8 +126,8 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 setIsMobileMenuOpen(false);
               }}
               className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${activeTab === 'kurslar'
-                  ? 'border-violet-600 text-violet-600 bg-violet-50 md:bg-transparent'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
+                ? 'border-indigo-600 text-indigo-600 bg-indigo-50 md:bg-transparent'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                 }`}
             >
               Kurslar
@@ -138,8 +138,8 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                 setIsMobileMenuOpen(false);
               }}
               className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${activeTab === 'talepler'
-                  ? 'border-violet-600 text-violet-600 bg-violet-50 md:bg-transparent'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
+                ? 'border-indigo-600 text-indigo-600 bg-indigo-50 md:bg-transparent'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                 }`}
             >
               Talepler
@@ -151,8 +151,8 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                   setIsMobileMenuOpen(false);
                 }}
                 className={`py-3 md:py-4 px-4 md:px-6 text-center font-medium text-sm md:text-base border-b-2 whitespace-nowrap ${activeTab === 'ornek-veri'
-                    ? 'border-violet-600 text-violet-600 bg-violet-50 md:bg-transparent'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
+                  ? 'border-indigo-600 text-indigo-600 bg-indigo-50 md:bg-transparent'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
                   }`}
               >
                 Örnek Veri
@@ -238,9 +238,9 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
       </div>
 
       {isSuperAdmin && (
-        <div className="mt-6 sm:mt-8 bg-purple-50 rounded-lg p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-purple-800">Süper Admin Yetkileri</h2>
-          <p className="mt-2 text-sm sm:text-base text-purple-700">
+        <div className="mt-6 sm:mt-8 bg-indigo-50 rounded-lg p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-indigo-800">Süper Admin Yetkileri</h2>
+          <p className="mt-2 text-sm sm:text-base text-indigo-700">
             Süper admin olarak, tüm dans okullarını, eğitmenleri, kursları ve kullanıcıları yönetebilirsiniz.
             Eğitmen başvurularını onaylayabilir veya reddedebilirsiniz. Dans stillerini de yönetebilirsiniz.
           </p>

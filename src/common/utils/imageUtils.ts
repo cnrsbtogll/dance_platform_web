@@ -20,7 +20,7 @@ export const generateInitialsAvatar = (name: string, userType: 'student' | 'inst
 
   // Kullanıcı tipine göre renk seç
   const colors = {
-    student: ['#6366f1', '#8b5cf6'], // indigo to purple
+    student: ['#6366f1', '#3b82f6'], // indigo to blue
     instructor: ['#f59e0b', '#ea580c'], // amber to orange
     school: ['#059669', '#0891b2'] // emerald to cyan
   };

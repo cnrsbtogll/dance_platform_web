@@ -650,7 +650,7 @@ function InstructorManagement(): JSX.Element {
   if (loading && egitmenler.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
         <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
@@ -847,7 +847,7 @@ function InstructorManagement(): JSX.Element {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700 transition-colors"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
                 disabled={loading}
               >
                 {loading ? 'Kaydediliyor...' : (seciliEgitmen ? 'Güncelle' : 'Ekle')}
@@ -863,13 +863,13 @@ function InstructorManagement(): JSX.Element {
               placeholder="Eğitmen adı veya uzmanlık ara..."
               value={aramaTerimi}
               onChange={(e) => setAramaTerimi(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-600"
+              className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-600"
             />
           </div>
 
           {loading && (
             <div className="flex justify-center my-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-violet-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
             </div>
           )}
 
@@ -946,7 +946,7 @@ function InstructorManagement(): JSX.Element {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => egitmenDuzenle(egitmen)}
-                          className="text-violet-600 hover:text-indigo-900 mr-2"
+                          className="text-indigo-600 hover:text-indigo-900 mr-2"
                         >
                           Düzenle
                         </button>
