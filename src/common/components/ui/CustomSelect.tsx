@@ -19,6 +19,7 @@ interface CustomSelectProps {
   placeholder?: string;
   fullWidth?: boolean;
   allowEmpty?: boolean;
+  colorVariant?: 'default' | 'school' | 'instructor';
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -33,17 +34,21 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   placeholder,
   fullWidth = true,
   allowEmpty = true,
+  colorVariant = 'default',
 }) => {
   const { isDark } = useTheme();
 
-  const bg = isDark ? '#1e293b' : '#ffffff';
-  const bgHover = isDark ? '#334155' : '#f9fafb';
-  const textColor = isDark ? '#f1f5f9' : '#111827';
-  const labelColor = isDark ? '#94a3b8' : '#6B7280';
-  const borderColor = isDark ? '#475569' : '#E5E7EB';
-  const borderHover = isDark ? '#64748b' : '#9CA3AF';
-  const borderFocus = isDark ? '#a78bfa' : '#7c3aed'; // Violet-400 / Violet-600
-  const placeholderColor = isDark ? '#64748b' : '#9CA3AF';
+  const isSchool = colorVariant === 'school';
+  const bg = isDark ? (isSchool ? '#231810' : '#1e293b') : '#ffffff';
+  const bgHover = isDark ? (isSchool ? '#493322' : '#334155') : '#f9fafb';
+  const textColor = isDark ? (isSchool ? '#ffffff' : '#f1f5f9') : '#111827';
+  const labelColor = isDark ? (isSchool ? '#cba990' : '#94a3b8') : '#6B7280';
+  const borderColor = isDark ? (isSchool ? '#493322' : '#475569') : '#E5E7EB';
+  const borderHover = isDark ? (isSchool ? '#cba990' : '#64748b') : '#9CA3AF';
+  const borderFocus = isDark ? (isSchool ? '#b45309' : '#a78bfa') : (isSchool ? '#b45309' : '#7c3aed');
+  const placeholderColor = isDark ? (isSchool ? '#8e715b' : '#64748b') : '#9CA3AF';
+  const selectedBg = isDark ? (isSchool ? '#493322' : '#334155') : '#f5f3ff';
+  const selectedHoverBg = isDark ? (isSchool ? '#493322' : '#475569') : '#ede9fe';
 
   const handleChange = (event: any) => {
     const selectedValue = event.target.value;
@@ -106,9 +111,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                   backgroundColor: bgHover,
                 },
                 '&.Mui-selected': {
-                  backgroundColor: isDark ? '#334155' : '#f5f3ff',
+                  backgroundColor: selectedBg,
                   '&:hover': {
-                    backgroundColor: isDark ? '#475569' : '#ede9fe',
+                    backgroundColor: selectedHoverBg,
                   },
                 },
               },

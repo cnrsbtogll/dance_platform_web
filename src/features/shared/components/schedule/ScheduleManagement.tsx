@@ -14,12 +14,14 @@ interface ScheduleManagementProps {
   courses: Course[];
   onAddCourse?: () => void;
   isAdmin?: boolean;
+  colorVariant?: 'default' | 'instructor' | 'school';
 }
 
-const ScheduleManagement: React.FC<ScheduleManagementProps> = ({ 
-  courses, 
+const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
+  courses,
   onAddCourse,
-  isAdmin = false 
+  isAdmin = false,
+  colorVariant = 'default'
 }) => {
   const [selectedDay, setSelectedDay] = useState<string>('');
 
@@ -27,7 +29,7 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div>
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Ders Programı</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Haftalık Program</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             {isAdmin ? 'Okulunuzun' : 'Size ait'} haftalık ders programını görüntüleyin
           </p>
@@ -57,6 +59,7 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
             ]}
             fullWidth
             allowEmpty
+            colorVariant={colorVariant === 'school' ? 'school' : 'default'}
           />
         </div>
       </div>
@@ -66,28 +69,27 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
           <div className="overflow-x-auto sm:overflow-x-visible">
             <div className="grid grid-cols-1 sm:grid-cols-7 gap-4 sm:min-w-0">
               {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map((day) => (
-                <div 
-                  key={day} 
+                <div
+                  key={day}
                   id={`day-${day}`}
                   onClick={() => setSelectedDay(day === selectedDay ? '' : day)}
-                  className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border p-3 min-h-[100px] sm:min-h-[200px] cursor-pointer hover:border-indigo-300 hover:ring-1 hover:ring-indigo-300 transition-all ${
-                    selectedDay === day 
-                      ? 'border-indigo-300 ring-1 ring-indigo-300' 
-                      : 'border-gray-200 dark:border-slate-700'
-                  } ${
-                    selectedDay && selectedDay !== day ? 'sm:block hidden' : ''
-                  }`}
+                  className={`bg-white rounded-lg shadow-sm border p-3 min-h-[100px] sm:min-h-[200px] cursor-pointer hover:border-indigo-300 hover:ring-1 hover:ring-indigo-300 transition-all ${colorVariant === 'school' ? 'dark:bg-[#1a120b]' : 'dark:bg-slate-800'
+                    } ${selectedDay === day
+                      ? 'border-indigo-300 ring-1 ring-indigo-300'
+                      : (colorVariant === 'school' ? 'border-gray-200 dark:border-[#493322]' : 'border-gray-200 dark:border-slate-700')
+                    } ${selectedDay && selectedDay !== day ? 'sm:block hidden' : ''
+                    }`}
                 >
-                  <div className="text-center font-medium py-2 rounded-md mb-3 bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-gray-300">
+                  <div className={`text-center font-medium py-2 rounded-md mb-3 bg-gray-50 text-gray-700 ${colorVariant === 'school' ? 'dark:bg-[#231810] dark:text-[#cba990]' : 'dark:bg-slate-900 dark:text-gray-300'}`}>
                     {day}
                   </div>
-                  
+
                   <div className="space-y-2">
                     {courses
                       .filter(course => course.schedule.some(s => s.day === day))
                       .map(course => (
-                        <div 
-                          key={course.id} 
+                        <div
+                          key={course.id}
                           className="p-3 bg-rose-50 hover:bg-rose-100 border border-rose-100 rounded-md transition-colors duration-200"
                         >
                           <div className="font-medium text-rose-700 truncate mb-1">{course.name}</div>
@@ -115,13 +117,13 @@ const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
           </div>
         </div>
       ) : (
-        <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+        <div className={`text-center py-12 bg-white rounded-lg shadow-sm border ${colorVariant === 'school' ? 'dark:bg-[#1a120b] border-gray-200 dark:border-[#493322]' : 'dark:bg-slate-800 border-gray-200 dark:border-slate-700'}`}>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Henüz Kurs Bulunmuyor</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
-            {isAdmin 
+            {isAdmin
               ? 'Yeni bir kurs eklemek için "Kurslar" sekmesini kullanabilirsiniz.'
               : 'Henüz size atanmış bir kurs bulunmuyor.'}
           </p>

@@ -18,6 +18,7 @@ export interface CustomInputProps {
   className?: string;
   required?: boolean;
   disabled?: boolean;
+  colorVariant?: 'default' | 'school' | 'instructor';
 }
 
 export const CustomInput: React.FC<CustomInputProps> = ({
@@ -35,17 +36,19 @@ export const CustomInput: React.FC<CustomInputProps> = ({
   className,
   required = false,
   disabled = false,
+  colorVariant = 'default',
 }) => {
   const { isDark } = useTheme();
 
-  const bg = isDark ? '#1e293b' : '#ffffff';
-  const textColor = isDark ? '#f1f5f9' : '#111827';
-  const labelColor = isDark ? '#94a3b8' : '#6B7280';
-  const borderColor = isDark ? '#475569' : '#E5E7EB';
-  const borderHover = isDark ? '#64748b' : '#9CA3AF';
-  const borderFocus = isDark ? '#a78bfa' : '#7c3aed'; // Violet-400 / Violet-600
-  const disabledBg = isDark ? '#0f172a' : '#f9fafb';
-  const disabledText = isDark ? '#64748b' : '#9CA3AF';
+  const isSchool = colorVariant === 'school';
+  const bg = isDark ? (isSchool ? '#231810' : '#1e293b') : '#ffffff';
+  const textColor = isDark ? (isSchool ? '#ffffff' : '#f1f5f9') : '#111827';
+  const labelColor = isDark ? (isSchool ? '#cba990' : '#94a3b8') : '#6B7280';
+  const borderColor = isDark ? (isSchool ? '#493322' : '#475569') : '#E5E7EB';
+  const borderHover = isDark ? (isSchool ? '#cba990' : '#64748b') : '#9CA3AF';
+  const borderFocus = isDark ? (isSchool ? '#b45309' : '#a78bfa') : (isSchool ? '#b45309' : '#7c3aed');
+  const disabledBg = isDark ? (isSchool ? '#1a120b' : '#0f172a') : '#f9fafb';
+  const disabledText = isDark ? (isSchool ? '#8e715b' : '#64748b') : '#9CA3AF';
 
   return (
     <TextField
@@ -89,7 +92,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
           '&.Mui-disabled': {
             backgroundColor: disabledBg,
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: isDark ? '#334155' : '#E5E7EB',
+              borderColor: isDark ? (isSchool ? '#2a1d13' : '#334155') : '#E5E7EB',
             },
           },
         },
@@ -137,7 +140,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
           marginTop: '-3px',
         },
         '& .MuiFormHelperText-root': {
-          color: error ? '#f87171' : (isDark ? '#94a3b8' : '#6B7280'),
+          color: error ? '#f87171' : (isDark ? (isSchool ? '#cba990' : '#94a3b8') : '#6B7280'),
         },
       }}
     />

@@ -4,27 +4,29 @@ interface ProgressTrackingProps {
   schoolInfo?: any;
   instructorId?: string;
   isAdmin?: boolean;
+  colorVariant?: 'default' | 'instructor' | 'school';
 }
 
 const ProgressTracking: React.FC<ProgressTrackingProps> = ({
   schoolInfo,
   instructorId,
-  isAdmin = false
+  isAdmin = false,
+  colorVariant = 'default'
 }) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">İlerleme Takibi</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Öğrenci İlerleme Durumu</h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {isAdmin 
+            {isAdmin
               ? 'Öğrencilerin dans eğitimindeki gelişimini takip edin'
               : 'Öğrencilerinizin dans eğitimindeki gelişimini takip edin'}
           </p>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 rounded-lg p-6">
+      <div className={`bg-white shadow-sm border rounded-lg p-6 ${colorVariant === 'school' ? 'dark:bg-[#1a120b] dark:border-[#493322]' : 'dark:bg-slate-800 border-gray-200 dark:border-slate-700'}`}>
         <div className="text-center py-12">
           <svg
             className="mx-auto h-12 w-12 text-gray-400"

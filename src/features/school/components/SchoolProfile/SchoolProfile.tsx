@@ -10,8 +10,8 @@ interface SchoolProfileProps {
   onUpdate?: (updatedSchool: Partial<School>) => Promise<void>;
 }
 
-export const SchoolProfile: React.FC<SchoolProfileProps> = ({ 
-  school, 
+export const SchoolProfile: React.FC<SchoolProfileProps> = ({
+  school,
   className = '',
   variant = 'row',
   onUpdate
@@ -81,11 +81,11 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
           {success}
         </div>
       )}
-      
+
       <div className="flex justify-end mb-4">
         {!isEditing ? (
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             color="primary"
             onClick={() => setIsEditing(true)}
           >
@@ -93,8 +93,8 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
           </Button>
         ) : (
           <div className="space-x-2">
-            <Button 
-              variant="outlined" 
+            <Button
+              variant="outlined"
               color="secondary"
               onClick={() => {
                 setIsEditing(false);
@@ -105,8 +105,8 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
             >
               İptal
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               color="primary"
               onClick={handleSave}
             >
@@ -127,6 +127,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
               disabled={!isEditing}
               required
               fullWidth
+              colorVariant="school"
             />
           </div>
           <div>
@@ -135,10 +136,11 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
               name="email"
               type="email"
               value={school.email}
-              onChange={() => {}}
+              onChange={() => { }}
               disabled={true}
               required
               fullWidth
+              colorVariant="school"
             />
           </div>
           <div>
@@ -149,6 +151,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
               onChange={handleInputChange}
               disabled={!isEditing}
               fullWidth
+              colorVariant="school"
             />
           </div>
         </div>
@@ -162,6 +165,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
               onChange={handleInputChange}
               disabled={!isEditing}
               fullWidth
+              colorVariant="school"
             />
           </div>
           <div>
@@ -172,6 +176,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
               onChange={handleInputChange}
               disabled={!isEditing}
               fullWidth
+              colorVariant="school"
             />
           </div>
         </div>
@@ -185,6 +190,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
               onChange={handleInputChange}
               disabled={!isEditing}
               fullWidth
+              colorVariant="school"
             />
           </div>
           <div>
@@ -195,6 +201,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
               onChange={handleInputChange}
               disabled={!isEditing}
               fullWidth
+              colorVariant="school"
             />
           </div>
         </div>

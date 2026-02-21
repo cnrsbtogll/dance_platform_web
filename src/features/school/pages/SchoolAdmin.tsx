@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 import createSchoolTheme from '../../../styles/schoolTheme';
 import { useTheme } from '../../../contexts/ThemeContext';
 import {
@@ -10,12 +11,32 @@ import {
   getDocs,
   doc,
   getDoc,
-  orderBy,
   updateDoc,
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../../../api/firebase/firebase';
 import { useAuth } from '../../../contexts/AuthContext';
+
+// Icons
+import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
+import StorefrontRoundedIcon from '@mui/icons-material/StorefrontRounded';
+import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
+import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
+import FactCheckRoundedIcon from '@mui/icons-material/FactCheckRounded';
+import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
+import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
+import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded';
+import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import PaymentsIcon from '@mui/icons-material/Payments';
+
+// Components
 import { StudentManagement } from '../../../features/shared/components/students/StudentManagement';
 import CourseManagement from '../../../features/shared/components/courses/CourseManagement';
 import AttendanceManagement from '../../../features/shared/components/attendance/AttendanceManagement';
@@ -23,8 +44,6 @@ import ProgressTracking from '../../../features/shared/components/progress/Progr
 import BadgeSystem from '../../../features/shared/components/badges/BadgeSystem';
 import ScheduleManagement from '../../../features/shared/components/schedule/ScheduleManagement';
 import InstructorManagement from '../components/InstructorManagement/InstructorManagement';
-import CustomSelect from '../../../common/components/ui/CustomSelect';
-import { User } from '../../../types';
 import { SchoolProfile } from '../components/SchoolProfile/SchoolProfile';
 
 interface Course {
@@ -50,27 +69,22 @@ interface SchoolInfo {
   [key: string]: any;
 }
 
+type TabType = 'dashboard' | 'profile' | 'instructors' | 'courses' | 'students' | 'schedule' | 'attendance' | 'progress' | 'badges';
+
 const SchoolAdmin: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
   const schoolTheme = createSchoolTheme(isDark ? 'dark' : 'light');
-  const [activeTab, setActiveTab] = useState<
-    'profile' |
-    'courses' |
-    'students' |
-    'instructors' |
-    'schedule' |
-    'attendance' |
-    'progress' |
-    'badges'
-  >('profile');
+
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState<string>('');
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
 
-  // Debug logs for school info
   useEffect(() => {
     if (schoolInfo && activeTab === 'students') {
       console.log('SchoolAdmin - Using school info:', {
@@ -81,15 +95,12 @@ const SchoolAdmin: React.FC = () => {
     }
   }, [schoolInfo, activeTab, currentUser?.uid]);
 
-  // Fetch school information
   useEffect(() => {
     const fetchSchoolInfo = async () => {
       if (!currentUser?.uid) return;
 
       try {
         setLoading(true);
-
-        // Fetch user document to get school ID
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
 
@@ -102,7 +113,6 @@ const SchoolAdmin: React.FC = () => {
         const userData = userDoc.data();
         const userRole = userData.role;
 
-        // Safely check if the user has the school role
         const isSchool = userRole
           ? (Array.isArray(userRole)
             ? userRole.includes('school')
@@ -115,7 +125,6 @@ const SchoolAdmin: React.FC = () => {
           return;
         }
 
-        // If this is the user's school account
         if (userData.schoolId) {
           const schoolRef = doc(db, 'schools', userData.schoolId);
           const schoolDoc = await getDoc(schoolRef);
@@ -130,7 +139,6 @@ const SchoolAdmin: React.FC = () => {
             });
           }
         } else {
-          // If the user doc itself is for a school
           setSchoolInfo({
             id: userDoc.id,
             displayName: userData.displayName || 'İsimsiz Okul',
@@ -150,7 +158,6 @@ const SchoolAdmin: React.FC = () => {
     fetchSchoolInfo();
   }, [currentUser]);
 
-  // Fetch courses
   useEffect(() => {
     const fetchCourses = async () => {
       if (!schoolInfo?.id) return;
@@ -177,16 +184,37 @@ const SchoolAdmin: React.FC = () => {
       }
     };
 
-    if (activeTab === 'schedule') {
+    if (activeTab === 'schedule' || activeTab === 'dashboard') {
       fetchCourses();
     }
   }, [activeTab, schoolInfo?.id]);
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const navItems = [
+    { id: 'dashboard', label: 'Özet', icon: <DashboardRoundedIcon fontSize="small" /> },
+    { id: 'profile', label: 'Okul Profili', icon: <StorefrontRoundedIcon fontSize="small" /> },
+    { id: 'students', label: 'Öğrenciler', icon: <GroupsRoundedIcon fontSize="small" /> },
+    { id: 'instructors', label: 'Eğitmenler', icon: <PersonRoundedIcon fontSize="small" /> },
+    { id: 'courses', label: 'Kurslar', icon: <MenuBookRoundedIcon fontSize="small" /> },
+    { id: 'schedule', label: 'Program', icon: <CalendarMonthRoundedIcon fontSize="small" /> },
+    { id: 'attendance', label: 'Yoklama', icon: <FactCheckRoundedIcon fontSize="small" /> },
+    { id: 'progress', label: 'İlerleme', icon: <TrendingUpRoundedIcon fontSize="small" /> },
+    { id: 'badges', label: 'Rozetler', icon: <EmojiEventsRoundedIcon fontSize="small" /> },
+  ];
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[500px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school"></div>
-        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
+      <div className="flex justify-center flex-col items-center min-h-[500px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school mb-4"></div>
+        <span className="text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
   }
@@ -196,9 +224,7 @@ const SchoolAdmin: React.FC = () => {
       <div className="max-w-2xl mx-auto my-10 p-8 bg-white dark:bg-slate-800 rounded-lg shadow-md">
         <div className="text-center">
           <div className="text-red-500 mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <CloseRoundedIcon sx={{ fontSize: 64 }} />
           </div>
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Hata</h2>
           <p className="text-gray-600 dark:text-gray-400">{error}</p>
@@ -207,217 +233,295 @@ const SchoolAdmin: React.FC = () => {
     );
   }
 
-  return (
-    <ThemeProvider theme={schoolTheme}>
-      <div className="container mx-auto px-4 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-10"
-        >
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4 inline-block relative bg-gradient-to-r from-school to-school-light bg-clip-text text-transparent">
-            Dans Okulu Yönetim Paneli
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Kurslarınızı, öğrencilerinizi, eğitmenlerinizi ve ders programınızı profesyonelce yönetin.
-          </p>
-        </motion.div>
+  const renderDashboardOverview = () => (
+    <div className="space-y-6">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
+              <GroupsRoundedIcon />
+            </div>
+            <span className="inline-flex items-center text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400 px-2 py-1 rounded-full">
+              +5.2% <TrendingUpIcon fontSize="small" className="ml-1" />
+            </span>
+          </div>
+          <div>
+            <p className="text-slate-500 dark:text-[#cba990] text-sm font-medium mb-1">Toplam Öğrenci</p>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">1,240</h3>
+          </div>
+        </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
-          {/* Tab Navigation - Mobile */}
-          <div className="md:hidden border-b overflow-x-auto">
-            <div className="flex whitespace-nowrap">
-              <button
-                onClick={() => setActiveTab('profile')}
-                className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'profile'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                Okul Profili
-              </button>
-              <button
-                onClick={() => setActiveTab('instructors')}
-                className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'instructors'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Eğitmenler
-              </button>
-              <button
-                onClick={() => setActiveTab('courses')}
-                className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'courses'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                Kurslar
-              </button>
-              <button
-                onClick={() => setActiveTab('students')}
-                className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'students'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                Öğrenciler
-              </button>
-              <button
-                onClick={() => setActiveTab('schedule')}
-                className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'schedule'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Program
-              </button>
-              <button
-                onClick={() => setActiveTab('attendance')}
-                className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'attendance'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Yoklama
-              </button>
-              <button
-                onClick={() => setActiveTab('progress')}
-                className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'progress'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                İlerleme
-              </button>
-              <button
-                onClick={() => setActiveTab('badges')}
-                className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'badges'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-                Rozetler
-              </button>
+        <div className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-amber-600 dark:text-amber-400">
+              <PersonRoundedIcon />
+            </div>
+            <span className="inline-flex items-center text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400 px-2 py-1 rounded-full">
+              +2.1% <TrendingUpIcon fontSize="small" className="ml-1" />
+            </span>
+          </div>
+          <div>
+            <p className="text-slate-500 dark:text-[#cba990] text-sm font-medium mb-1">Toplam Eğitmen</p>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">58</h3>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600 dark:text-purple-400">
+              <MenuBookRoundedIcon />
+            </div>
+            <span className="inline-flex items-center text-xs font-medium text-slate-500 bg-slate-50 dark:bg-slate-800 dark:text-slate-400 px-2 py-1 rounded-full">
+              0.0%
+            </span>
+          </div>
+          <div>
+            <p className="text-slate-500 dark:text-[#cba990] text-sm font-medium mb-1">Aktif Kurslar</p>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{courses.length || 0}</h3>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+              <PaymentsIcon />
+            </div>
+            <span className="inline-flex items-center text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400 px-2 py-1 rounded-full">
+              +12% <TrendingUpIcon fontSize="small" className="ml-1" />
+            </span>
+          </div>
+          <div>
+            <p className="text-slate-500 dark:text-[#cba990] text-sm font-medium mb-1">Aylık Gelir</p>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">₺45,200</h3>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <div className="bg-white dark:bg-[#231810] p-6 rounded-xl border border-slate-200 dark:border-[#493322] shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Kayıt Trendleri</h3>
+                <p className="text-sm text-slate-500 dark:text-[#cba990]">Aylık yeni öğrenci sayısı</p>
+              </div>
+              <div className="flex gap-2">
+                <button className="px-3 py-1 text-xs font-medium bg-slate-100 dark:bg-[#493322] text-slate-600 dark:text-white rounded-md hover:bg-slate-200 dark:hover:bg-[#493322]/80 transition">Haftalık</button>
+                <button className="px-3 py-1 text-xs font-medium bg-school text-white rounded-md shadow-sm">Aylık</button>
+              </div>
+            </div>
+            <div className="relative h-64 w-full">
+              <div className="absolute inset-0 flex items-end justify-between px-2 pb-6 gap-2">
+                {[40, 55, 35, 65, 50, 85].map((val, i) => (
+                  <div key={i} className={`w-full ${i === 5 ? 'bg-school' : 'bg-school/40'} rounded-t-sm group relative transition-all`} style={{ height: `${val}%` }}>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">{val}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="absolute bottom-0 inset-x-0 flex justify-between px-2 text-xs text-slate-400 font-medium">
+                <span>Oca</span><span>Şub</span><span>Mar</span><span>Nis</span><span>May</span><span>Haz</span>
+              </div>
             </div>
           </div>
 
-          {/* Tab Navigation - Desktop */}
-          <div className="hidden md:block border-b">
-            <nav className="flex -mb-px">
-              <button
+          <div className="bg-white dark:bg-[#231810] rounded-xl border border-slate-200 dark:border-[#493322] shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-[#493322]">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Son Etkinlikler</h3>
+              <button className="text-sm font-medium text-school hover:text-school/80">Tümünü Gör</button>
+            </div>
+            <div className="divide-y divide-slate-100 dark:divide-[#493322]">
+              {[
+                { icon: <PaymentsIcon />, color: "text-green-600", bg: "bg-green-100 dark:bg-green-900/30", title: "Ödeme Alındı", desc: "Öğrenci: Alex Johnson", time: "2 dk önce" },
+                { icon: <GroupsRoundedIcon />, color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30", title: "Yeni Öğrenci Kaydı", desc: "Öğrenci: Sarah Connor", time: "1 saat önce" },
+                { icon: <MenuBookRoundedIcon />, color: "text-amber-600", bg: "bg-amber-100 dark:bg-amber-900/30", title: "Kurs Programı Güncellendi", desc: "Eğitmen: Mr. Anderson", time: "3 saat önce" }
+              ].map((act, i) => (
+                <div key={i} className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-[#493322]/30 transition-colors cursor-pointer">
+                  <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${act.bg} ${act.color}`}>
+                    {act.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800 dark:text-white truncate">{act.title}</p>
+                    <p className="text-xs text-slate-500 dark:text-[#cba990]">{act.desc}</p>
+                  </div>
+                  <span className="text-xs text-slate-400 font-medium whitespace-nowrap">{act.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-6">
+          <div className="bg-white dark:bg-[#231810] rounded-xl border border-slate-200 dark:border-[#493322] shadow-sm p-6">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Bildirimler & İpuçları</h3>
+            <div className="space-y-4">
+              <div
+                className="flex gap-3 group cursor-pointer"
                 onClick={() => setActiveTab('profile')}
-                className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'profile'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
               >
-                Okul Profili
-              </button>
-              <button
-                onClick={() => setActiveTab('instructors')}
-                className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'instructors'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                Eğitmenler
-              </button>
-              <button
-                onClick={() => setActiveTab('courses')}
-                className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'courses'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                Kurslar
-              </button>
-              <button
+                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-school/10 text-school shrink-0 border border-school/20">
+                  <StorefrontRoundedIcon />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-800 dark:text-white group-hover:text-school transition-colors">Okul Profili</p>
+                  <p className="text-xs text-slate-500 dark:text-[#cba990]">Profil ve IBAN bilgilerinizi güncel tutun.</p>
+                </div>
+              </div>
+              <div
+                className="flex gap-3 group cursor-pointer"
                 onClick={() => setActiveTab('students')}
-                className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'students'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
               >
-                Öğrenciler
-              </button>
-              <button
-                onClick={() => setActiveTab('schedule')}
-                className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'schedule'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                Program
-              </button>
-              <button
-                onClick={() => setActiveTab('attendance')}
-                className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'attendance'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                Yoklama
-              </button>
-              <button
-                onClick={() => setActiveTab('progress')}
-                className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'progress'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                İlerleme Takibi
-              </button>
-              <button
-                onClick={() => setActiveTab('badges')}
-                className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'badges'
-                  ? 'border-school text-school'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-                  }`}
-              >
-                Rozetler
-              </button>
-            </nav>
+                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-slate-100 dark:bg-[#493322] text-slate-600 dark:text-white shrink-0 group-hover:bg-school-lighter transition-colors border border-transparent group-hover:border-school/20">
+                  <GroupsRoundedIcon />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-800 dark:text-white transition-colors group-hover:text-school">Yıl Sonu Gösterisi</p>
+                  <p className="text-xs text-slate-500 dark:text-[#cba990]">Hazırlıklar devam ediyor, öğrencileri kontrol edin.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="p-4 sm:p-6">
-            {activeTab === 'profile' && schoolInfo && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Okul Profili</h2>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      Dans okulunuzun temel bilgilerini görüntüleyin ve düzenleyin
-                    </p>
-                  </div>
-                </div>
+          <div className="bg-gradient-to-br from-school to-school-dark rounded-xl shadow-lg p-6 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <EmojiEventsRoundedIcon sx={{ fontSize: 120 }} />
+            </div>
+            <div className="relative z-10">
+              <h3 className="text-lg font-bold mb-2">Okul Duyurusu</h3>
+              <p className="text-white/90 text-sm mb-4 leading-relaxed">Yeni sezon kayıtlarımız açıldı, tüm sınıfları ve eğitmen saatlerini panele yüklemeyi unutmayın.</p>
+              <button
+                onClick={() => setActiveTab('courses')}
+                className="px-4 py-2 bg-white text-school text-sm font-bold rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+              >
+                Kurslara Git
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
-                <div className="bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 rounded-lg p-6">
+  return (
+    <ThemeProvider theme={schoolTheme}>
+      <div className="flex min-h-screen w-full bg-school-bg dark:bg-[#1a120b] overflow-hidden font-sans text-slate-900 dark:text-slate-100 antialiased">
+
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex flex-col w-72 h-screen z-20 bg-white dark:bg-[#231810] border-r border-slate-200 dark:border-[#493322] sticky top-0">
+          <div className="flex items-center gap-3 px-6 py-6 border-b border-slate-100 dark:border-[#493322]">
+            <div
+              className="bg-center bg-no-repeat bg-cover rounded-full size-10 shrink-0 border border-slate-200 dark:border-slate-700"
+              style={{ backgroundImage: `url(${schoolInfo?.photoURL || 'https://ui-avatars.com/api/?name=S&background=b45309&color=fff'})` }}
+            />
+            <div className="flex flex-col">
+              <h1 className="text-slate-900 dark:text-white text-base font-bold leading-tight line-clamp-1">{schoolInfo?.displayName || 'Yükleniyor...'}</h1>
+              <p className="text-slate-500 dark:text-[#cba990] text-xs font-normal">Okul Yönetim Paneli</p>
+            </div>
+          </div>
+
+          <nav className="flex flex-col flex-1 px-4 py-6 gap-2 overflow-y-auto">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id as TabType)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${activeTab === item.id
+                  ? 'bg-school/10 text-school dark:bg-[#493322] dark:text-white font-medium'
+                  : 'text-slate-600 dark:text-[#cba990] hover:bg-slate-50 dark:hover:bg-[#493322]/50 hover:text-school dark:hover:text-white'
+                  }`}
+              >
+                {item.icon}
+                <span className="text-sm leading-normal">{item.label}</span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="px-4 py-4 border-t border-slate-100 dark:border-[#493322]">
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center justify-center gap-2 rounded-lg h-10 bg-school hover:bg-school-light text-white text-sm font-bold shadow-sm transition-all"
+            >
+              <LogoutRoundedIcon fontSize="small" />
+              <span>Çıkış Yap</span>
+            </button>
+          </div>
+        </aside>
+
+        {/* Mobile Navigation Drawer */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              <motion.aside
+                initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
+                className="fixed inset-y-0 left-0 w-72 h-full bg-white dark:bg-[#231810] z-50 flex flex-col shadow-xl"
+              >
+                <div className="flex items-center justify-between px-6 py-6 border-b border-slate-100 dark:border-[#493322]">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="bg-center bg-no-repeat bg-cover rounded-full size-10 shrink-0 border border-slate-200 dark:border-slate-700"
+                      style={{ backgroundImage: `url(${schoolInfo?.photoURL || 'https://ui-avatars.com/api/?name=S&background=b45309&color=fff'})` }}
+                    />
+                    <div className="flex flex-col">
+                      <h1 className="text-slate-900 dark:text-white text-base font-bold leading-tight">Yönetim</h1>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsMobileMenuOpen(false)} className="text-slate-500 dark:text-white p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+                    <CloseRoundedIcon />
+                  </button>
+                </div>
+                <nav className="flex flex-col flex-1 px-4 py-6 gap-2 overflow-y-auto">
+                  {navItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id as TabType);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${activeTab === item.id
+                        ? 'bg-school/10 text-school dark:bg-[#493322] dark:text-white font-medium'
+                        : 'text-slate-600 dark:text-[#cba990] hover:bg-slate-50 dark:hover:bg-[#493322]/50 hover:text-school dark:hover:text-white'
+                        }`}
+                    >
+                      {item.icon}
+                      <span className="text-sm leading-normal">{item.label}</span>
+                    </button>
+                  ))}
+
+                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-[#493322]">
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg h-10 bg-school hover:bg-school-light text-white text-sm font-bold shadow-sm transition-all"
+                    >
+                      <LogoutRoundedIcon fontSize="small" />
+                      <span>Çıkış Yap</span>
+                    </button>
+                  </div>
+                </nav>
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Main Content Area */}
+        <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {activeTab === 'dashboard' && renderDashboardOverview()}
+
+              {activeTab === 'profile' && schoolInfo && (
+                <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
+                  <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-white">Okul Profili</h3>
                   <SchoolProfile
                     school={schoolInfo}
                     variant="card"
@@ -428,8 +532,6 @@ const SchoolAdmin: React.FC = () => {
                           ...updatedSchool,
                           updatedAt: serverTimestamp()
                         });
-
-                        // Refresh school info
                         const updatedDoc = await getDoc(schoolRef);
                         if (updatedDoc.exists()) {
                           const updatedData = updatedDoc.data();
@@ -447,89 +549,79 @@ const SchoolAdmin: React.FC = () => {
                     }}
                   />
                 </div>
-              </div>
-            )}
+              )}
 
-            {activeTab === 'instructors' && schoolInfo && (
-              <InstructorManagement schoolInfo={schoolInfo} />
-            )}
+              {activeTab === 'instructors' && schoolInfo && (
+                <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
+                  <InstructorManagement schoolInfo={schoolInfo} />
+                </div>
+              )}
 
-            {activeTab === 'courses' && schoolInfo && (
-              <CourseManagement
-                schoolId={schoolInfo.id}
-                isAdmin={false}
-                colorVariant="school"
-              />
-            )}
+              {activeTab === 'courses' && schoolInfo && (
+                <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
+                  <CourseManagement
+                    schoolId={schoolInfo.id}
+                    isAdmin={false}
+                    colorVariant="school"
+                  />
+                </div>
+              )}
 
-            {activeTab === 'students' && schoolInfo && (
-              <div>
-                <StudentManagement
-                  isAdmin={false}
-                  colorVariant="school"
-                />
-              </div>
-            )}
+              {activeTab === 'students' && schoolInfo && (
+                <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
+                  <StudentManagement
+                    isAdmin={false}
+                    colorVariant="school"
+                  />
+                </div>
+              )}
 
-            {activeTab === 'attendance' && schoolInfo && (
-              <AttendanceManagement
-                schoolInfo={schoolInfo}
-                isAdmin={true}
-              />
-            )}
+              {activeTab === 'attendance' && schoolInfo && (
+                <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
+                  <AttendanceManagement
+                    schoolInfo={schoolInfo}
+                    isAdmin={true}
+                    colorVariant="school"
+                  />
+                </div>
+              )}
 
-            {activeTab === 'progress' && schoolInfo && (
-              <ProgressTracking
-                schoolInfo={schoolInfo}
-                isAdmin={true}
-              />
-            )}
+              {activeTab === 'progress' && schoolInfo && (
+                <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
+                  <ProgressTracking
+                    schoolInfo={schoolInfo}
+                    isAdmin={true}
+                    colorVariant="school"
+                  />
+                </div>
+              )}
 
-            {activeTab === 'badges' && schoolInfo && (
-              <BadgeSystem
-                schoolInfo={schoolInfo}
-                isAdmin={true}
-              />
-            )}
+              {activeTab === 'badges' && schoolInfo && (
+                <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
+                  <BadgeSystem
+                    schoolInfo={schoolInfo}
+                    isAdmin={true}
+                    colorVariant="school"
+                  />
+                </div>
+              )}
 
-            {activeTab === 'schedule' && (
-              <ScheduleManagement
-                courses={courses}
-                onAddCourse={() => setActiveTab('courses')}
-                isAdmin={true}
-              />
-            )}
+              {activeTab === 'schedule' && (
+                <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
+                  <ScheduleManagement
+                    courses={courses}
+                    onAddCourse={() => setActiveTab('courses')}
+                    isAdmin={true}
+                    colorVariant="school"
+                  />
+                </div>
+              )}
+            </motion.div>
           </div>
-        </div>
-
-        <div className="mt-8 bg-school-bg rounded-lg p-4 border border-school-lighter">
-          <h2 className="font-semibold text-school-dark">Dans Okulu İpuçları</h2>
-          <ul className="mt-2 space-y-2 text-sm text-school">
-            <li className="flex items-start">
-              <span className="mr-2 text-school-light">•</span>
-              <span>Eğitmenlerinizin ve öğrencilerinizin profillerini düzenli olarak güncelleyin.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2 text-school-light">•</span>
-              <span>Kurs programını öğrenci ve eğitmen uygunluğuna göre optimize edin.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2 text-school-light">•</span>
-              <span>Öğrenci ve eğitmen geri bildirimlerini düzenli olarak takip edin.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2 text-school-light">•</span>
-              <span>Dans etkinliklerini ve özel dersleri önceden planlayın.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2 text-school-light">•</span>
-              <span>Okulunuzun sosyal medya ve tanıtım faaliyetlerini güncel tutun.</span>
-            </li>
-          </ul>
-        </div>
+        </main>
       </div>
     </ThemeProvider>
   );
 };
 
-export default SchoolAdmin; 
+export default SchoolAdmin;

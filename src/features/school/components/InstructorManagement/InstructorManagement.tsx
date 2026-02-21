@@ -1,36 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  serverTimestamp, 
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
   Timestamp,
-  orderBy 
+  orderBy
 } from 'firebase/firestore';
 import { db } from '../../../../api/firebase/firebase';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { 
-  Box, 
-  Button, 
-  Card, 
-  CardContent, 
-  CardActions, 
-  Grid, 
-  TextField, 
-  Dialog, 
-  DialogActions, 
-  DialogContent, 
-  DialogTitle, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CardActions,
+  Grid,
+  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Typography,
   Chip,
   IconButton,
@@ -41,10 +41,10 @@ import {
   Rating,
   Divider
 } from '@mui/material';
-import { 
-  Add as AddIcon, 
-  Edit as EditIcon, 
-  Delete as DeleteIcon, 
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
   Search as SearchIcon,
   School as SchoolIcon,
   Person as PersonIcon,
@@ -112,14 +112,14 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Dialog states
   const [openDialog, setOpenDialog] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [formData, setFormData] = useState<InstructorFormData>(defaultInstructorFormData);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedInstructorId, setSelectedInstructorId] = useState<string | null>(null);
-  
+
   // Success message state
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -147,7 +147,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   }, [successMessage]);
 
   useEffect(() => {
-    const filtered = instructors.filter(instructor => 
+    const filtered = instructors.filter(instructor =>
       instructor.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       instructor.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -157,18 +157,18 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   const fetchInstructors = async () => {
     try {
       if (!currentUser?.uid) return;
-      
+
       setLoading(true);
       const instructorsRef = collection(db, 'users');
       console.log('Fetching instructors for currentUser.uid:', currentUser.uid);
-      
+
       const q = query(
-        instructorsRef, 
+        instructorsRef,
         where('role', '==', 'instructor'),
         where('schoolId', '==', currentUser.uid),
         orderBy('createdAt', 'desc')
       );
-      
+
       const querySnapshot = await getDocs(q);
       console.log('Query snapshot size:', querySnapshot.size);
       console.log('Raw query results:');
@@ -176,18 +176,18 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
         console.log('Document ID:', doc.id);
         console.log('Document data:', doc.data());
       });
-      
+
       const instructorsData: Instructor[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         instructorsData.push({
           id: doc.id,
           ...doc.data()
         } as Instructor);
       });
-      
+
       console.log('Processed instructors data:', instructorsData);
-      
+
       setInstructors(instructorsData);
       setFilteredInstructors(instructorsData);
       setLoading(false);
@@ -200,7 +200,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
   const handleOpenDialog = (isEditMode: boolean, instructor?: Instructor) => {
     setIsEdit(isEditMode);
-    
+
     if (isEditMode && instructor) {
       setFormData({
         id: instructor.id,
@@ -215,7 +215,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
     } else {
       setFormData(defaultInstructorFormData);
     }
-    
+
     setOpenDialog(true);
   };
 
@@ -253,7 +253,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
     try {
       setLoading(true);
-      
+
       if (isEdit) {
         // Update existing instructor
         const instructorRef = doc(db, 'users', formData.id);
@@ -266,33 +266,33 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
           updatedAt: serverTimestamp()
         });
-        
+
         // Update the instructor in the local state
-        setInstructors(instructors.map(instructor => 
-          instructor.id === formData.id 
-            ? { 
-                ...instructor, 
-                displayName: formData.displayName,
-                phoneNumber: formData.phoneNumber,
-                danceStyles: formData.danceStyles,
-                biography: formData.biography,
-                experience: formData.experience,
-                photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
-              } 
+        setInstructors(instructors.map(instructor =>
+          instructor.id === formData.id
+            ? {
+              ...instructor,
+              displayName: formData.displayName,
+              phoneNumber: formData.phoneNumber,
+              danceStyles: formData.danceStyles,
+              biography: formData.biography,
+              experience: formData.experience,
+              photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
+            }
             : instructor
         ));
-        
+
         setSuccessMessage('Eğitmen bilgileri başarıyla güncellendi.');
       } else {
         // Check if instructor with this email already exists
         const userSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', formData.email)));
-        
+
         if (!userSnapshot.empty) {
           // Email already exists, check if user is an instructor
           const existingUser = userSnapshot.docs[0];
           const existingUserId = existingUser.id;
           const userData = existingUser.data();
-          
+
           if (userData.role === 'instructor' || (Array.isArray(userData.role) && userData.role.includes('instructor'))) {
             // Already an instructor, just update the school association
             await updateDoc(doc(db, 'users', existingUserId), {
@@ -300,7 +300,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
               schoolName: schoolInfo.displayName,
               updatedAt: serverTimestamp()
             });
-            
+
             // Add to the local state
             const existingInstructorData = existingUser.data() as Instructor;
             const updatedInstructor = {
@@ -309,14 +309,14 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
               schoolId: currentUserId,
               schoolName: schoolInfo.displayName,
             };
-            
+
             setInstructors([updatedInstructor, ...instructors]);
             setSuccessMessage('Mevcut eğitmen okulunuza bağlandı.');
           } else {
             // User exists but not an instructor - update role to include instructor
             const currentRole = userData.role;
             let newRole;
-            
+
             if (Array.isArray(currentRole)) {
               if (!currentRole.includes('instructor')) {
                 newRole = [...currentRole, 'instructor'];
@@ -328,7 +328,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
             } else {
               newRole = 'instructor';
             }
-            
+
             await updateDoc(doc(db, 'users', existingUserId), {
               role: newRole,
               schoolId: currentUserId,
@@ -338,7 +338,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
               experience: formData.experience,
               updatedAt: serverTimestamp()
             });
-            
+
             // Add to the local state
             const existingUserData = existingUser.data() as Instructor;
             const updatedInstructor = {
@@ -351,7 +351,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
               biography: formData.biography,
               experience: formData.experience,
             };
-            
+
             setInstructors([updatedInstructor, ...instructors]);
             setSuccessMessage('Kullanıcı eğitmen rolüne yükseltildi ve okulunuza bağlandı.');
           }
@@ -373,20 +373,20 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           };
-          
+
           await setDoc(doc(db, 'users', newInstructorId), newInstructorData);
-          
+
           // Add the new instructor to the local state
           const newInstructor = {
             ...newInstructorData,
             createdAt: Timestamp.now()
           } as Instructor;
-          
+
           setInstructors([newInstructor, ...instructors]);
           setSuccessMessage('Yeni eğitmen başarıyla eklendi.');
         }
       }
-      
+
       setLoading(false);
       handleCloseDialog();
     } catch (err) {
@@ -403,10 +403,10 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
   const handleDeleteInstructor = async () => {
     if (!selectedInstructorId) return;
-    
+
     try {
       setLoading(true);
-      
+
       // Remove the school association from the instructor
       const instructorRef = doc(db, 'users', selectedInstructorId);
       await updateDoc(instructorRef, {
@@ -414,11 +414,11 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
         schoolName: null,
         updatedAt: serverTimestamp()
       });
-      
+
       // Remove from local state
       setInstructors(instructors.filter(instructor => instructor.id !== selectedInstructorId));
       setSuccessMessage('Eğitmen okul listenizden kaldırıldı.');
-      
+
       setLoading(false);
       setDeleteConfirmOpen(false);
       setSelectedInstructorId(null);
@@ -448,29 +448,29 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
         <Typography variant="body1" color="text.secondary" paragraph>
           Okulunuza kayıtlı eğitmenleri yönetin, yeni eğitmenler ekleyin ve mevcut eğitmenleri düzenleyin.
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
-        
+
         {successMessage && (
           <Alert severity="success" sx={{ mb: 2 }}>
             {successMessage}
           </Alert>
         )}
       </Box>
-      
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: { xs: 'column', sm: 'row' }, 
-        justifyContent: 'space-between', 
-        alignItems: { xs: 'stretch', sm: 'center' }, 
+
+      <Box sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between',
+        alignItems: { xs: 'stretch', sm: 'center' },
         gap: { xs: 2, sm: 0 },
-        mb: 3 
+        mb: 3
       }}>
-        <Box sx={{ 
+        <Box sx={{
           flex: { xs: '1', sm: '0 1 300px' },
           order: { xs: 2, sm: 1 },
           position: 'relative',
@@ -478,15 +478,15 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
             paddingLeft: '40px'
           }
         }}>
-          <SearchIcon 
-            sx={{ 
+          <SearchIcon
+            sx={{
               position: 'absolute',
               left: '12px',
               top: '50%',
               transform: 'translateY(-50%)',
               color: 'action.active',
               pointerEvents: 'none'
-            }} 
+            }}
           />
           <CustomInput
             name="search"
@@ -495,10 +495,11 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
             value={searchTerm}
             onChange={(e: { target: { name: string; value: any } }) => setSearchTerm(e.target.value)}
             fullWidth
+            colorVariant="school"
           />
         </Box>
-        
-        <Box sx={{ 
+
+        <Box sx={{
           order: { xs: 1, sm: 2 },
           width: { xs: '100%', sm: 'auto' }
         }}>
@@ -508,7 +509,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog(false)}
             fullWidth={false}
-            sx={{ 
+            sx={{
               width: { xs: '100%', sm: 'auto' },
               minWidth: { sm: '160px' },
               bgcolor: 'primary.main',
@@ -519,7 +520,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           </Button>
         </Box>
       </Box>
-      
+
       {loading && instructors.length === 0 ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
           <CircularProgress />
@@ -529,11 +530,11 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           {filteredInstructors.length > 0 ? (
             filteredInstructors.map((instructor) => (
               <Grid item xs={12} sm={6} md={4} key={instructor.id}>
-                <Card 
-                  elevation={2} 
-                  sx={{ 
-                    height: '100%', 
-                    display: 'flex', 
+                <Card
+                  elevation={2}
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
                     flexDirection: 'column',
                     transition: 'transform 0.2s, box-shadow 0.2s',
                     '&:hover': {
@@ -552,9 +553,9 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                       {instructor.displayName}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Rating 
-                        value={instructor.rating || 0} 
-                        readOnly 
+                      <Rating
+                        value={instructor.rating || 0}
+                        readOnly
                         precision={0.5}
                         size="small"
                       />
@@ -564,16 +565,16 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                     </Box>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 0.5, mb: 1 }}>
                       {instructor.danceStyles && instructor.danceStyles.map((style) => (
-                        <Chip 
-                          key={style} 
-                          label={style.charAt(0).toUpperCase() + style.slice(1)} 
-                          size="small" 
+                        <Chip
+                          key={style}
+                          label={style.charAt(0).toUpperCase() + style.slice(1)}
+                          size="small"
                           sx={{ fontWeight: 'medium' }}
                         />
                       ))}
                     </Box>
                   </Box>
-                  
+
                   <Divider />
                   <CardContent sx={{ flexGrow: 1 }}>
                     {instructor.biography && (
@@ -583,7 +584,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                           : instructor.biography}
                       </Typography>
                     )}
-                    
+
                     <Box sx={{ mt: 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <EmailIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
@@ -605,18 +606,18 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                       )}
                     </Box>
                   </CardContent>
-                  
+
                   <CardActions sx={{ p: 2, pt: 0 }}>
-                    <Button 
-                      size="small" 
+                    <Button
+                      size="small"
                       color="primary"
                       onClick={() => handleOpenDialog(true, instructor)}
                       startIcon={<EditIcon />}
                     >
                       Düzenle
                     </Button>
-                    <Button 
-                      size="small" 
+                    <Button
+                      size="small"
                       color="error"
                       onClick={() => handleDeleteConfirmOpen(instructor.id)}
                       startIcon={<DeleteIcon />}
@@ -629,10 +630,10 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
             ))
           ) : (
             <Grid item xs={12}>
-              <Box sx={{ 
-                p: 4, 
-                display: 'flex', 
-                flexDirection: 'column', 
+              <Box sx={{
+                p: 4,
+                display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 bgcolor: 'background.paper',
                 borderRadius: 2
@@ -642,8 +643,8 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                   {searchTerm ? 'Arama kriterine uygun eğitmen bulunamadı.' : 'Henüz hiç eğitmen kaydı bulunmuyor.'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" align="center">
-                  {searchTerm 
-                    ? 'Farklı bir arama terimi deneyin veya yeni eğitmen ekleyin.' 
+                  {searchTerm
+                    ? 'Farklı bir arama terimi deneyin veya yeni eğitmen ekleyin.'
                     : 'Yeni bir eğitmen eklemek için "Yeni Eğitmen" butonuna tıklayın.'}
                 </Typography>
               </Box>
@@ -651,12 +652,12 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           )}
         </Grid>
       )}
-      
+
       {/* Add/Edit Instructor Dialog */}
-      <Dialog 
-        open={openDialog} 
-        onClose={handleCloseDialog} 
-        maxWidth="md" 
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
@@ -666,13 +667,13 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           }
         }}
       >
-        <DialogTitle sx={{ 
+        <DialogTitle sx={{
           pb: 1,
           fontSize: { xs: '1.25rem', sm: '1.5rem' }
         }}>
           {isEdit ? 'Eğitmen Düzenle' : 'Yeni Eğitmen Ekle'}
         </DialogTitle>
-        <DialogContent sx={{ 
+        <DialogContent sx={{
           p: { xs: 2, sm: 3 },
           '&:first-of-type': { pt: { xs: 2, sm: 3 } }
         }}>
@@ -691,6 +692,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 onChange={handleInputChange}
                 required
                 fullWidth
+                colorVariant="school"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -703,6 +705,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 required
                 disabled={isEdit}
                 fullWidth
+                colorVariant="school"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -741,6 +744,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                   label: level.label
                 }))}
                 fullWidth
+                colorVariant="school"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -755,6 +759,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 }))}
                 multiple
                 fullWidth
+                colorVariant="school"
               />
             </Grid>
 
@@ -774,29 +779,30 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 rows={4}
                 placeholder="Eğitmen hakkında kısa bir tanıtım yazısı..."
                 fullWidth
+                colorVariant="school"
               />
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ 
+        <DialogActions sx={{
           p: { xs: 2, sm: 3 },
           gap: 1
         }}>
-          <Button 
-            onClick={handleCloseDialog} 
+          <Button
+            onClick={handleCloseDialog}
             color="secondary"
-            sx={{ 
+            sx={{
               minWidth: { xs: '80px', sm: '100px' }
             }}
           >
             İptal
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained" 
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
             color="primary"
             disabled={!formData.displayName || !formData.email}
-            sx={{ 
+            sx={{
               minWidth: { xs: '80px', sm: '100px' }
             }}
           >
@@ -804,7 +810,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           </Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteConfirmOpen}

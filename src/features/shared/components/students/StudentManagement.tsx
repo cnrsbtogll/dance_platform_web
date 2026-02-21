@@ -924,7 +924,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="hover:bg-gray-50 dark:hover:bg-slate-800"
+        className={`hover:bg-gray-50 ${colorVariant === 'school' ? 'dark:hover:bg-[#493322]/30' : 'dark:hover:bg-slate-800'}`}
       >
         <td className="px-6 py-4 whitespace-nowrap">
           <div className="flex items-center">
@@ -1140,7 +1140,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               placeholder="Ad veya e-posta ile ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 ${colorVariant === 'school' ? 'focus:ring-school dark:focus:ring-school-light' : 'focus:ring-instructor dark:focus:ring-instructor-light'} focus:border-transparent`}
+              className={`w-full px-4 py-2 border rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:border-transparent ${colorVariant === 'school' ? 'border-gray-300 dark:border-[#493322] bg-white dark:bg-[#1a120b] placeholder-gray-400 dark:placeholder-[#cba990]/50 focus:ring-school dark:focus:ring-school-light' : 'border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-instructor dark:focus:ring-instructor-light'}`}
             />
             <span className="absolute right-3 top-2.5 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1175,7 +1175,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       )}
 
       {editMode ? (
-        <div className="bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 rounded-lg">
+        <div className={`p-4 sm:p-6 rounded-lg border ${colorVariant === 'school' ? 'bg-gray-50 dark:bg-[#231810] border-transparent dark:border-[#493322]' : 'bg-gray-50 dark:bg-slate-900 border-transparent dark:border-slate-800'}`}>
           <h3 className="text-lg font-semibold mb-4">
             {selectedStudent ? 'Öğrenci Düzenle' : 'Yeni Öğrenci Ekle'}
           </h3>
@@ -1373,42 +1373,42 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
 
           {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50 dark:bg-slate-900">
+            <table className={`min-w-full divide-y ${colorVariant === 'school' ? 'divide-gray-200 dark:divide-[#493322]' : 'divide-gray-200 dark:divide-gray-700'}`}>
+              <thead className={colorVariant === 'school' ? 'bg-gray-50 dark:bg-[#231810]' : 'bg-gray-50 dark:bg-slate-900'}>
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
                     Öğrenci
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
                     E-posta
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
                     Dans Seviyesi
                   </th>
                   {userRole !== 'instructor' && (
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
                       Eğitmen
                     </th>
                   )}
                   {userRole !== 'school' && (
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
                       Okul
                     </th>
                   )}
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
                     Kurslar
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
                     İşlemler
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
+              <tbody className={`divide-y ${colorVariant === 'school' ? 'bg-white dark:bg-[#1a120b] divide-gray-200 dark:divide-[#493322]' : 'bg-white dark:bg-slate-800 divide-gray-200 dark:divide-slate-700'}`}>
                 {filteredStudents.length > 0 ? (
                   filteredStudents.map((student) => renderStudent(student))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                    <td colSpan={6} className={`px-6 py-4 text-center text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
                       {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
                     </td>
                   </tr>
@@ -1421,7 +1421,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           <div className="md:hidden space-y-4">
             {filteredStudents.length > 0 ? (
               filteredStudents.map((student) => (
-                <div key={student.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+                <div key={student.id} className={`rounded-lg shadow-sm border p-4 ${colorVariant === 'school' ? 'bg-white dark:bg-[#231810] border-gray-200 dark:border-[#493322]' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center max-w-[60%]">
                       <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
@@ -1462,7 +1462,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Dans Seviyesi:</span>
+                      <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Dans Seviyesi:</span>
                       <p className="font-medium">
                         {student.level === 'beginner' && 'Başlangıç'}
                         {student.level === 'intermediate' && 'Orta'}
@@ -1473,19 +1473,19 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                     </div>
                     {student.phoneNumber && (
                       <div>
-                        <span className="text-gray-500 dark:text-gray-400">Telefon:</span>
+                        <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Telefon:</span>
                         <p className="font-medium">{student.phoneNumber}</p>
                       </div>
                     )}
                     {userRole !== 'instructor' && (
                       <div>
-                        <span className="text-gray-500 dark:text-gray-400">Eğitmen:</span>
+                        <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Eğitmen:</span>
                         <p className="font-medium">{student.instructorName || '-'}</p>
                       </div>
                     )}
                     {userRole !== 'school' && (
                       <div>
-                        <span className="text-gray-500 dark:text-gray-400">Okul:</span>
+                        <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Okul:</span>
                         <SchoolProfile
                           school={{
                             id: student.schoolId || '',
@@ -1497,7 +1497,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                       </div>
                     )}
                     <div className="col-span-2">
-                      <span className="text-gray-500 dark:text-gray-400">Kurslar:</span>
+                      <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Kurslar:</span>
                       {student.courseIds && student.courseIds.length > 0 ? (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {student.courseIds.map(courseId => {
@@ -1517,7 +1517,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 </div>
               ))
             ) : (
-              <div className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
+              <div className={`text-center py-4 text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
                 {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
               </div>
             )}

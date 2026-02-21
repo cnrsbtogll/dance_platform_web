@@ -495,7 +495,7 @@ function AppContent(): JSX.Element {
               </Routes>
             </div>
 
-            <footer className="bg-gray-800 dark:bg-gray-950 text-white py-8 transition-colors duration-300">
+            <footer className={`${((currentUser?.role === 'school') || (Array.isArray(currentUser?.role) && currentUser.role.includes('school'))) ? 'bg-gray-800 dark:bg-[#231810] border-t dark:border-[#493322] border-transparent' : 'bg-gray-800 dark:bg-gray-950'} text-white py-8 transition-colors duration-300`}>
               <div className="container mx-auto px-4">
                 <div className="flex flex-col md:flex-row justify-between">
                   <div className="mb-6 md:mb-0">
