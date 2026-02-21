@@ -306,9 +306,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
         errors.contactPhone = '10 rakam girmelisiniz';
       }
 
-      if (formData.danceStyles.length === 0) {
-        errors.danceStyles = 'En az bir dans stili seçmelisiniz';
-      }
+
 
       if (!currentUser) {
         if (!formData.password) {
@@ -550,40 +548,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                   />
                 </div>
 
-                <div>
-                  <CustomInput
-                    label="Kuruluş Yılı"
-                    name="establishedYear"
-                    type="text"
-                    value={formData.establishedYear}
-                    onChange={handleInputChange}
-                    helperText={`${1900} - ${new Date().getFullYear()} arası bir yıl girin`}
-                  />
-                </div>
 
-                <div className="col-span-2">
-                  <CustomSelect
-                    label="Dans Stilleri"
-                    name="danceStyles"
-                    value={formData.danceStyles}
-                    options={danceStyleOptions}
-                    onChange={handleDanceStyleChange}
-                    error={formErrors.danceStyles}
-                    multiple
-                    required
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <CustomSelect
-                    label="Olanaklar"
-                    name="facilities"
-                    value={formData.facilities}
-                    options={facilitiesOptions}
-                    onChange={handleFacilitiesChange}
-                    multiple
-                  />
-                </div>
               </div>
             </div>
 
@@ -631,16 +596,7 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                   />
                 </div>
 
-                <div className="col-span-2">
-                  <CustomInput
-                    label="Web Sitesi"
-                    name="website"
-                    type="text"
-                    value={formData.website || ''}
-                    onChange={handleInputChange}
-                    placeholder="https://www.dansokulum.com"
-                  />
-                </div>
+
 
                 {!currentUser && (
                   <div className="col-span-2">
@@ -672,46 +628,6 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
                     multiline
                     rows={3}
                   />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 col-span-2">
-                  <div>
-                    <CustomInput
-                      label="Şehir"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  <div>
-                    <CustomInput
-                      label="İlçe"
-                      name="district"
-                      value={formData.district}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 col-span-2">
-                  <div>
-                    <CustomInput
-                      label="Posta Kodu"
-                      name="zipCode"
-                      value={formData.zipCode}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  <div>
-                    <CustomInput
-                      label="Ülke"
-                      name="country"
-                      value={formData.country || ''}
-                      onChange={handleInputChange}
-                    />
-                  </div>
                 </div>
               </div>
             </div>
