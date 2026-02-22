@@ -856,9 +856,12 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  // Delete student
+  // Delete user (student/instructor/school)
   const deleteStudentHandler = async (studentId: string): Promise<void> => {
-    if (!window.confirm('Bu öğrenciyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+    const studentToDelete = students.find(s => s.id === studentId);
+    if (!studentToDelete) return;
+
+    if (!window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
       return;
     }
 
@@ -866,19 +869,33 @@ export const UserManagement: React.FC = () => {
     setError(null);
 
     try {
-      // Delete from Firestore
+      // Create batch or do sequential deletes
+      const roles = Array.isArray(studentToDelete.role) ? studentToDelete.role : [studentToDelete.role];
+
+      // Delete from role-specific collections
+      if (roles.includes('instructor')) {
+        const instructorsRef = collection(db, 'instructors');
+        const q = query(instructorsRef, where('userId', '==', studentId));
+        const querySnapshot = await getDocs(q);
+        const deletePromises = querySnapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
+        await Promise.all(deletePromises);
+      }
+
+      if (roles.includes('school')) {
+        await deleteDoc(doc(db, 'schools', studentId));
+      }
+
+      // Delete from main users collection
       await deleteDoc(doc(db, 'users', studentId));
 
       // Remove from state
       const updatedStudents = students.filter(student => student.id !== studentId);
       setStudents(updatedStudents);
-      setSuccess('Öğrenci başarıyla silindi.');
+      setSuccess('Kullanıcı başarıyla silindi.');
 
-      // Note: Deleting the auth user would require admin SDK or reauthentication,
-      // so we're only deleting the Firestore document here.
     } catch (err) {
-      console.error('Öğrenci silinirken hata oluştu:', err);
-      setError('Öğrenci silinirken bir hata oluştu. Lütfen tekrar deneyin.');
+      console.error('Kullanıcı silinirken hata oluştu:', err);
+      setError('Kullanıcı silinirken bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
     }

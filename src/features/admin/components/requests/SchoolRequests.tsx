@@ -228,14 +228,6 @@ function SchoolRequests(): JSX.Element {
     );
   }
 
-  if (requests.length === 0) {
-    return (
-      <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Okul Başvuruları</h2>
-        <p className="text-gray-600 dark:text-gray-400">Şu anda bekleyen okul başvurusu bulunmamaktadır.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 sm:p-6">
