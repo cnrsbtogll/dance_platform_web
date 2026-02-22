@@ -25,25 +25,29 @@ const SimpleModal: React.FC<SimpleModalProps> = ({
                 return {
                     border: 'border-school/30 dark:border-school/50',
                     headerBorder: 'border-school/10 dark:border-school/20',
-                    focus: 'ring-school'
+                    focus: 'ring-school',
+                    bg: 'bg-white dark:bg-[#1a120b]'
                 };
             case 'instructor':
                 return {
                     border: 'border-instructor/30 dark:border-instructor/50',
                     headerBorder: 'border-instructor/10 dark:border-instructor/20',
-                    focus: 'ring-instructor'
+                    focus: 'ring-instructor',
+                    bg: 'bg-white dark:bg-[#1a0b0b]'
                 };
             case 'admin':
                 return {
                     border: 'border-indigo-500/30 dark:border-indigo-500/50',
                     headerBorder: 'border-indigo-500/10 dark:border-indigo-500/20',
-                    focus: 'ring-indigo-500'
+                    focus: 'ring-indigo-500',
+                    bg: 'bg-white dark:bg-slate-900'
                 };
             default:
                 return {
                     border: 'border-gray-200 dark:border-slate-700',
                     headerBorder: 'border-gray-100 dark:border-slate-800',
-                    focus: 'ring-gray-500'
+                    focus: 'ring-gray-500',
+                    bg: 'bg-white dark:bg-slate-900'
                 };
         }
     };
@@ -59,8 +63,7 @@ const SimpleModal: React.FC<SimpleModalProps> = ({
 
     if (!open) return null;
 
-    const defaultBodyClass = "bg-white dark:bg-slate-900";
-    const containerClass = `${bodyClassName || defaultBodyClass} rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border ${variantColors.border}`;
+    const containerClass = `${bodyClassName || variantColors.bg} rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border ${variantColors.border}`;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">

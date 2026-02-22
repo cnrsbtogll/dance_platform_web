@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   collection,
   getDocs,
@@ -14,7 +15,9 @@ import {
   QuerySnapshot,
   limit,
   where,
-  getDoc
+  getDoc,
+  arrayUnion,
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../../../../api/firebase/firebase';
 import { auth } from '../../../../api/firebase/firebase';
@@ -255,6 +258,7 @@ const timestampToDate = (timestamp: any): string => {
 };
 
 function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVariant = 'instructor' }: CourseManagementProps): JSX.Element {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
   const [editMode, setEditMode] = useState<boolean>(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -298,12 +302,26 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [instructors, setInstructors] = useState<Array<{ label: string; value: string }>>([]);
+  const [instructors, setInstructors] = useState<Array<{ label: string; value: string; courseIds?: string[] }>>([]);
   const [schools, setSchools] = useState<Array<{ label: string; value: string }>>([]);
   const [loadingInstructors, setLoadingInstructors] = useState<boolean>(true);
   const [loadingSchools, setLoadingSchools] = useState<boolean>(true);
   const [selectedContactCourse, setSelectedContactCourse] = useState<Course | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'draft'>('all');
+  const [instructorSearchTerm, setInstructorSearchTerm] = useState<string>('');
+  const [students, setStudents] = useState<any[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState<boolean>(true);
+  const [selectedCourseForStudents, setSelectedCourseForStudents] = useState<Course | null>(null);
+  const [selectedCourseForInstructors, setSelectedCourseForInstructors] = useState<Course | null>(null);
+  const [studentSearchInModal, setStudentSearchInModal] = useState<string>('');
+  const [instructorSearchInModal, setInstructorSearchInModal] = useState<string>('');
+  const [showQuickAddStudent, setShowQuickAddStudent] = useState<boolean>(false);
+  const [quickAddStudentData, setQuickAddStudentData] = useState({ displayName: '', email: '', password: '', phoneNumber: '' });
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
+
+  const [showQuickAddInstructor, setShowQuickAddInstructor] = useState<boolean>(false);
+  const [quickAddInstructorData, setQuickAddInstructorData] = useState({ displayName: '', email: '', password: '', phoneNumber: '' });
+  const [isQuickAddingInstructor, setIsQuickAddingInstructor] = useState(false);
 
   const sectionBorderColor = isAdmin ? 'border-indigo-600' : colorVariant === 'school' ? 'border-school' : 'border-instructor';
   const inputFocusRing = colorVariant === 'school' ? 'focus:ring-school focus:border-school' : 'focus:ring-instructor focus:border-instructor';
@@ -539,32 +557,22 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     }
 
     try {
-      console.log('Eğitmenler getiriliyor...');
-      const instructorsRef = collection(db, 'instructors');
+      console.log('[DEBUG-COURSE-MODAL] Eğitmenler getiriliyor...');
+      const instructorsRef = collection(db, 'users');
 
       let q;
-      // Okul yöneticisi için kendi ID'sine bağlı veya prop ile gelen schoolId'ye bağlı eğitmenleri getir
       const targetSchoolId = schoolId || auth.currentUser.uid;
 
-      if (!isAdmin) {
-        console.log('Okul yöneticisi için eğitmen sorgusu oluşturuluyor. Okul ID:', targetSchoolId);
-        q = query(
-          instructorsRef,
-          where('schoolId', '==', targetSchoolId),
-          where('status', '==', 'active')
-        );
-      } else {
-        console.log('Admin için tüm eğitmenler sorgusu oluşturuluyor');
-        q = query(
-          instructorsRef,
-          where('status', '==', 'active')
-        );
-      }
+      // We need to fetch from 'users' and then filter by role='instructor' and school
+      q = query(
+        instructorsRef,
+        orderBy('createdAt', 'desc')
+      );
 
-      console.log('Eğitmenler için query oluşturuldu, çalıştırılıyor...', {
+      console.log('[DEBUG-COURSE-MODAL] Query oluşturuldu, çalıştırılıyor...', {
         currentUserId: auth.currentUser.uid,
         isAdmin,
-        queryConditions: q
+        targetSchoolId
       });
 
       try {
@@ -575,26 +583,32 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           )
         ]) as QuerySnapshot<DocumentData>;
 
-        console.log('Query sonuçları:', {
-          empty: querySnapshot.empty,
-          size: querySnapshot.size,
-          docs: querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            data: {
-              displayName: doc.data().displayName,
-              email: doc.data().email,
-              schoolId: doc.data().schoolId,
-              status: doc.data().status
-            }
-          }))
+        console.log('[DEBUG-COURSE-MODAL] Fetched docs count:', querySnapshot.size);
+
+        const validDocs: any[] = [];
+        querySnapshot.forEach(doc => {
+          const data = doc.data();
+          const roles = Array.isArray(data.role) ? data.role : [data.role];
+
+          if (roles.includes('instructor')) {
+            validDocs.push({ id: doc.id, ...data });
+          }
         });
 
-        const instructorsData = querySnapshot.docs
-          .map(doc => {
-            const data = doc.data();
+        console.log('[DEBUG-COURSE-MODAL] Query sonuçları (Valid Instructors):', validDocs.map(d => ({
+          id: d.id,
+          displayName: d.displayName,
+          email: d.email,
+          schoolId: d.schoolId,
+          schoolIds: d.schoolIds
+        })));
+
+        const instructorsData = validDocs
+          .map(data => {
             return {
               label: data.displayName || data.email || 'İsimsiz Eğitmen',
-              value: doc.id
+              value: data.id,
+              courseIds: data.courseIds || []
             };
           })
           .sort((a, b) => a.label.localeCompare(b.label));
@@ -629,7 +643,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
   // Okulları getir
   const fetchSchools = async () => {
-    if (!isAdmin) return;
+    // Both admins and instructors can see the school list for course affiliation
+    if (!isAdmin && colorVariant !== 'instructor') return;
 
     try {
       console.log('Okullar getiriliyor...');
@@ -692,6 +707,352 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       ]);
     } finally {
       setLoadingSchools(false);
+    }
+  };
+
+  // Öğrencileri getir (Kayıtlı sayısı için)
+  const fetchStudents = async () => {
+    try {
+      const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as string[]).includes('school') : false;
+      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+      if (!effectiveSchoolId && !isAdmin) return;
+
+      const usersRef = collection(db, 'users');
+      let q;
+      if (isAdmin) {
+        q = query(usersRef, where('role', 'array-contains', 'student'));
+      } else {
+        q = query(
+          usersRef,
+          where('schoolIds', 'array-contains', effectiveSchoolId)
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+      const studentList = querySnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        // Filter by role locally since Firestore doesn't allow multiple array-contains
+        .filter((user: any) =>
+          typeof user.role === 'string'
+            ? user.role === 'student'
+            : Array.isArray(user.role) && user.role.includes('student')
+        );
+      setStudents(studentList);
+    } catch (error) {
+      console.error('Öğrenciler yüklenirken hata:', error);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  // Öğrenciyi kursa ekle
+  const handleAddStudentToCourse = async (studentId: string, courseId: string) => {
+    try {
+      await updateDoc(doc(db, 'users', studentId), {
+        courseIds: arrayUnion(courseId),
+        updatedAt: serverTimestamp()
+      });
+      // State'i güncelle
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, courseIds: [...(s.courseIds || []), courseId] } : s));
+      setSuccess('Öğrenci kursa başarıyla eklendi.');
+      setStudentSearchInModal('');
+    } catch (err) {
+      console.error('Öğrenci eklenirken hata:', err);
+      setError('Öğrenci eklenemedi.');
+    }
+  };
+
+  // Yeni öğrenci oluştur ve kursa ekle
+  const handleQuickAddStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickAddStudentData.email || !quickAddStudentData.displayName || !quickAddStudentData.password) {
+      setError('E-posta, İsim ve Şifre alanları zorunludur.');
+      return;
+    }
+
+    try {
+      setIsQuickAdding(true);
+      setError(null);
+
+      const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as any as string[]).includes('school') : false;
+      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
+      if (!effectiveSchoolId && !isAdmin) {
+        throw new Error("Okul bilgisi bulunamadı");
+      }
+
+      // Check if user already exists
+      const userSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', quickAddStudentData.email)));
+      if (!userSnapshot.empty) {
+        setError('Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var. Lütfen arama kısmından ekleyin.');
+        setIsQuickAdding(false);
+        return;
+      }
+
+      // We need to use dynamic import for firebase auth methods to avoid top level issues or use existing imports
+      // Firebase auth module is imported at top
+      const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+      const { secondaryAuth } = await import('../../../../api/firebase/firebase');
+
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, quickAddStudentData.email, quickAddStudentData.password);
+      const newUser = userCredential.user;
+
+      await updateProfile(newUser, {
+        displayName: quickAddStudentData.displayName
+      });
+
+      const schoolRef = doc(db, 'users', effectiveSchoolId);
+      const schoolDoc = await getDoc(schoolRef);
+      const schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : 'Bilinmeyen Okul';
+
+      // Assign to user collection
+      const newStudentData = {
+        id: newUser.uid,
+        displayName: quickAddStudentData.displayName,
+        email: quickAddStudentData.email,
+        phoneNumber: quickAddStudentData.phoneNumber || '',
+        role: ['student'],
+        level: 'beginner',
+        schoolId: effectiveSchoolId,
+        schoolIds: [effectiveSchoolId],
+        schoolName: schoolNameData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        photoURL: '/assets/placeholders/default-student.png',
+        courseIds: selectedCourseForStudents?.id ? [selectedCourseForStudents.id] : []
+      };
+
+      await setDoc(doc(db, 'users', newUser.uid), newStudentData);
+
+      // Update local state
+      setStudents(prev => [{ ...newStudentData } as any, ...prev]);
+
+      setSuccess('Yeni öğrenci oluşturuldu ve kursa eklendi.');
+      setShowQuickAddStudent(false);
+      setQuickAddStudentData({ displayName: '', email: '', password: '', phoneNumber: '' });
+
+      // Sign out from the secondary auth so it doesn't affect main session
+      await secondaryAuth.signOut();
+    } catch (err: any) {
+      console.error('Yeni öğrenci eklenirken hata:', err);
+      setError(err.message || 'Öğrenci eklenirken bir hata oluştu');
+    } finally {
+      setIsQuickAdding(false);
+    }
+  };
+
+  // Yeni eğitmen oluştur (Kurstan hızlı ekleme)
+  const handleQuickAddInstructor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickAddInstructorData.email || !quickAddInstructorData.displayName || !quickAddInstructorData.password) {
+      setError('E-posta, İsim ve Şifre alanları zorunludur.');
+      return;
+    }
+
+    try {
+      setIsQuickAddingInstructor(true);
+      setError(null);
+
+      const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as any as string[]).includes('school') : false;
+      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
+      if (!effectiveSchoolId && !isAdmin) {
+        throw new Error("Okul bilgisi bulunamadı");
+      }
+
+      const userSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', quickAddInstructorData.email)));
+      if (!userSnapshot.empty) {
+        setError('Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var.');
+        setIsQuickAddingInstructor(false);
+        return;
+      }
+
+      const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+      const { secondaryAuth } = await import('../../../../api/firebase/firebase');
+
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, quickAddInstructorData.email, quickAddInstructorData.password);
+      const newUser = userCredential.user;
+
+      await updateProfile(newUser, {
+        displayName: quickAddInstructorData.displayName
+      });
+
+      const schoolRef = doc(db, 'users', effectiveSchoolId);
+      const schoolDoc = await getDoc(schoolRef);
+      const schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : 'Bilinmeyen Okul';
+
+      const newInstructorData = {
+        id: newUser.uid,
+        displayName: quickAddInstructorData.displayName,
+        email: quickAddInstructorData.email,
+        phoneNumber: quickAddInstructorData.phoneNumber || '',
+        role: ['instructor'],
+        status: 'active',
+        schoolId: effectiveSchoolId,
+        schoolName: schoolNameData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        photoURL: '/assets/placeholders/default-instructor.png',
+        danceStyles: [],
+        experience: 0
+      };
+
+      await setDoc(doc(db, 'users', newUser.uid), newInstructorData);
+
+      // Listeye ekle (DropDown için)
+      const newInstructorLabel = { label: newInstructorData.displayName, value: newInstructorData.id, courseIds: [] };
+      setInstructors(prev => [newInstructorLabel, ...prev]);
+
+      // O anki Form Data'ya (Oluşturulan kurs) eğitmeni otomatik seçili atayalım
+      setFormData(prev => ({
+        ...prev,
+        instructorIds: [...prev.instructorIds, newInstructorData.id],
+        instructorNames: [...prev.instructorNames, newInstructorData.displayName]
+      }));
+
+      setSuccess('Yeni eğitmen oluşturuldu ve kursa eklendi.');
+      setShowQuickAddInstructor(false);
+      setQuickAddInstructorData({ displayName: '', email: '', password: '', phoneNumber: '' });
+
+      await secondaryAuth.signOut();
+    } catch (err: any) {
+      console.error('Yeni eğitmen eklenirken hata:', err);
+      setError(err.message || 'Eğitmen eklenirken bir hata oluştu');
+    } finally {
+      setIsQuickAddingInstructor(false);
+    }
+  };
+
+  // Öğrenciyi kurstan çıkar
+  const handleRemoveStudentFromCourse = async (studentId: string, courseId: string) => {
+    if (!window.confirm('Öğrenciyi bu kurstan çıkarmak istediğinizden emin misiniz?')) return;
+    try {
+      const student = students.find(s => s.id === studentId);
+      const newCourseIds = student.courseIds.filter((id: string) => id !== courseId);
+      await updateDoc(doc(db, 'users', studentId), {
+        courseIds: newCourseIds,
+        updatedAt: serverTimestamp()
+      });
+      // State'i güncelle
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, courseIds: newCourseIds } : s));
+      setSuccess('Öğrenci kurstan çıkarıldı.');
+    } catch (err) {
+      console.error('Öğrenci çıkarılırken hata:', err);
+      setError('Öğrenci çıkarılamadı.');
+    }
+  };
+
+  // Eğitmeni kursa ekle
+  const handleAddInstructorToCourse = async (instructorId: string, instructorName: string, courseId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const courseRef = doc(db, 'courses', courseId);
+
+      const courseSnapshot = await getDoc(courseRef);
+      if (!courseSnapshot.exists()) throw new Error('Kurs bulunamadı.');
+
+      const courseData = courseSnapshot.data();
+      const currentInstructorIds = courseData.instructorIds || [];
+      const currentInstructorNames = courseData.instructorNames || [];
+
+      if (!currentInstructorIds.includes(instructorId)) {
+        await updateDoc(courseRef, {
+          instructorIds: arrayUnion(instructorId),
+          instructorNames: arrayUnion(instructorName),
+          updatedAt: serverTimestamp()
+        });
+
+        // Update the instructor user document with the courseId
+        const instructorRef = doc(db, 'users', instructorId);
+        await updateDoc(instructorRef, {
+          courseIds: arrayUnion(courseId),
+          updatedAt: serverTimestamp()
+        });
+
+        // Modalı ve course id statelerini güncelle
+        setCourses(prev => prev.map(c =>
+          c.id === courseId ? { ...c, instructorIds: [...currentInstructorIds, instructorId], instructorNames: [...currentInstructorNames, instructorName] } : c
+        ));
+
+        if (selectedCourseForInstructors && selectedCourseForInstructors.id === courseId) {
+          setSelectedCourseForInstructors(prev => prev ? {
+            ...prev,
+            instructorIds: [...currentInstructorIds, instructorId],
+            instructorNames: [...currentInstructorNames, instructorName]
+          } : null);
+        }
+
+        setSuccess('Eğitmen hesaba atandı.');
+        setInstructorSearchInModal('');
+      } else {
+        setError('Bu eğitmen zaten kursa atanmış.');
+      }
+    } catch (error) {
+      console.error('Eğitmen atanırken hata:', error);
+      setError('Eğitmen atanamadı.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Eğitmeni kurstan çıkar
+  const handleRemoveInstructorFromCourse = async (instructorId: string, instructorName: string, courseId: string) => {
+    if (!window.confirm('Bu eğitmeni kurstan çıkarmak istediğinizden emin misiniz?')) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const courseRef = doc(db, 'courses', courseId);
+      const courseSnapshot = await getDoc(courseRef);
+      if (!courseSnapshot.exists()) throw new Error('Kurs bulunamadı.');
+
+      const courseData = courseSnapshot.data();
+      const currentInstructorIds = courseData.instructorIds || [];
+      const currentInstructorNames = courseData.instructorNames || [];
+
+      const newInstructorIds = currentInstructorIds.filter((id: string) => id !== instructorId);
+      const newInstructorNames = currentInstructorNames.filter((name: string) => name !== instructorName);
+
+      await updateDoc(courseRef, {
+        instructorIds: newInstructorIds,
+        instructorNames: newInstructorNames,
+        updatedAt: serverTimestamp()
+      });
+
+      // Update the instructor user document, removing the courseId
+      const instructorRef = doc(db, 'users', instructorId);
+      const instructorSnap = await getDoc(instructorRef);
+      if (instructorSnap.exists()) {
+        const instData = instructorSnap.data();
+        const currentCourseIds = instData.courseIds || [];
+        const newCourseIds = currentCourseIds.filter((id: string) => id !== courseId);
+        await updateDoc(instructorRef, {
+          courseIds: newCourseIds,
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      setCourses(prev => prev.map(c =>
+        c.id === courseId ? { ...c, instructorIds: newInstructorIds, instructorNames: newInstructorNames } : c
+      ));
+
+      if (selectedCourseForInstructors && selectedCourseForInstructors.id === courseId) {
+        setSelectedCourseForInstructors(prev => prev ? {
+          ...prev,
+          instructorIds: newInstructorIds,
+          instructorNames: newInstructorNames
+        } : null);
+      }
+
+      setSuccess('Eğitmen kurstan başarıyla çıkarıldı.');
+    } catch (err) {
+      console.error('Eğitmen çıkarılırken hata:', err);
+      setError('Eğitmen çıkarılamadı.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -859,6 +1220,32 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                   colorVariant={colorVariant}
                   required
                 />
+
+                {/* Freelance / School selection for instructors */}
+                {colorVariant === 'instructor' && !isAdmin && (
+                  <div className="pt-2">
+                    <CustomSelect
+                      name="schoolId"
+                      label="Okul Bağlantısı (Opsiyonel)"
+                      options={schools}
+                      value={formData.schoolId}
+                      onChange={(value) => {
+                        const style = value as string;
+                        const selectedSchool = schools.find(s => s.value === style);
+                        setFormData({
+                          ...formData,
+                          schoolId: style,
+                          schoolName: selectedSchool?.label || ''
+                        });
+                      }}
+                      placeholder="Freelance (Okulsuz)"
+                      colorVariant={colorVariant}
+                    />
+                    <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
+                      Okul seçerseniz, kurs o okulun adı ve konumuyla yayınlanır. Seçmezseniz "Freelance" olarak görünür.
+                    </p>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -933,43 +1320,129 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
                 6. Eğitmenler
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {instructors.map((instructor) => {
-                  const isSelected = formData.instructorIds.includes(instructor.value);
-                  return (
-                    <button
-                      key={instructor.value}
-                      type="button"
-                      onClick={() => {
-                        setFormData(prev => {
-                          const newIds = isSelected
-                            ? prev.instructorIds.filter(id => id !== instructor.value)
-                            : [...prev.instructorIds, instructor.value];
-                          const newNames = isSelected
-                            ? prev.instructorNames.filter(name => name !== instructor.label)
-                            : [...prev.instructorNames, instructor.label];
-                          return { ...prev, instructorIds: newIds, instructorNames: newNames };
-                        });
-                      }}
-                      className={`flex items-center p-3 rounded-lg border transition-all text-sm ${isSelected
-                        ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
-                        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                        }`}
-                    >
-                      <div className={`w-4 h-4 rounded mr-2 flex items-center justify-center border ${isSelected
-                        ? (colorVariant === 'school' ? 'bg-school border-school' : 'bg-instructor border-instructor')
-                        : 'border-gray-300 dark:border-slate-500'
-                        }`}>
-                        {isSelected && (
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
+              <div className="space-y-4">
+                <CustomInput
+                  name="instructorSearch"
+                  label=""
+                  placeholder="İsim veya e-posta ile eğitmen ara..."
+                  value={instructorSearchTerm}
+                  onChange={(e: any) => setInstructorSearchTerm(e.target.value)}
+                  colorVariant={colorVariant}
+                  startIcon={
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  }
+                />
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[200px] overflow-y-auto p-1">
+                  {instructors
+                    .filter(i =>
+                      i.label.toLowerCase().includes(instructorSearchTerm.toLowerCase())
+                    )
+                    .map((instructor) => {
+                      const isSelected = formData.instructorIds.includes(instructor.value);
+                      return (
+                        <button
+                          key={instructor.value}
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => {
+                              const newIds = isSelected
+                                ? prev.instructorIds.filter(id => id !== instructor.value)
+                                : [...prev.instructorIds, instructor.value];
+                              const newNames = isSelected
+                                ? prev.instructorNames.filter(name => name !== instructor.label)
+                                : [...prev.instructorNames, instructor.label];
+                              return { ...prev, instructorIds: newIds, instructorNames: newNames };
+                            });
+                          }}
+                          className={`flex items-center p-3 rounded-lg border transition-all text-sm ${isSelected
+                            ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
+                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                            }`}
+                        >
+                          <div className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center border ${isSelected
+                            ? (colorVariant === 'school' ? 'bg-school border-school' : 'bg-instructor border-instructor')
+                            : 'border-gray-300 dark:border-slate-500'
+                            }`}>
+                            {isSelected && (
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="truncate">{instructor.label}</span>
+                        </button>
+                      );
+                    })}
+                  {instructors.filter(i => i.label.toLowerCase().includes(instructorSearchTerm.toLowerCase())).length === 0 && (
+                    <div className="col-span-full py-4 text-center text-gray-500 dark:text-gray-400 text-sm italic">
+                      Eğitmen bulunamadı.
+                    </div>
+                  )}
+                </div>
+                {!showQuickAddInstructor ? (
+                  <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
+                    Eğitmen Feriha'da kayıtlı değil mi? <button type="button" onClick={(e) => { e.preventDefault(); setShowQuickAddInstructor(true); }} className="text-school dark:text-school-light font-medium hover:underline">Sıfırdan Eğitmen Ekle</button>
+                  </div>
+                ) : (
+                  <div className="bg-school/5 border border-school/20 rounded-xl p-4 mt-2 animate-in fade-in zoom-in-95 duration-200">
+                    <h4 className="text-sm font-semibold text-school mb-3 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Yeni Eğitmen Oluştur ve Seç
+                    </h4>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        placeholder="Ad Soyad"
+                        value={quickAddInstructorData.displayName}
+                        onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, displayName: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                      />
+                      <input
+                        type="email"
+                        placeholder="E-posta Adresi"
+                        value={quickAddInstructorData.email}
+                        onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                      />
+                      <input
+                        type="tel"
+                        placeholder="Telefon Numarası (Opsiyonel)"
+                        value={quickAddInstructorData.phoneNumber}
+                        onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                      />
+                      <input
+                        type="password"
+                        placeholder="Giriş Şifresi Belirle"
+                        value={quickAddInstructorData.password}
+                        onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, password: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                      />
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowQuickAddInstructor(false)}
+                          className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 font-medium"
+                          disabled={isQuickAddingInstructor}
+                        >
+                          İptal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleQuickAddInstructor}
+                          disabled={isQuickAddingInstructor}
+                          className="text-xs px-4 py-1.5 bg-school text-white rounded shadow-sm hover:bg-school-light font-medium transition-colors disabled:opacity-50"
+                        >
+                          {isQuickAddingInstructor ? 'Ekleniyor...' : 'Kaydet ve Seç'}
+                        </button>
                       </div>
-                      {instructor.label}
-                    </button>
-                  );
-                })}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
           </div>
@@ -1095,6 +1568,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           }
         } catch (e) {
           console.error('Okullar yüklenirken hata:', e);
+        }
+
+        try {
+          await fetchStudents();
+        } catch (e) {
+          console.error('Öğrenciler yüklenirken hata:', e);
         }
 
       } catch (err) {
@@ -1280,6 +1759,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
             finalLocation = schoolData.location;
           }
         }
+      } else {
+        // Freelance course - clear school name if it was somehow set
+        formData.schoolName = 'Freelance';
       }
 
       const cleanedData = cleanDataForFirebase(formData);
@@ -1515,7 +1997,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
       {/* Kurs Listesi Sekmeleri */}
       <div className="flex justify-end mb-2">
-        <div className={`flex p-1 rounded-xl bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700/50`}>
+        <div className={`flex p-1 rounded-xl ${colorVariant === 'school' ? 'bg-school-bg/50 dark:bg-school/5' : 'bg-gray-100 dark:bg-slate-800/50'} border border-gray-200 dark:border-slate-700/50`}>
           {([
             { value: 'all', label: 'Tümü' },
             { value: 'active', label: 'Aktif' },
@@ -1533,7 +2015,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               {label}
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusFilter === value
                 ? 'bg-white/20 text-white'
-                : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
+                : (colorVariant === 'school' ? 'bg-school/10 text-school' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400')
                 }`}>
                 {courses.filter(c => value === 'all' ? true : c.status === value).length}
               </span>
@@ -1546,7 +2028,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       <div className={`rounded-lg shadow overflow-hidden border ${isAdmin
         ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
         : colorVariant === 'school'
-          ? 'bg-school-bg/50 dark:bg-[#1a120b] border-school/30 dark:border-school/20'
+          ? 'bg-school-bg border-school/40 dark:border-school/30 dark:bg-[#1a120b]'
           : 'bg-instructor-bg/50 dark:bg-[#0f172a] border-instructor/30 dark:border-instructor/20'
         }`}>
         <div className="overflow-x-auto">
@@ -1554,12 +2036,13 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
             <thead className={isAdmin
               ? 'bg-gray-50 dark:bg-slate-900'
               : colorVariant === 'school'
-                ? 'bg-school-bg/80 dark:bg-school/10'
+                ? 'bg-school-bg dark:bg-school/20'
                 : 'bg-instructor-bg/80 dark:bg-instructor/10'
             }>
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kurs</th>
                 <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Program</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Yönetim</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kapasite</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durum</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
@@ -1600,8 +2083,40 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       )}
                     </div>
                   </td>
-                  <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {course.currentParticipants}/{course.maxParticipants}
+                  <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedCourseForStudents(course)}
+                        title="Öğrenci Listesi"
+                        className={`p-1.5 rounded-lg border transition-all ${colorVariant === 'school' ? 'bg-school/5 border-school/20 text-school hover:bg-school/10' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setSelectedCourseForInstructors(course)}
+                        title="Eğitmen Atama/Listesi"
+                        className={`p-1.5 rounded-lg border transition-all ${colorVariant === 'school' ? 'bg-school/5 border-school/20 text-school hover:bg-school/10' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                  <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-12 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-full ${colorVariant === 'school' ? 'bg-school' : 'bg-instructor'}`}
+                          style={{ width: `${Math.min(100, (students.filter(s => s.courseIds?.includes(course.id)).length / course.maxParticipants) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {students.filter(s => s.courseIds?.includes(course.id)).length}/{course.maxParticipants}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${course.status === 'active'
@@ -1642,6 +2157,303 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           </table>
         </div>
       </div>
+      {/* Modal - Kayıtlı Öğrenciler */}
+      <SimpleModal
+        open={!!selectedCourseForStudents}
+        onClose={() => setSelectedCourseForStudents(null)}
+        title={`"${selectedCourseForStudents?.name}" - Kayıtlı Öğrenciler`}
+        colorVariant={isAdmin ? 'admin' : (colorVariant as 'school' | 'instructor')}
+        bodyClassName="bg-white dark:bg-slate-900"
+        actions={
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={() => setSelectedCourseForStudents(null)}
+          >
+            Kapat
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex justify-between items-center bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-100 dark:border-slate-700">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Toplam: <span className="font-bold text-gray-900 dark:text-white">{students.filter(s => s.courseIds?.includes(selectedCourseForStudents?.id)).length}</span> öğrenci
+            </div>
+          </div>
+
+          {/* Öğrenci Ekleme Alanı */}
+          <div className="space-y-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="İsim veya email ile öğrenci ara ve ekle..."
+                value={studentSearchInModal}
+                onChange={(e) => setStudentSearchInModal(e.target.value)}
+                className={`w-full px-4 py-2 rounded-xl border text-sm focus:ring-2 outline-none transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-white ${inputFocusRing}`}
+              />
+              <svg className="w-4 h-4 absolute right-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            {/* Hızlı Öğrenci Ekleme Formu */}
+            {showQuickAddStudent ? (
+              <div className="bg-school/5 border border-school/20 rounded-xl p-4 mt-2 mb-4 animate-in fade-in zoom-in-95 duration-200">
+                <h4 className="text-sm font-semibold text-school mb-3 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Yeni Öğrenci Oluştur ve Ekle
+                </h4>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Ad Soyad"
+                    value={quickAddStudentData.displayName}
+                    onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, displayName: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                  />
+                  <input
+                    type="email"
+                    placeholder="E-posta Adresi"
+                    value={quickAddStudentData.email}
+                    onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Telefon Numarası (Opsiyonel)"
+                    value={quickAddStudentData.phoneNumber}
+                    onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Giriş Şifresi Belirle"
+                    value={quickAddStudentData.password}
+                    onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, password: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                  />
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickAddStudent(false)}
+                      className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 font-medium"
+                      disabled={isQuickAdding}
+                    >
+                      İptal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleQuickAddStudent}
+                      disabled={isQuickAdding}
+                      className="text-xs px-4 py-1.5 bg-school text-white rounded shadow-sm hover:bg-school-light font-medium transition-colors disabled:opacity-50"
+                    >
+                      {isQuickAdding ? 'Ekleniyor...' : 'Kaydet ve Kursa Ata'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-right text-gray-500 dark:text-gray-400 mt-1">
+                Öğrenciniz Feriha'da kayıtlı değil mi? <button type="button" onClick={() => setShowQuickAddStudent(true)} className="text-school hover:underline font-medium">Sıfırdan Öğrenci Oluştur</button>
+              </div>
+            )}
+
+            {studentSearchInModal.length >= 2 && !showQuickAddStudent && (
+              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-10">
+                {students
+                  .filter(s =>
+                    !s.courseIds?.includes(selectedCourseForStudents?.id) &&
+                    (s.displayName?.toLowerCase().includes(studentSearchInModal.toLowerCase()) ||
+                      s.email?.toLowerCase().includes(studentSearchInModal.toLowerCase()))
+                  )
+                  .map(student => (
+                    <button
+                      key={student.id}
+                      onClick={() => handleAddStudentToCourse(student.id, selectedCourseForStudents!.id)}
+                      className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors text-left border-b border-gray-50 last:border-0 dark:border-slate-700"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-600 flex items-center justify-center text-[10px] font-bold text-gray-400">
+                          {student.displayName?.charAt(0) || '?'}
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium dark:text-white">{student.displayName}</div>
+                          <div className="text-xs text-gray-500">{student.email}</div>
+                        </div>
+                      </div>
+                      <div className={`p-1 rounded-full ${colorVariant === 'school' ? 'bg-school/10 text-school' : 'bg-instructor/10 text-instructor'}`}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </div>
+                    </button>
+                  ))
+                }
+                {students.filter(s =>
+                  !s.courseIds?.includes(selectedCourseForStudents?.id) &&
+                  (s.displayName?.toLowerCase().includes(studentSearchInModal.toLowerCase()) ||
+                    s.email?.toLowerCase().includes(studentSearchInModal.toLowerCase()))
+                ).length === 0 && (
+                    <div className="p-4 text-center text-sm text-gray-500">Öğrenci bulunamadı.</div>
+                  )}
+              </div>
+            )}
+          </div>
+
+          <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+            {students.filter(s => s.courseIds?.includes(selectedCourseForStudents?.id)).length > 0 ? (
+              students.filter(s => s.courseIds?.includes(selectedCourseForStudents?.id)).map((student) => (
+                <div key={student.id} className="group flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-gray-500 uppercase">
+                      {student.displayName?.charAt(0) || '?'}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">{student.displayName}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{student.email}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${student.level === 'advanced' ? 'bg-purple-100 text-purple-700' : student.level === 'intermediate' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                      {student.level === 'advanced' ? 'İleri' : student.level === 'intermediate' ? 'Orta' : 'Başlangıç'}
+                    </span>
+                    <button
+                      onClick={() => handleRemoveStudentFromCourse(student.id, selectedCourseForStudents!.id)}
+                      className="hidden group-hover:flex p-1 text-red-400 hover:text-red-600 transition-colors"
+                      title="Kurstan Çıkar"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-gray-400 dark:text-gray-600 italic">
+                Bu kursa henüz öğrenci kaydı yapılmamış.
+              </div>
+            )}
+          </div>
+        </div>
+      </SimpleModal>
+
+      {/* Modal - Eğitmen Listesi */}
+      <SimpleModal
+        open={!!selectedCourseForInstructors}
+        onClose={() => setSelectedCourseForInstructors(null)}
+        title={`"${selectedCourseForInstructors?.name}" - Görevli Eğitmenler`}
+        colorVariant={isAdmin ? 'admin' : (colorVariant as 'school' | 'instructor')}
+        bodyClassName="bg-white dark:bg-slate-900"
+        actions={
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={() => setSelectedCourseForInstructors(null)}
+          >
+            Kapat
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex justify-between items-center bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-100 dark:border-slate-700">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Görevli: <span className="font-bold text-gray-900 dark:text-white">
+                {Array.from(new Set([
+                  ...(selectedCourseForInstructors?.instructorIds || []),
+                  ...instructors.filter(i => i.courseIds?.includes(selectedCourseForInstructors?.id || '')).map(i => i.value)
+                ])).length}
+              </span> eğitmen
+            </div>
+          </div>
+
+          {/* Eğitmen Ara / Ata */}
+          <div className="space-y-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="İsim ile eğitmen ara ve ata..."
+                value={instructorSearchInModal}
+                onChange={(e) => setInstructorSearchInModal(e.target.value)}
+                className={`w-full px-4 py-2 rounded-xl border text-sm focus:ring-2 outline-none transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-white ${inputFocusRing}`}
+              />
+              <svg className="w-4 h-4 absolute right-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            {/* Arama Sonuçları */}
+            {instructorSearchInModal.length >= 2 && (
+              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-10">
+                {instructors
+                  .filter(i =>
+                    !selectedCourseForInstructors?.instructorIds?.includes(i.value) &&
+                    !i.courseIds?.includes(selectedCourseForInstructors?.id || '') &&
+                    i.label.toLowerCase().includes(instructorSearchInModal.toLowerCase())
+                  )
+                  .map(instructor => (
+                    <button
+                      key={instructor.value}
+                      onClick={() => handleAddInstructorToCourse(instructor.value, instructor.label, selectedCourseForInstructors!.id)}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors flex items-center justify-between border-b border-gray-50 dark:border-slate-700/50 last:border-0`}
+                    >
+                      <span className="font-medium text-gray-900 dark:text-white">{instructor.label}</span>
+                      <span className="text-xs bg-school/10 text-school px-2 py-1 rounded-full">Ata</span>
+                    </button>
+                  ))}
+                {instructors.filter(i =>
+                  !selectedCourseForInstructors?.instructorIds?.includes(i.value) &&
+                  !i.courseIds?.includes(selectedCourseForInstructors?.id || '') &&
+                  i.label.toLowerCase().includes(instructorSearchInModal.toLowerCase())
+                ).length === 0 && (
+                    <div className="px-4 py-3 text-sm text-gray-500 text-center">Eğitmen bulunamadı.</div>
+                  )}
+              </div>
+            )}
+
+            <div className="text-xs text-right text-gray-500 dark:text-gray-400 mt-1">
+              Eğitmen Feriha'da kayıtlı değil mi? <button type="button" onClick={(e) => { e.preventDefault(); setShowQuickAddInstructor(true); setSelectedCourseForInstructors(null); editCourse(selectedCourseForInstructors!); setCurrentStep(3); }} className="text-school dark:text-school-light font-medium hover:underline">Sıfırdan Eğitmen Ekle</button>
+            </div>
+          </div>
+
+          <div className="max-h-80 overflow-y-auto space-y-2 pr-1 mt-4">
+            {Array.from(new Set([
+              ...(selectedCourseForInstructors?.instructorIds || []),
+              ...instructors.filter(i => i.courseIds?.includes(selectedCourseForInstructors?.id || '')).map(i => i.value)
+            ])).map((id) => {
+              const matchedInstructor = instructors.find((i) => i.value === id);
+              // Asıl kurs datasındaki isimlere fallback olmasını da sağlıyoruz.
+              const fallbackIndex = selectedCourseForInstructors?.instructorIds?.indexOf(id);
+              const fallbackName = fallbackIndex !== undefined && fallbackIndex > -1 ? selectedCourseForInstructors?.instructorNames?.[fallbackIndex] : undefined;
+              const name = matchedInstructor?.label || fallbackName || 'İsimsiz Eğitmen';
+
+              return (
+                <div key={id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-gray-500 uppercase">
+                      {name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">{name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">ID: {id.substring(0, 8)}...</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveInstructorFromCourse(id, name, selectedCourseForInstructors!.id)}
+                    className="p-1.5 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                    title="Kurstan Çıkar"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </SimpleModal>
     </div>
   );
 }

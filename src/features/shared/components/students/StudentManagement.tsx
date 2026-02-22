@@ -11,7 +11,8 @@ import {
   orderBy,
   serverTimestamp,
   where,
-  Timestamp
+  Timestamp,
+  arrayUnion
 } from 'firebase/firestore';
 import {
   createUserWithEmailAndPassword,
@@ -21,7 +22,7 @@ import {
   getAuth,
   signInWithEmailAndPassword
 } from 'firebase/auth';
-import { db, auth } from '../../../../api/firebase/firebase';
+import { db, auth, secondaryAuth } from '../../../../api/firebase/firebase';
 import { motion } from 'framer-motion';
 import { User, UserRole, DanceLevel, DanceStyle } from '../../../../types';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -364,6 +365,18 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   });
   const [courses, setCourses] = useState<Course[]>([]);
   const [userRole, setUserRole] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // --- NEW Quick Assign State ---
+  const [quickAssignModalOpen, setQuickAssignModalOpen] = useState(false);
+  const [studentToAssign, setStudentToAssign] = useState<FirebaseUser | null>(null);
+  const [quickAssignCourseIds, setQuickAssignCourseIds] = useState<string[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  // Existing user warning state
+  const [existingUserModalOpen, setExistingUserModalOpen] = useState(false);
+  const [existingUserToLink, setExistingUserToLink] = useState<any>(null);
+  // ------------------------------
 
   // Check if current user is super admin
   useEffect(() => {
@@ -411,29 +424,29 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       const userRef = doc(db, 'users', currentUser?.uid || '');
       const userDoc = await getDoc(userRef);
       const userData = userDoc.data();
-      const userRole = userData?.role || '';
+      const userRoleRaw = userData?.role || '';
+      const userRole = typeof userRoleRaw === 'string' ? userRoleRaw : (Array.isArray(userRoleRaw) ? userRoleRaw[0] : '');
+      const isSchoolUser = typeof userRoleRaw === 'string' ? userRoleRaw === 'school' : Array.isArray(userRoleRaw) && userRoleRaw.includes('school');
 
       if (isAdmin) {
         console.log('Admin mode: fetching all students');
         studentsQuery = query(
           usersRef,
-          where('role', '==', 'student'),
-          orderBy('createdAt', 'desc')
+          where('role', 'array-contains', 'student')
         );
-      } else if (userRole === 'school') {
+      } else if (isSchoolUser) {
         const effectiveSchoolId = schoolId || userData?.schoolId || currentUser?.uid;
         console.log('School mode: fetching students for school', effectiveSchoolId);
         studentsQuery = query(
           usersRef,
-          where('schoolId', '==', effectiveSchoolId),
-          where('role', '==', 'student')
+          where('schoolIds', 'array-contains', effectiveSchoolId)
         );
       } else if (userRole === 'instructor') {
         console.log('Instructor mode: fetching students for instructor', currentUser?.uid);
         studentsQuery = query(
           usersRef,
           where('instructorId', '==', currentUser?.uid),
-          where('role', '==', 'student')
+          where('role', 'array-contains', 'student')
         );
       }
 
@@ -443,7 +456,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           id: doc.id,
           ...doc.data()
         } as FirebaseUser))
-        .filter(student => student.role === 'student');
+        .filter(student => student.role === 'student' || (Array.isArray(student.role) && student.role.includes('student')));
 
       console.log('Students data:', studentsData);
       setStudents(studentsData);
@@ -597,12 +610,12 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     }
   };
 
-  // Davetiye e-postası gönderme fonksiyonu
-  const sendInvitationEmail = async (email: string, invitationData: {
+  // Öğrenci kullanıcı hesabını oluşturma (Davet yerine direkt oluşturma)
+  const createStudentUser = async (email: string, studentData: {
     displayName: string;
     level?: DanceLevel;
     phoneNumber?: string;
-    password?: string; // Add password here
+    password?: string;
     instructorId?: string;
     instructorName?: string;
     schoolId?: string;
@@ -611,52 +624,45 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     courseIds: string[];
   }) => {
     try {
-      // Benzersiz bir davet kodu oluştur
-      const invitationId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (!studentData.password) {
+        throw new Error('Şifre zorunludur');
+      }
 
-      // Remove undefined values from invitationData
-      const cleanedInvitationData = Object.fromEntries(
-        Object.entries({
-          email,
-          ...invitationData,
-          status: 'pending',
-          type: 'student',
-          createdAt: serverTimestamp(),
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 gün geçerli
-        }).filter(([_, value]) => value !== undefined)
+      // Create Firebase Auth user using secondaryAuth so current admin user won't be logged out
+      const userCredential = await createUserWithEmailAndPassword(
+        secondaryAuth,
+        email,
+        studentData.password
       );
+      const user = userCredential.user;
 
-      // Davet bilgilerini Firestore'a kaydet
-      await setDoc(doc(db, 'pendingUsers', invitationId), cleanedInvitationData);
+      await updateProfile(user, {
+        displayName: studentData.displayName
+      });
 
-      // Kullanıcıyı users koleksiyonuna ekle
-      const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const now = Timestamp.now();
+      const userId = user.uid;
 
       const userData = {
         id: userId,
         email,
-        displayName: invitationData.displayName,
+        displayName: studentData.displayName,
         role: 'student',
-        level: invitationData.level || 'beginner',
-        photoURL: invitationData.photoURL || DEFAULT_STUDENT_IMAGE,
-        phoneNumber: invitationData.phoneNumber || '',
-        instructorId: invitationData.instructorId || null,
-        instructorName: invitationData.instructorName || null,
-        schoolId: invitationData.schoolId || null,
-        schoolName: invitationData.schoolName || null,
-        courseIds: invitationData.courseIds || [],
+        level: studentData.level || 'beginner',
+        photoURL: studentData.photoURL || DEFAULT_STUDENT_IMAGE,
+        phoneNumber: studentData.phoneNumber || '',
+        instructorId: studentData.instructorId || null,
+        instructorName: studentData.instructorName || null,
+        schoolId: studentData.schoolId || null, // Legacy map
+        schoolIds: studentData.schoolId ? [studentData.schoolId] : [], // Course-Centric M:N map
+        schoolName: studentData.schoolName || null,
+        courseIds: studentData.courseIds || [],
         createdAt: now,
         updatedAt: now,
-        status: 'pending'
+        status: 'active'
       };
 
-      await setDoc(doc(db, 'users', userId), {
-        ...userData,
-        password: invitationData.password || null, // Temporarily store password for easier rollout
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
+      await setDoc(doc(db, 'users', userId), userData);
 
       // Öğrenci listesini güncelle
       setStudents(prevStudents => [
@@ -666,7 +672,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
 
       return true;
     } catch (error) {
-      console.error('Davet gönderilirken hata oluştu:', error);
+      console.error('Öğrenci hesabı oluşturulurken hata oluştu:', error);
       throw error;
     }
   };
@@ -708,27 +714,27 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       const userRole = userData?.role || '';
       console.log('Current user role:', userRole);
 
+      const effectiveSchoolId = schoolId || (userRole === 'school' || (Array.isArray(userRole) && userRole.includes('school')) ? userData?.schoolId || currentUser.uid : '');
+
       // Query oluştur
       let q = query(coursesRef, orderBy('createdAt', 'desc')); // Default query for admin
 
-      if (!isAdmin) {
-        if (userRole === 'school') {
-          console.log('School: Okula ait kurslar getiriliyor -', currentUser.uid);
-          q = query(
-            coursesRef,
-            where('schoolId', '==', currentUser.uid),
-            orderBy('createdAt', 'desc')
-          );
-        } else if (userRole === 'instructor') {
-          console.log('Instructor: Eğitmene ait kurslar getiriliyor -', currentUser.uid);
-          q = query(
-            coursesRef,
-            where('instructorId', '==', currentUser.uid),
-            orderBy('createdAt', 'desc')
-          );
-        }
+      if (effectiveSchoolId) {
+        console.log('School: Okul ID\'ye ait kurslar getiriliyor -', effectiveSchoolId);
+        q = query(
+          coursesRef,
+          where('schoolId', '==', effectiveSchoolId),
+          orderBy('createdAt', 'desc')
+        );
+      } else if (!isAdmin && (userRole === 'instructor' || (Array.isArray(userRole) && userRole.includes('instructor')))) {
+        console.log('Instructor: Eğitmene ait kurslar getiriliyor -', currentUser.uid);
+        q = query(
+          coursesRef,
+          where('instructorId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc')
+        );
       } else {
-        console.log('Admin: Tüm kurslar getiriliyor');
+        console.log('Admin: Tüm kurslar getiriliyor veya auth schoolId bulunamadı');
       }
 
       console.log('Ana query oluşturuldu:', q);
@@ -800,7 +806,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           instructorName = selectedInstructor?.displayName || '';
         }
 
-        const updateData = {
+        const updateData: any = {
           displayName: formData.displayName,
           phone: formData.phone,
           level: formData.level,
@@ -812,6 +818,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           courseIds: formData.courseIds || [],
           updatedAt: serverTimestamp()
         };
+
+        if (formData.password) {
+          updateData.password = formData.password;
+        }
 
         console.log('Updating student with data:', updateData);
         await updateDoc(userRef, updateData);
@@ -852,7 +862,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         const emailCheckSnapshot = await getDocs(emailQuery);
 
         if (!emailCheckSnapshot.empty) {
-          throw new Error('Bu e-posta adresi zaten kullanılıyor.');
+          const existingUser = emailCheckSnapshot.docs[0];
+          const userData = { id: existingUser.id, ...existingUser.data() };
+
+          setExistingUserToLink(userData);
+          setExistingUserModalOpen(true);
+          setLoading(false);
+          return;
         }
 
         // Get instructor name if an instructor is selected
@@ -862,8 +878,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           instructorName = selectedInstructor?.displayName || '';
         }
 
-        // Davet gönder
-        await sendInvitationEmail(formData.email, {
+        // Hesabı oluştur
+        await createStudentUser(formData.email, {
           displayName: formData.displayName,
           level: formData.level,
           phoneNumber: formData.phone,
@@ -873,10 +889,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           schoolName: schoolNameText,
           photoURL: formData.photoURL,
           courseIds: formData.courseIds,
-          password: formData.password // Pass the password from form
+          password: formData.password
         });
 
-        setSuccess('Öğrenci başarıyla eklendi ve davet e-postası gönderildi.');
+        setSuccess('Öğrenci hesabı başarıyla oluşturuldu.');
       }
 
       // Close the form
@@ -887,6 +903,65 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       console.error('Error in form submission:', err);
       setError('İşlem sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmLink = async () => {
+    if (!existingUserToLink) return;
+    const managedSchoolId = schoolId || (currentUser as any)?.schoolId || (userRole === 'school' ? currentUser?.uid : null);
+
+    try {
+      setLoading(true);
+      const existingUserId = existingUserToLink.id;
+      const userData = existingUserToLink;
+
+      // Check if already assigned to this school
+      const schoolIds = Array.isArray(userData.schoolIds) ? userData.schoolIds : (userData.schoolId ? [userData.schoolId] : []);
+      if (managedSchoolId && schoolIds.includes(managedSchoolId)) {
+        setError('Bu öğrenci zaten okulunuza kayıtlı.');
+        setLoading(false);
+        setExistingUserModalOpen(false);
+        return;
+      }
+
+      let newRole = userData.role;
+      if (typeof newRole === 'string' && newRole !== 'student') {
+        newRole = [newRole, 'student'];
+      } else if (Array.isArray(newRole) && !newRole.includes('student')) {
+        newRole = [...newRole, 'student'];
+      } else if (!newRole) {
+        newRole = 'student';
+      }
+
+      const updatePayload: any = {
+        role: newRole,
+        updatedAt: serverTimestamp()
+      };
+
+      if (managedSchoolId) {
+        updatePayload.schoolId = managedSchoolId;
+        updatePayload.schoolIds = arrayUnion(managedSchoolId);
+      }
+
+      // Append array values if any were selected in formData
+      if (formData.courseIds && formData.courseIds.length > 0) {
+        updatePayload.courseIds = arrayUnion(...formData.courseIds);
+      }
+
+      await updateDoc(doc(db, 'users', existingUserId), updatePayload);
+
+      const updatedDoc = await getDoc(doc(db, 'users', existingUserId));
+      setStudents([{ ...updatedDoc.data(), id: existingUserId } as FirebaseUser, ...students.filter(s => s.id !== existingUserId)]);
+      setSuccess('Mevcut kullanıcı öğrenci olarak okulunuza bağlandı.');
+
+      setExistingUserModalOpen(false);
+      setExistingUserToLink(null);
+      setEditMode(false);
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Öğrenci bağlanırken hata:', err);
+      setError('Öğrenci bağlanırken bir hata oluştu.');
       setLoading(false);
     }
   };
@@ -918,6 +993,50 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       setLoading(false);
     }
   };
+
+  // --- NEW Quick Assign Handlers ---
+  const handleOpenQuickAssign = (student: FirebaseUser) => {
+    setStudentToAssign(student);
+    setQuickAssignCourseIds(student.courseIds || []);
+    setQuickAssignModalOpen(true);
+  };
+
+  const handleCloseQuickAssign = () => {
+    setQuickAssignModalOpen(false);
+    setStudentToAssign(null);
+    setQuickAssignCourseIds([]);
+  };
+
+  const handleSaveQuickAssign = async () => {
+    if (!studentToAssign) return;
+    setIsAssigning(true);
+    let errorMessage = '';
+
+    try {
+      const studentRef = doc(db, 'users', studentToAssign.id);
+
+      const payload: any = {
+        courseIds: quickAssignCourseIds,
+        updatedAt: serverTimestamp()
+      };
+
+      await updateDoc(studentRef, payload);
+
+      setStudents(prev =>
+        prev.map(s => s.id === studentToAssign.id ? { ...s, courseIds: quickAssignCourseIds } : s)
+      );
+
+      setSuccessMessage('Öğrencinin kursları başarıyla güncellendi.');
+      handleCloseQuickAssign();
+    } catch (err) {
+      console.error('Hızlı atama sırasında hata:', err);
+      errorMessage = 'Kurs atama işlemi başarısız oldu.';
+      setError(errorMessage);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+  // ----------------------------------
 
   // Render student row
   const renderStudent = (student: FirebaseUser) => {
@@ -1011,6 +1130,12 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium min-w-[140px]">
           <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => handleOpenQuickAssign(student)}
+              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
+              Kursa Ata
+            </button>
             <button
               onClick={() => editStudent(student)}
               className={colorVariant === 'school' ? 'text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter' : 'text-instructor hover:text-instructor-dark dark:text-instructor-light dark:hover:text-instructor-lighter'}
@@ -1254,19 +1379,26 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 autoComplete="new-password"
               />
 
-              {/* Password field - show only for new student in school mode */}
-              {(userRole.includes('school') && !selectedStudent) && (
-                <CustomInput
-                  label="Şifre"
-                  name="password"
-                  type="password"
-                  value={formData.password || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  fullWidth
-                  required
-                  colorVariant="school"
-                  autoComplete="new-password"
-                />
+              {/* Password field - show for new students or when editing */}
+              {(userRole.includes('school')) && (
+                <div className="flex flex-col gap-1">
+                  <CustomInput
+                    label={selectedStudent ? "Yeni Şifre Belirle (Opsiyonel)" : "Şifre"}
+                    name="password"
+                    type="password"
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    fullWidth
+                    required={!selectedStudent}
+                    colorVariant="school"
+                    autoComplete="new-password"
+                  />
+                  {selectedStudent && (
+                    <span className="text-[10px] text-gray-500 italic">
+                      * Yeni bir şifre girerseniz kullanıcının giriş şifresi güncellenir.
+                    </span>
+                  )}
+                </div>
               )}
 
               {(!userRole.includes('school') || !!selectedStudent) && (
@@ -1335,21 +1467,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 />
               )}
 
-              {(!isAdmin && userRole.includes('school') && !!selectedStudent) && (
-                <div className="md:col-span-2 mt-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Okul:</span>
-                  <div className="max-w-xs">
-                    <SchoolProfile
-                      school={{
-                        id: currentUser?.uid || '',
-                        displayName: schools.find(s => s.id === currentUser?.uid)?.displayName || '',
-                        email: schools.find(s => s.id === currentUser?.uid)?.email || ''
-                      }}
-                      variant="card"
-                    />
-                  </div>
-                </div>
-              )}
+              {/* School profile removed as per request */}
 
               {/* Course selection - Show for school admin adding or editing */}
               {(userRole.includes('school') || isAdmin) && (
@@ -1397,6 +1515,102 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             </div>
           </div>
         </form>
+      </SimpleModal>
+
+      <SimpleModal
+        open={quickAssignModalOpen}
+        onClose={handleCloseQuickAssign}
+        title="Kursa Ata"
+        colorVariant={colorVariant as 'school' | 'instructor'}
+      >
+        <div className="p-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <strong className="text-gray-900 dark:text-white">{studentToAssign?.displayName}</strong> adlı öğrenciyi aşağıdaki kurslara atayabilirsiniz:
+          </p>
+          <div className="mt-4">
+            <CustomSelect
+              name="quickCourseIds"
+              label="Kurslar"
+              value={quickAssignCourseIds}
+              onChange={(value: string | string[]) => {
+                if (Array.isArray(value)) {
+                  setQuickAssignCourseIds(value);
+                }
+              }}
+              options={courses.map(course => ({
+                value: course.id,
+                label: course.name
+              }))}
+              fullWidth
+              multiple
+              required
+              colorVariant={colorVariant as "school" | "instructor"}
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-100 dark:border-slate-800">
+            <Button
+              variant="outlined"
+              onClick={handleCloseQuickAssign}
+              disabled={isAssigning}
+            >
+              İptal
+            </Button>
+            <Button
+              onClick={handleSaveQuickAssign}
+              variant={colorVariant as 'school' | 'instructor'}
+              disabled={isAssigning}
+            >
+              {isAssigning ? 'Kaydediliyor...' : 'Atamayı Kaydet'}
+            </Button>
+          </div>
+        </div>
+      </SimpleModal>
+
+      {/* Existing User Warning Modal */}
+      <SimpleModal
+        open={existingUserModalOpen}
+        onClose={() => setExistingUserModalOpen(false)}
+        title="Kullanıcı Zaten Mevcut"
+        colorVariant={colorVariant as "school" | "instructor"}
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800/50 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-800/50 flex items-center justify-center flex-shrink-0 text-orange-600 dark:text-orange-400">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-gray-900 dark:text-white font-medium">Bu e-posta adresiyle bir kullanıcı zaten kayıtlı.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <strong>{existingUserToLink?.displayName}</strong> ({existingUserToLink?.email})
+                {existingUserToLink?.role?.includes('student')
+                  ? ' zaten bir öğrenci.'
+                  : ' şu an bir ' + existingUserToLink?.role + '.'}
+              </p>
+            </div>
+          </div>
+          <p className="text-gray-700 dark:text-gray-300">
+            Bu kullanıcıyı okulunuza öğrenci olarak bağlamak istiyor musunuz?
+            {existingUserToLink?.role !== 'student' && ' Kullanıcının rolü otomatik olarak öğrenci rolünü de içerecek şekilde güncellenecektir.'}
+          </p>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              onClick={() => setExistingUserModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              Vazgeç
+            </button>
+            <button
+              onClick={handleConfirmLink}
+              className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${colorVariant === 'school' ? 'bg-school hover:bg-school-dark' : 'bg-instructor hover:bg-instructor-dark'
+                }`}
+            >
+              Evet, Bağla
+            </button>
+          </div>
+        </div>
       </SimpleModal>
 
       <>
@@ -1477,6 +1691,12 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                     </div>
                   </div>
                   <div className="flex space-x-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleOpenQuickAssign(student)}
+                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                    >
+                      Kursa Ata
+                    </button>
                     <button
                       onClick={() => editStudent(student)}
                       className={colorVariant === 'school' ? 'text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter' : 'text-instructor hover:text-instructor-dark dark:text-instructor-light dark:hover:text-instructor-lighter'}

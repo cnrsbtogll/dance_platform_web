@@ -236,15 +236,22 @@ const SchoolAdmin: React.FC = () => {
         let iCount = 0;
         const schoolUsersData: any[] = [];
 
+        console.log('[DEBUG-DASHBOARD] Fetched total user docs for schoolId:', schoolUsersSnapshot.docs.length);
+
         schoolUsersSnapshot.forEach(doc => {
           const data = doc.data();
           const roles = Array.isArray(data.role) ? data.role : [data.role];
 
           if (roles.includes('student')) sCount++;
-          if (roles.includes('instructor')) iCount++;
+          if (roles.includes('instructor')) {
+            iCount++;
+            console.log(`[DEBUG-DASHBOARD] Counted as Instructor:`, data.displayName, data.email, roles);
+          }
 
           schoolUsersData.push({ id: doc.id, ...data, roles });
         });
+
+        console.log('[DEBUG-DASHBOARD] Final Instructor Count:', iCount);
 
         setStudentCount(sCount);
         setInstructorCount(iCount);

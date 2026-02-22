@@ -10,9 +10,11 @@ import {
   updateDoc,
   serverTimestamp,
   Timestamp,
-  orderBy
+  orderBy,
+  arrayUnion
 } from 'firebase/firestore';
-import { db } from '../../../../api/firebase/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { db, secondaryAuth } from '../../../../api/firebase/firebase';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { DanceLevel, DanceStyle } from '../../../../types';
 import CustomInput from '../../../../common/components/ui/CustomInput';
@@ -32,6 +34,7 @@ interface Instructor {
   biography?: string;
   experience?: number;
   rating?: number;
+  courseIds?: string[];
   createdAt: Timestamp;
 }
 
@@ -135,6 +138,18 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
     { value: 10, label: '10+ yıl' }
   ];
 
+  // --- NEW Quick Assign State ---
+  const [quickAssignModalOpen, setQuickAssignModalOpen] = useState(false);
+  const [instructorToAssign, setInstructorToAssign] = useState<Instructor | null>(null);
+  const [quickAssignCourseIds, setQuickAssignCourseIds] = useState<string[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [courses, setCourses] = useState<{ id: string, name: string }[]>([]);
+
+  // Existing user warning state
+  const [existingUserModalOpen, setExistingUserModalOpen] = useState(false);
+  const [existingUserToLink, setExistingUserToLink] = useState<any>(null);
+  // ------------------------------
+
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!currentUser) return;
@@ -163,6 +178,31 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   }, [successMessage]);
 
   useEffect(() => {
+    // Fetch courses for the current school
+    const fetchCourses = async () => {
+      try {
+        const coursesRef = collection(db, 'courses');
+        const q = query(
+          coursesRef,
+          where('schoolId', '==', schoolInfo.id)
+        );
+        const querySnapshot = await getDocs(q);
+        const docs = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name || 'İsimsiz Kurs'
+        }));
+        setCourses(docs);
+      } catch (err) {
+        console.error('Kurslar yüklenirken hata:', err);
+      }
+    };
+
+    if (schoolInfo.id) {
+      fetchCourses();
+    }
+  }, [schoolInfo.id]);
+
+  useEffect(() => {
     const filtered = instructors.filter(instructor =>
       instructor.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       instructor.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -175,17 +215,52 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
       if (!currentUser?.uid) return;
       setLoading(true);
       const instructorsRef = collection(db, 'users');
+
+      // Since Firestore doesn't support multiple array-contains or complex OR queries easily,
+      // and a user's role might be an array (e.g., ['student', 'instructor']) and schoolIds might be an array,
+      // we query by the legacy schoolId or array-contains schoolIds, and filter in memory.
+      // For now, we fetch ALL users of this school and filter the 'instructor' role in memory.
+
+      // Query users mapping to this school (using the legacy field for compatibility, 
+      // but ideally we'd use schoolIds array-contains, or just filter everything if small enough)
       const q = query(
         instructorsRef,
-        where('role', '==', 'instructor'),
-        where('schoolId', '==', schoolInfo.id),
+        // Fallback to fetching all and filtering in memory or using where('schoolId', '==', schoolInfo.id)
+        // If we want to support M:N schoolIds we should use:
+        // where('schoolIds', 'array-contains', schoolInfo.id)
+        // But for backward compatibility with older data:
         orderBy('createdAt', 'desc')
       );
+
       const querySnapshot = await getDocs(q);
       const instructorsData: Instructor[] = [];
+
+      console.log('[DEBUG-INSTRUCTOR-PAGE] Fetched total user docs:', querySnapshot.docs.length);
+      console.log('[DEBUG-INSTRUCTOR-PAGE] Target schoolId:', schoolInfo.id);
+
       querySnapshot.forEach((doc) => {
-        instructorsData.push({ id: doc.id, ...doc.data() } as Instructor);
+        const data = doc.data();
+
+        // 1. Check if user belongs to this school
+        const belongsToSchool =
+          data.schoolId === schoolInfo.id ||
+          (Array.isArray(data.schoolIds) && data.schoolIds.includes(schoolInfo.id));
+
+        if (!belongsToSchool) return;
+
+        // 2. Check if user is an instructor
+        const isInstructor =
+          data.role === 'instructor' ||
+          (Array.isArray(data.role) && data.role.includes('instructor'));
+
+        if (isInstructor) {
+          console.log(`[DEBUG-INSTRUCTOR-PAGE] Found match for school:`, data.displayName, data.email, data.schoolId, data.schoolIds);
+          instructorsData.push({ id: doc.id, ...data } as Instructor);
+        }
       });
+
+      console.log('[DEBUG-INSTRUCTOR-PAGE] Final Valid Instructors Array:', instructorsData);
+
       setInstructors(instructorsData);
       setFilteredInstructors(instructorsData);
       setLoading(false);
@@ -245,7 +320,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
       setLoading(true);
       if (isEdit) {
         const instructorRef = doc(db, 'users', formData.id);
-        await updateDoc(instructorRef, {
+        const updatePayload: any = {
           displayName: formData.displayName,
           phoneNumber: formData.phoneNumber,
           danceStyles: formData.danceStyles,
@@ -253,60 +328,116 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           experience: formData.experience,
           photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
           updatedAt: serverTimestamp()
-        });
+        };
+
+        if (formData.password) {
+          updatePayload.password = formData.password;
+        }
+
+        await updateDoc(instructorRef, updatePayload);
         setInstructors(instructors.map(instructor =>
           instructor.id === formData.id
             ? { ...instructor, displayName: formData.displayName, phoneNumber: formData.phoneNumber, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience, photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png' }
             : instructor
         ));
         setSuccessMessage('Eğitmen bilgileri başarıyla güncellendi.');
+        handleCloseDialog();
       } else {
+        // Check if user already exists
         const userSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', formData.email)));
+
         if (!userSnapshot.empty) {
           const existingUser = userSnapshot.docs[0];
-          const existingUserId = existingUser.id;
-          const userData = existingUser.data();
-          if (userData.role === 'instructor' || (Array.isArray(userData.role) && userData.role.includes('instructor'))) {
-            await updateDoc(doc(db, 'users', existingUserId), { schoolId: managedSchoolId, schoolName: schoolInfo.displayName, updatedAt: serverTimestamp() });
-            setInstructors([{ ...userData as Instructor, id: existingUserId, schoolId: managedSchoolId, schoolName: schoolInfo.displayName } as any, ...instructors]);
-            setSuccessMessage('Mevcut eğitmen okulunuza bağlandı.');
-          } else {
-            const currentRole = userData.role;
-            let newRole = Array.isArray(currentRole)
-              ? (!currentRole.includes('instructor') ? [...currentRole, 'instructor'] : currentRole)
-              : (typeof currentRole === 'string' ? (currentRole === 'instructor' ? currentRole : ['instructor', currentRole]) : 'instructor');
-            await updateDoc(doc(db, 'users', existingUserId), { role: newRole, schoolId: managedSchoolId, schoolName: schoolInfo.displayName, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience, updatedAt: serverTimestamp() });
-            setInstructors([{ ...userData as Instructor, id: existingUserId, role: newRole, schoolId: managedSchoolId, schoolName: schoolInfo.displayName, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience } as any, ...instructors]);
-            setSuccessMessage('Kullanıcı eğitmen rolüne yükseltildi ve okulunuza bağlandı.');
-          }
-        } else {
-          const newInstructorId = `instructor_${Date.now()}`;
-          const newInstructorData = {
-            id: newInstructorId,
-            displayName: formData.displayName,
-            email: formData.email,
-            phoneNumber: formData.phoneNumber || '',
-            role: 'instructor',
-            danceStyles: formData.danceStyles,
-            biography: formData.biography,
-            experience: formData.experience,
-            schoolId: managedSchoolId,
-            schoolName: schoolInfo.displayName,
-            photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            password: formData.password || null
-          };
-          await setDoc(doc(db, 'users', newInstructorId), newInstructorData);
-          setInstructors([{ ...newInstructorData, createdAt: Timestamp.now() } as Instructor, ...instructors]);
-          setSuccessMessage('Yeni eğitmen başarıyla eklendi.');
+          const userData = { id: existingUser.id, ...existingUser.data() };
+
+          setExistingUserToLink(userData);
+          setExistingUserModalOpen(true);
+          setLoading(false);
+          return;
         }
+
+        // Create new instructor if doesn't exist
+        const userCredential = await createUserWithEmailAndPassword(
+          secondaryAuth,
+          formData.email,
+          formData.password!
+        );
+
+        await updateProfile(userCredential.user, {
+          displayName: formData.displayName
+        });
+
+        const newInstructorId = userCredential.user.uid;
+        const newInstructorData = {
+          id: newInstructorId,
+          displayName: formData.displayName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber || '',
+          role: 'instructor',
+          danceStyles: formData.danceStyles,
+          biography: formData.biography,
+          experience: formData.experience,
+          schoolId: managedSchoolId,
+          schoolIds: [managedSchoolId],
+          schoolName: schoolInfo.displayName,
+          photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
+        await setDoc(doc(db, 'users', newInstructorId), newInstructorData);
+        setInstructors([{ ...newInstructorData, createdAt: Timestamp.now() } as Instructor, ...instructors]);
+        setSuccessMessage('Yeni eğitmen başarıyla oluşturuldu ve eklendi.');
+        handleCloseDialog();
       }
       setLoading(false);
-      handleCloseDialog();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Eğitmen kaydedilirken bir hata oluştu:', err);
-      setError('Eğitmen kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.');
+      setError('Eğitmen kaydedilirken bir hata oluştu: ' + (err.message || 'Lütfen tekrar deneyin.'));
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmLink = async () => {
+    if (!existingUserToLink) return;
+    const managedSchoolId = schoolInfo.id;
+
+    try {
+      setLoading(true);
+      const existingUserId = existingUserToLink.id;
+      const userData = existingUserToLink;
+
+      // Check if already assigned to this school
+      const schoolIds = Array.isArray(userData.schoolIds) ? userData.schoolIds : (userData.schoolId ? [userData.schoolId] : []);
+      if (schoolIds.includes(managedSchoolId)) {
+        setError('Bu eğitmen zaten okulunuza kayıtlı.');
+        setLoading(false);
+        setExistingUserModalOpen(false);
+        return;
+      }
+
+      const currentRole = userData.role;
+      let newRole = Array.isArray(currentRole)
+        ? (!currentRole.includes('instructor') ? [...currentRole, 'instructor'] : currentRole)
+        : (typeof currentRole === 'string' ? (currentRole === 'instructor' ? currentRole : ['instructor', currentRole]) : 'instructor');
+
+      await updateDoc(doc(db, 'users', existingUserId), {
+        role: newRole,
+        schoolId: managedSchoolId, // Legacy
+        schoolIds: arrayUnion(managedSchoolId), // M:N
+        schoolName: schoolInfo.displayName,
+        updatedAt: serverTimestamp()
+      });
+
+      setInstructors([{ ...userData, id: existingUserId, role: newRole, schoolId: managedSchoolId, schoolName: schoolInfo.displayName } as any, ...instructors]);
+      setSuccessMessage('Mevcut kullanıcı eğitmen olarak okulunuza bağlandı.');
+
+      setExistingUserModalOpen(false);
+      setExistingUserToLink(null);
+      handleCloseDialog();
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Kullanıcı bağlanırken hata:', err);
+      setError('Kullanıcı bağlanırken bir hata oluştu.');
       setLoading(false);
     }
   };
@@ -334,6 +465,83 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
       setDeleteConfirmOpen(false);
     }
   };
+
+  // --- NEW Quick Assign Handlers ---
+  const handleOpenQuickAssign = (instructor: Instructor) => {
+    setInstructorToAssign(instructor);
+    // As instructors don't currently have "courseIds" displayed in their grid by default, 
+    // let's assume they have it in their user document if assigned previously
+    setQuickAssignCourseIds((instructor as any).courseIds || []);
+    setQuickAssignModalOpen(true);
+  };
+
+  const handleCloseQuickAssign = () => {
+    setQuickAssignModalOpen(false);
+    setInstructorToAssign(null);
+    setQuickAssignCourseIds([]);
+  };
+
+  const handleSaveQuickAssign = async () => {
+    if (!instructorToAssign) return;
+    setIsAssigning(true);
+    let errorMessage = '';
+
+    try {
+      const instructorRef = doc(db, 'users', instructorToAssign.id);
+      const oldCourseIds = (instructorToAssign as any).courseIds || [];
+      const newCourseIds = quickAssignCourseIds;
+
+      const addedCourseIds = newCourseIds.filter((id: string) => !oldCourseIds.includes(id));
+      const removedCourseIds = oldCourseIds.filter((id: string) => !newCourseIds.includes(id));
+
+      const payload: any = {
+        courseIds: newCourseIds,
+        updatedAt: serverTimestamp()
+      };
+
+      await updateDoc(instructorRef, payload);
+
+      // EKLENEN KURSLAR: courses tablosunda instructorIds ve instructorNames güncellemesi
+      for (const courseId of addedCourseIds) {
+        const courseRef = doc(db, 'courses', courseId);
+        await updateDoc(courseRef, {
+          instructorIds: arrayUnion(instructorToAssign.id),
+          instructorNames: arrayUnion(instructorToAssign.displayName || instructorToAssign.email)
+        });
+      }
+
+      // ÇIKARILAN KURSLAR: courses tablosundan bu eğitmeni düşür
+      for (const courseId of removedCourseIds) {
+        const courseRef = doc(db, 'courses', courseId);
+        const courseSnap = await getDoc(courseRef);
+        if (courseSnap.exists()) {
+          const cData = courseSnap.data();
+          const currInstIds = cData.instructorIds || [];
+          const currInstNames = cData.instructorNames || [];
+          const newInstIds = currInstIds.filter((id: string) => id !== instructorToAssign.id);
+          const newInstNames = currInstNames.filter((name: string) => name !== instructorToAssign.displayName && name !== instructorToAssign.email);
+          await updateDoc(courseRef, {
+            instructorIds: newInstIds,
+            instructorNames: newInstNames
+          });
+        }
+      }
+
+      setInstructors(prev =>
+        prev.map(i => i.id === instructorToAssign.id ? { ...i, courseIds: newCourseIds } : i)
+      );
+
+      setSuccessMessage('Eğitmenin kursları başarıyla güncellendi.');
+      handleCloseQuickAssign();
+    } catch (err) {
+      console.error('Hızlı atama sırasında hata:', err);
+      errorMessage = 'Kurs atama işlemi başarısız oldu.';
+      setError(errorMessage);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+  // ----------------------------------
 
   const getExperienceText = (years: number) => {
     if (years < 1) return '1 yıldan az';
@@ -410,7 +618,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                     E-posta
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
-                    Dans Alanları
+                    Kurslar
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
                     Değerlendirme
@@ -427,7 +635,11 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
                           <Avatar
-                            src={instructor.photoURL}
+                            src={
+                              instructor.photoURL && instructor.photoURL !== '/assets/placeholders/default-instructor.png'
+                                ? instructor.photoURL
+                                : `https://ui-avatars.com/api/?name=${encodeURIComponent(instructor.displayName)}&background=b45309&color=fff`
+                            }
                             alt={instructor.displayName}
                             className="h-10 w-10 ring-1 ring-school/20"
                           />
@@ -448,15 +660,18 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                       <div className="text-sm text-gray-900 dark:text-gray-300">{instructor.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      <div className="flex flex-wrap gap-1">
-                        {instructor.danceStyles && instructor.danceStyles.length > 0 ? (
-                          instructor.danceStyles.map(style => (
-                            <span key={style} className="px-2 py-0.5 rounded-full bg-school/10 dark:bg-school/20 text-xs font-medium text-school-dark dark:text-school-light capitalize">
-                              {style}
-                            </span>
-                          ))
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {instructor.courseIds && instructor.courseIds.length > 0 ? (
+                          instructor.courseIds.map(courseId => {
+                            const course = courses.find(c => c.id === courseId);
+                            return course ? (
+                              <span key={courseId} className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                                {course.name}
+                              </span>
+                            ) : null;
+                          })
                         ) : (
-                          <span>-</span>
+                          <span className="text-gray-400">-</span>
                         )}
                       </div>
                     </td>
@@ -470,6 +685,13 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleOpenQuickAssign(instructor)}
+                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+                          title="Kursa Ata"
+                        >
+                          Kursa Ata
+                        </button>
                         <button
                           onClick={() => handleOpenDialog(true, instructor)}
                           className="text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter transition-colors"
@@ -519,6 +741,13 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                   </div>
                   <div className="flex space-x-2 flex-shrink-0">
                     <button
+                      onClick={() => handleOpenQuickAssign(instructor)}
+                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 p-1"
+                      title="Kursa Ata"
+                    >
+                      Kursa Ata
+                    </button>
+                    <button
                       onClick={() => handleOpenDialog(true, instructor)}
                       className="text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter p-1"
                     >
@@ -535,16 +764,19 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="col-span-2">
-                    <span className="text-sm text-gray-500 dark:text-[#cba990]">Dans Alanları:</span>
+                    <span className="text-sm text-gray-500 dark:text-[#cba990]">Atanmış Kurslar:</span>
                     <div className="mt-1 flex flex-wrap gap-1">
-                      {instructor.danceStyles && instructor.danceStyles.length > 0 ? (
-                        instructor.danceStyles.map(style => (
-                          <span key={style} className="px-2 py-0.5 rounded-full bg-school/10 dark:bg-school/20 text-xs font-medium text-school-dark dark:text-school-light capitalize">
-                            {style}
-                          </span>
-                        ))
+                      {instructor.courseIds && instructor.courseIds.length > 0 ? (
+                        instructor.courseIds.map(courseId => {
+                          const course = courses.find(c => c.id === courseId);
+                          return course ? (
+                            <span key={courseId} className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                              {course.name}
+                            </span>
+                          ) : null;
+                        })
                       ) : (
-                        <p className="font-medium">-</p>
+                        <p className="font-medium text-gray-400 text-xs">-</p>
                       )}
                     </div>
                   </div>
@@ -591,6 +823,57 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           </div>
         </div>
       )}
+
+      {/* Quick Assign Modal */}
+      <SimpleModal
+        open={quickAssignModalOpen}
+        onClose={handleCloseQuickAssign}
+        title="Kursa Ata"
+        colorVariant="school"
+      >
+        <div className="p-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <strong className="text-gray-900 dark:text-white">{instructorToAssign?.displayName}</strong> adlı eğitmeni aşağıdaki kurslara atayabilirsiniz:
+          </p>
+          <div className="mt-4">
+            <CustomSelect
+              name="quickCourseIds"
+              label="Kurslar"
+              value={quickAssignCourseIds}
+              onChange={(value: string | string[]) => {
+                if (Array.isArray(value)) {
+                  setQuickAssignCourseIds(value);
+                }
+              }}
+              options={courses.map(course => ({
+                value: course.id,
+                label: course.name
+              }))}
+              fullWidth
+              multiple
+              required
+              colorVariant="school"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-100 dark:border-slate-800">
+            <Button
+              variant="outlined"
+              onClick={handleCloseQuickAssign}
+              disabled={isAssigning}
+            >
+              İptal
+            </Button>
+            <Button
+              onClick={handleSaveQuickAssign}
+              variant="school"
+              disabled={isAssigning}
+            >
+              {isAssigning ? 'Kaydediliyor...' : 'Atamayı Kaydet'}
+            </Button>
+          </div>
+        </div>
+      </SimpleModal>
 
       {/* Add/Edit Modal */}
       <SimpleModal
@@ -666,20 +949,25 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 onPhoneNumberChange={(number) => handlePhoneChange('+90', number)}
                 autoComplete="new-password"
               />
-              {!isEdit && (
+              <div className="flex flex-col gap-1">
                 <CustomInput
                   name="password"
-                  label="Şifre"
+                  label={isEdit ? "Yeni Şifre (Opsiyonel)" : "Şifre"}
                   type="password"
                   value={formData.password || ''}
                   onChange={handleInputChange}
-                  required
+                  required={!isEdit}
                   fullWidth
                   colorVariant="school"
-                  placeholder="Giriş şifresi oluşturun"
+                  placeholder={isEdit ? "Değiştirmek için girin" : "Giriş şifresi oluşturun"}
                   autoComplete="new-password"
                 />
-              )}
+                {isEdit && (
+                  <span className="text-[10px] text-gray-500 italic">
+                    * Yeni bir şifre girerseniz kullanıcının giriş şifresi güncellenir.
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -727,6 +1015,41 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
               fullWidth
               colorVariant="school"
             />
+          </div>
+        </div>
+      </SimpleModal>
+
+      {/* Existing User Warning Modal */}
+      <SimpleModal
+        open={existingUserModalOpen}
+        onClose={() => setExistingUserModalOpen(false)}
+        title="Kullanıcı Zaten Mevcut"
+        colorVariant="school"
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800/50 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-800/50 flex items-center justify-center flex-shrink-0 text-orange-600 dark:text-orange-400">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-gray-900 dark:text-white font-medium">Bu e-posta adresiyle bir kullanıcı zaten kayıtlı.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <strong>{existingUserToLink?.displayName}</strong> ({existingUserToLink?.email})
+                {existingUserToLink?.role?.includes('instructor')
+                  ? ' zaten bir eğitmen.'
+                  : ' şu an bir ' + existingUserToLink?.role + '.'}
+              </p>
+            </div>
+          </div>
+          <p className="text-gray-700 dark:text-gray-300">
+            Bu kullanıcıyı okulunuza eğitmen olarak bağlamak istiyor musunuz?
+            {existingUserToLink?.role !== 'instructor' && ' Kullanıcının rolü otomatik olarak eğitmen olarak güncellenecektir.'}
+          </p>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outlined" onClick={() => setExistingUserModalOpen(false)}>Vazgeç</Button>
+            <Button variant="school" onClick={handleConfirmLink}>Evet, Bağla</Button>
           </div>
         </div>
       </SimpleModal>
