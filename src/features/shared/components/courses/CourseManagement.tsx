@@ -276,7 +276,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     duration: 90,
     date: null,
     time: '18:00',
-    price: 0,
+    price: 1500,
     currency: 'TRY',
     status: 'active',
     recurring: true,
@@ -888,42 +888,34 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
                 5. Ücretlendirme ve Süre
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2">
-                    <CustomInput
-                      type="number"
-                      name="price"
-                      label="Fiyat"
-                      value={formData.price.toString()}
-                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                      colorVariant={colorVariant}
-                      required
-                    />
-                  </div>
-                  <div className="col-span-1">
-                    <CustomSelect
-                      name="currency"
-                      label="Birim"
-                      options={currencyOptions}
-                      value={formData.currency}
-                      onChange={(value) => setFormData({ ...formData, currency: value as string })}
-                      colorVariant={colorVariant}
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <CustomInput
-                    type="number"
-                    name="duration"
-                    label="Süre (dk)"
-                    value={formData.duration.toString()}
-                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })}
-                    colorVariant={colorVariant}
-                    required
-                  />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <CustomInput
+                  type="number"
+                  name="price"
+                  label="Fiyat"
+                  value={formData.price.toString()}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                  colorVariant={colorVariant}
+                  required
+                />
+                <CustomSelect
+                  name="currency"
+                  label="Birim"
+                  options={currencyOptions}
+                  value={formData.currency}
+                  onChange={(value) => setFormData({ ...formData, currency: value as string })}
+                  colorVariant={colorVariant}
+                  required
+                />
+                <CustomInput
+                  type="number"
+                  name="duration"
+                  label="Süre (dk)"
+                  value={formData.duration.toString()}
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })}
+                  colorVariant={colorVariant}
+                  required
+                />
               </div>
             </section>
 
@@ -1143,7 +1135,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       duration: 90,
       date: null,
       time: '18:00',
-      price: 0,
+      price: 1500,
       currency: 'TRY',
       status: 'active',
       recurring: true,
@@ -1237,8 +1229,24 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   };
 
   // Form gönderimi
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    // Eğer son adımda değilsek, "Enter" tuşu bir sonraki adıma geçirmeli
+    if (currentStep < totalSteps) {
+      const form = document.getElementById('course-form') as HTMLFormElement;
+      if (form && form.reportValidity()) {
+        setCurrentStep(prev => prev + 1);
+      }
+      return;
+    }
+
+    // Kurs programı kontrolü
+    if (formData.schedule.length === 0) {
+      setError('Lütfen en az bir ders günü seçerek kurs programını oluşturun.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -1265,6 +1273,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         schedule: formData.schedule,
         updatedAt: serverTimestamp()
       };
+
+      console.log('Kurs kaydediliyor (Payload):', courseDataToSave);
+      console.log('Kullanıcı UID:', auth.currentUser?.uid);
 
       if (selectedCourse) {
         // Mevcut kursu güncelle
@@ -1418,8 +1429,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                   onClick={() => {
                     const form = document.getElementById('course-form') as HTMLFormElement;
                     if (form && form.reportValidity()) {
+                      setError(null);
                       setCurrentStep(prev => prev + 1);
                     } else if (!form) {
+                      setError(null);
                       setCurrentStep(prev => prev + 1);
                     }
                   }}
@@ -1428,8 +1441,13 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                 </Button>
               ) : (
                 <Button
-                  type="submit"
-                  form="course-form"
+                  type="button"
+                  onClick={() => {
+                    const form = document.getElementById('course-form') as HTMLFormElement;
+                    if (form && form.reportValidity()) {
+                      handleSubmit();
+                    }
+                  }}
                   variant={isAdmin ? 'indigo' : colorVariant}
                   disabled={loading}
                 >
@@ -1440,7 +1458,38 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           </div>
         }
       >
-        <form id="course-form" onSubmit={handleSubmit} className="space-y-6">
+        <form
+          id="course-form"
+          className="space-y-6"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.type !== 'textarea') {
+              e.preventDefault();
+              if (currentStep < totalSteps) {
+                const form = document.getElementById('course-form') as HTMLFormElement;
+                if (form && form.reportValidity()) {
+                  setError(null);
+                  setCurrentStep(prev => prev + 1);
+                }
+              }
+            }
+          }}
+        >
+          {error && (
+            <div className="col-span-full p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 rounded-lg text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="col-span-full p-3 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/50 text-green-600 dark:text-green-400 rounded-lg text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {success}
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             {renderFormFields()}
           </div>

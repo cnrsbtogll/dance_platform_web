@@ -521,7 +521,6 @@ const SchoolAdmin: React.FC = () => {
 
               {activeTab === 'profile' && schoolInfo && (
                 <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
-                  <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-white">Okul Profili</h3>
                   <SchoolProfile
                     school={schoolInfo}
                     variant="card"

@@ -12,19 +12,25 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
     
+    // Role kontrolü (String veya Array destekler)
+    function hasRole(role) {
+      let userRole = getUserRole();
+      return userRole == role || (userRole is list && role in userRole);
+    }
+    
     // Kullanıcı instructor mı?
     function isInstructor() {
-      return request.auth != null && getUserRole() == 'instructor';
+      return isAuthenticated() && hasRole('instructor');
     }
     
     // Kullanıcı admin mi?
     function isAdmin() {
-      return request.auth != null && getUserRole() == 'admin';
+      return isAuthenticated() && hasRole('admin');
     }
     
     // Kullanıcı okul mu?
     function isSchool() {
-      return request.auth != null && getUserRole() == 'school';
+      return isAuthenticated() && hasRole('school');
     }
     
     // Kullanıcı authenticated mi?
@@ -40,29 +46,45 @@ service cloud.firestore {
       allow read: if true;
       
       // Eğitmen kendi kursunu, Okul kendi kursunu ve Admin tüm kursları oluşturabilir
-      allow create: if isAuthenticated() && 
-                      (
-                        (isInstructor() && request.resource.data.instructorId == request.auth.uid) ||
-                        (isSchool() && request.resource.data.schoolId == request.auth.uid) ||
-                        isAdmin()
-                      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isSchool() && (
+          request.resource.data.schoolId == request.auth.uid || 
+          request.resource.data.schoolId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolId
+        )) ||
+        (isInstructor() && (
+          request.resource.data.instructorId == request.auth.uid ||
+          request.auth.uid in request.resource.data.instructorIds
+        ))
+      );
       
-      // Eğitmen/Okul kendi kursunu güncelleyebilir, admin hepsini
-      allow update: if isAuthenticated() && 
-                      (
-                        (isInstructor() && resource.data.instructorId == request.auth.uid) ||
-                        (isSchool() && resource.data.schoolId == request.auth.uid) ||
-                        isAdmin() ||
-                        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantStats', 'updatedAt', 'currentParticipants']))
-                      );
+      // Güncelleme yetkisi
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (isSchool() && (
+          resource.data.schoolId == request.auth.uid || 
+          resource.data.schoolId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolId
+        )) ||
+        (isInstructor() && (
+          resource.data.instructorId == request.auth.uid ||
+          request.auth.uid in resource.data.instructorIds
+        )) ||
+        // Otomatik güncellemeler (istatistikler vb.)
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantStats', 'updatedAt', 'currentParticipants'])
+      );
 
-      // Eğitmen/Okul kendi kursunu silebilir, admin hepsini
-      allow delete: if isAuthenticated() && 
-                      (
-                        (isInstructor() && resource.data.instructorId == request.auth.uid) ||
-                        (isSchool() && resource.data.schoolId == request.auth.uid) ||
-                        isAdmin()
-                      );
+      // Silme yetkisi
+      allow delete: if isAuthenticated() && (
+        isAdmin() ||
+        (isSchool() && (
+          resource.data.schoolId == request.auth.uid || 
+          resource.data.schoolId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolId
+        )) ||
+        (isInstructor() && (
+          resource.data.instructorId == request.auth.uid ||
+          request.auth.uid in resource.data.instructorIds
+        ))
+      );
     }
     
     // ==========================================
@@ -72,15 +94,20 @@ service cloud.firestore {
       // Herkes okuyabilir
       allow read: if true;
       
-      // Sadece kendi instructor profilini oluşturabilir/güncelleyebilir
+      // Kendi profili, okul veya admin tarafından oluşturulabilir/güncellenebilir
       allow create, update: if isAuthenticated() && 
-                              isInstructor() && 
-                              instructorId == request.auth.uid;
+                              (
+                                (isInstructor() && instructorId == request.auth.uid) ||
+                                isSchool() || 
+                                isAdmin()
+                              );
       
-      // Sadece kendi profilini silebilir
+      // Sadece kendi profilini veya admin silebilir
       allow delete: if isAuthenticated() && 
-                      isInstructor() && 
-                      instructorId == request.auth.uid;
+                      (
+                        (isInstructor() && instructorId == request.auth.uid) ||
+                        isAdmin()
+                      );
     }
     
     // ==========================================
@@ -116,8 +143,8 @@ service cloud.firestore {
       // Partner listesini görmek için girişe gerek yok
       allow read: if true;
       
-      // Sadece kendi profilini oluşturabilir/güncelleyebilir
-      allow create, update: if isAuthenticated() && userId == request.auth.uid;
+      // Kendi profili, okul veya admin tarafından yönetilebilir
+      allow create, update: if isAuthenticated() && (userId == request.auth.uid || isSchool() || isAdmin());
       
       // Sadece admin silebilir
       allow delete: if isAdmin();
@@ -302,8 +329,8 @@ service cloud.firestore {
     // PENDING USERS
     // ==========================================
     match /pendingUsers/{userId} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
+      allow read: if isAuthenticated() && (isSchool() || isAdmin());
+      allow write: if isAuthenticated() && (isSchool() || isAdmin());
     }
     
     // ==========================================
