@@ -790,8 +790,10 @@ function InstructorManagement(): JSX.Element {
               <div>
                 <CustomPhoneInput
                   name="phoneNumber"
-                  value={formVeri.phoneNumber}
-                  onChange={handleInputChange}
+                  countryCode="+90" // Default or extracted
+                  phoneNumber={formVeri.phoneNumber || ''}
+                  onCountryCodeChange={() => { }} // Ignoring country code for now as form is single combined string mostly
+                  onPhoneNumberChange={(val: string) => setFormVeri(prev => ({ ...prev, phoneNumber: val }))}
                   label="Telefon"
                 />
               </div>
