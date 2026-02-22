@@ -1,29 +1,24 @@
 import React from 'react';
+import { generateInitialsAvatar } from '../../utils/imageUtils';
 
 interface AvatarProps {
   src?: string | null;
   alt: string;
   className?: string;
+  userType?: 'student' | 'instructor' | 'school';
 }
 
-function Avatar({ src, alt, className = '' }: AvatarProps) {
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
+function Avatar({ src, alt, className = '', userType = 'student' }: AvatarProps) {
+  // Check if src is missing or is the default placeholder image
+  const isDefaultImage = !src || src.includes('egitmen_default.jpg') || src === '/assets/placeholders/default-instructor.png';
 
-  if (!src) {
+  if (isDefaultImage) {
     return (
-      <div 
-        className={`flex items-center justify-center bg-rose-100 text-brand-pink ${className}`}
-        title={alt}
-      >
-        <span className="text-sm font-medium">{getInitials(alt)}</span>
-      </div>
+      <img
+        src={generateInitialsAvatar(alt, userType)}
+        alt={alt}
+        className={`object-cover rounded-full ${className}`}
+      />
     );
   }
 
@@ -31,11 +26,11 @@ function Avatar({ src, alt, className = '' }: AvatarProps) {
     <img
       src={src}
       alt={alt}
-      className={`object-cover ${className}`}
+      className={`object-cover rounded-full ${className}`}
       onError={(e) => {
         const target = e.target as HTMLImageElement;
         target.onerror = null;
-        target.src = '/assets/images/dance/egitmen_default.jpg';
+        target.src = generateInitialsAvatar(alt, userType);
       }}
     />
   );

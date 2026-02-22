@@ -21,7 +21,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
       case 'salsa':
         return 'bg-red-500';
       case 'bachata':
-        return 'bg-purple-500';
+        return 'bg-indigo-500';
       case 'kizomba':
         return 'bg-blue-500';
       case 'tango':

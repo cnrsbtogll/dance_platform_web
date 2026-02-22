@@ -333,7 +333,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
   return (
     <>
-      <nav className={`bg-white dark:bg-gray-900 shadow-md fixed w-full z-50 backdrop-blur-sm bg-white dark:bg-gray-900/90 transition-colors duration-300 ${hasInstructorRole ? 'border-b-2 border-instructor' : hasSchoolRole ? 'border-b-2 border-school' : 'border-b border-gray-200 dark:border-gray-700'}`}>
+      <nav className={`shadow-md fixed w-full z-50 backdrop-blur-sm transition-colors duration-300 ${hasSchoolRole && !hasInstructorRole ? 'bg-white/90 dark:bg-[#231810]/90' : 'bg-white/90 dark:bg-gray-900/90'} ${hasInstructorRole ? 'border-b-2 border-instructor' : hasSchoolRole ? 'border-b-2 border-school' : 'border-b border-gray-200 dark:border-gray-700'}`}>
         {/* Instructor mode banner */}
         {hasInstructorRole && (
           <div className="bg-gradient-to-r from-instructor-dark via-instructor to-instructor-light px-4 py-0.5 flex items-center justify-center gap-2">
@@ -389,32 +389,32 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   <Link
                     to="/partners"
                     className={`${isActive('/partners')
-                      ? 'border-brand-pink text-brand-pink font-medium'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                      ? (hasInstructorRole ? 'border-instructor text-instructor' : hasSchoolRole ? 'border-school text-school' : 'border-brand-pink text-brand-pink') + ' font-medium'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 ' + (hasInstructorRole ? 'hover:text-instructor hover:border-instructor' : hasSchoolRole ? 'hover:text-school hover:border-school' : 'hover:text-brand-pink hover:border-brand-pink')} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                   >
                     Partner Bul
                   </Link>
                   <Link
                     to="/courses"
                     className={`${isActive('/courses')
-                      ? 'border-brand-pink text-brand-pink font-medium'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                      ? (hasInstructorRole ? 'border-instructor text-instructor' : hasSchoolRole ? 'border-school text-school' : 'border-brand-pink text-brand-pink') + ' font-medium'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 ' + (hasInstructorRole ? 'hover:text-instructor hover:border-instructor' : hasSchoolRole ? 'hover:text-school hover:border-school' : 'hover:text-brand-pink hover:border-brand-pink')} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                   >
                     Kurs Bul
                   </Link>
                   <Link
                     to="/festivals"
                     className={`${isActive('/festivals')
-                      ? 'border-brand-pink text-brand-pink font-medium'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                      ? (hasInstructorRole ? 'border-instructor text-instructor' : hasSchoolRole ? 'border-school text-school' : 'border-brand-pink text-brand-pink') + ' font-medium'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 ' + (hasInstructorRole ? 'hover:text-instructor hover:border-instructor' : hasSchoolRole ? 'hover:text-school hover:border-school' : 'hover:text-brand-pink hover:border-brand-pink')} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                   >
                     Festivaller
                   </Link>
                   <Link
                     to="/nights"
                     className={`${isActive('/nights')
-                      ? 'border-brand-pink text-brand-pink font-medium'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-pink hover:border-brand-pink'} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
+                      ? (hasInstructorRole ? 'border-instructor text-instructor' : hasSchoolRole ? 'border-school text-school' : 'border-brand-pink text-brand-pink') + ' font-medium'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 ' + (hasInstructorRole ? 'hover:text-instructor hover:border-instructor' : hasSchoolRole ? 'hover:text-school hover:border-school' : 'hover:text-brand-pink hover:border-brand-pink')} inline-flex items-center px-1 pt-1 border-b-2 text-sm transition-all duration-200`}
                   >
                     Geceler
                   </Link>
@@ -425,7 +425,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
               {/* Dark mode toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-pink"
+                className={`p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 ${hasInstructorRole ? 'focus:ring-instructor' : hasSchoolRole ? 'focus:ring-school' : 'focus:ring-brand-pink'}`}
                 title={isDark ? 'Aydınlık Mod' : 'Karanlık Mod'}
                 aria-label="Tema değiştir"
               >
@@ -492,7 +492,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                   {hasSuperAdminRole && (
                     <Link
                       to="/admin"
-                      className="mr-1 lg:mr-3 inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                      className="mr-1 lg:mr-3 inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                       title="Admin Panel"
                     >
                       <span className="hidden lg:inline">Admin Panel</span>
@@ -519,7 +519,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       </div>
                       <button
                         onClick={toggleProfileMenu}
-                        className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
+                        className={`flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 ${hasInstructorRole ? 'focus:ring-instructor' : hasSchoolRole ? 'focus:ring-school' : 'focus:ring-brand-pink'}`}
                       >
                         <span className="sr-only">Profil menüsünü aç</span>
                         <img
@@ -639,7 +639,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
             <div className="-mr-2 flex items-center md:hidden">
               <button
                 onClick={toggleMenu}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-brand-pink hover:bg-gray-100 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-pink transition duration-150 ease-in-out"
+                className={`inline-flex items-center justify-center p-2 rounded-md text-gray-400 ${hasInstructorRole ? 'hover:text-instructor' : hasSchoolRole ? 'hover:text-school' : 'hover:text-brand-pink'} hover:bg-gray-100 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-inset ${hasInstructorRole ? 'focus:ring-instructor' : hasSchoolRole ? 'focus:ring-school' : 'focus:ring-brand-pink'} transition duration-150 ease-in-out`}
               >
                 <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                   {isMenuOpen ? (
@@ -792,7 +792,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                     {hasSuperAdminRole && (
                       <Link
                         to="/admin"
-                        className="block px-3 py-1 mt-2 rounded-md text-base font-medium text-white bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 transition-colors duration-150"
+                        className="block px-3 py-1 mt-2 rounded-md text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-150"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Admin Panel

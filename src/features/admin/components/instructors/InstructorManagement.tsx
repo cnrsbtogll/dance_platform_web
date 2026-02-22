@@ -24,9 +24,11 @@ import { db, auth } from '../../../../api/firebase/firebase';
 import { motion } from 'framer-motion';
 import ImageUploader from '../../../../common/components/ui/ImageUploader';
 import { resizeImageFromBase64 } from '../../../../api/services/userService';
+import Avatar from '../../../../common/components/ui/Avatar';
 import { generateInitialsAvatar } from '../../../../common/utils/imageUtils';
 import CustomSelect from '../../../../common/components/ui/CustomSelect';
 import CustomPhoneInput from '../../../../common/components/ui/CustomPhoneInput';
+import CustomInput from '../../../../common/components/ui/CustomInput';
 
 // Tip tanımlamaları
 interface Egitmen {
@@ -222,7 +224,7 @@ function InstructorManagement(): JSX.Element {
           tecrube: data.experience || data.tecrube || 'Belirtilmemiş',
           biyografi: data.bio || data.biyografi || '',
           okul_id: data.okul_id || data.schoolId || '',
-          gorsel: data.photoURL || data.gorsel || '/assets/images/dance/egitmen_default.jpg',
+          gorsel: data.photoURL || data.gorsel || '',
           userId: data.userId || null,
           email: data.email || '',
           displayName: data.displayName || data.ad || 'İsimsiz Eğitmen',
@@ -324,7 +326,7 @@ function InstructorManagement(): JSX.Element {
       tecrube: '',
       biyografi: '',
       okul_id: '',
-      gorsel: '/assets/images/dance/egitmen_default.jpg',
+      gorsel: '',
       email: '',
       phoneNumber: '',
       password: ''
@@ -359,7 +361,7 @@ function InstructorManagement(): JSX.Element {
       if (base64Image === null) {
         setFormVeri(prev => ({
           ...prev,
-          gorsel: '/assets/images/dance/egitmen_default.jpg'
+          gorsel: ''
         }));
         setLoading(false);
         return;
@@ -491,7 +493,7 @@ function InstructorManagement(): JSX.Element {
         id: userId,
         email,
         displayName: invitationData.displayName,
-        role: ['instructor'],
+        role: ['draft-instructor'],
         level: 'advanced',
         photoURL: '',
         phoneNumber: invitationData.phoneNumber || '',
@@ -650,7 +652,7 @@ function InstructorManagement(): JSX.Element {
   if (loading && egitmenler.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
         <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
@@ -710,6 +712,7 @@ function InstructorManagement(): JSX.Element {
               <div>
                 <CustomSelect
                   label="Uzmanlık Alanı"
+                  name="uzmanlık"
                   value={formVeri.uzmanlık}
                   onChange={handleSelectChange('uzmanlık')}
                   options={danceStyles.map(style => ({
@@ -739,6 +742,7 @@ function InstructorManagement(): JSX.Element {
               <div>
                 <CustomSelect
                   label="Çalıştığı Okul"
+                  name="okul_id"
                   value={formVeri.okul_id}
                   onChange={handleSelectChange('okul_id')}
                   options={dansOkullari.map(okul => ({
@@ -777,7 +781,6 @@ function InstructorManagement(): JSX.Element {
 
               <div>
                 <CustomPhoneInput
-                  id="phoneNumber"
                   name="phoneNumber"
                   value={formVeri.phoneNumber}
                   onChange={handleInputChange}
@@ -828,7 +831,6 @@ function InstructorManagement(): JSX.Element {
                 <ImageUploader
                   currentPhotoURL={formVeri.gorsel}
                   onImageChange={(base64Image) => handleImageChange(base64Image)}
-                  title="Eğitmen Fotoğrafı"
                   shape="circle"
                   width={200}
                   height={200}
@@ -847,7 +849,7 @@ function InstructorManagement(): JSX.Element {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700 transition-colors"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
                 disabled={loading}
               >
                 {loading ? 'Kaydediliyor...' : (seciliEgitmen ? 'Güncelle' : 'Ekle')}
@@ -858,18 +860,24 @@ function InstructorManagement(): JSX.Element {
       ) : (
         <>
           <div className="mb-4">
-            <input
-              type="text"
+            <CustomInput
+              name="search"
+              label=""
               placeholder="Eğitmen adı veya uzmanlık ara..."
               value={aramaTerimi}
-              onChange={(e) => setAramaTerimi(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-600"
+              onChange={(e: { target: { name: string; value: any } }) => setAramaTerimi(e.target.value)}
+              fullWidth
+              startIcon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              }
             />
           </div>
 
           {loading && (
             <div className="flex justify-center my-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-violet-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
             </div>
           )}
 
@@ -906,26 +914,13 @@ function InstructorManagement(): JSX.Element {
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 relative bg-blue-100 rounded-full overflow-hidden">
-                            {egitmen.gorsel ? (
-                              <img
-                                className="h-10 w-10 rounded-full object-cover absolute inset-0"
-                                src={egitmen.gorsel}
-                                alt={egitmen.ad}
-                                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                                  const target = e.currentTarget;
-                                  target.onerror = null;
-                                  // Hata durumunda baş harf avatarını göster
-                                  target.src = generateInitialsAvatar(egitmen.ad, 'instructor');
-                                }}
-                              />
-                            ) : (
-                              <img
-                                className="h-10 w-10 rounded-full object-cover"
-                                src={generateInitialsAvatar(egitmen.ad, 'instructor')}
-                                alt={egitmen.ad}
-                              />
-                            )}
+                          <div className="flex-shrink-0 h-10 w-10 relative rounded-full overflow-hidden">
+                            <Avatar
+                              src={egitmen.gorsel}
+                              alt={egitmen.ad}
+                              className="h-10 w-10"
+                              userType="instructor"
+                            />
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">{egitmen.ad}</div>
@@ -946,7 +941,7 @@ function InstructorManagement(): JSX.Element {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => egitmenDuzenle(egitmen)}
-                          className="text-violet-600 hover:text-indigo-900 mr-2"
+                          className="text-indigo-600 hover:text-indigo-900 mr-2"
                         >
                           Düzenle
                         </button>

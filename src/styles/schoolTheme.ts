@@ -21,12 +21,12 @@ const createSchoolTheme = (mode: 'light' | 'dark' = 'light') => createTheme({
         info: { main: '#d97706' },
         success: { main: '#4caf50' },
         background: {
-            default: mode === 'dark' ? '#0f172a' : '#fffbeb',
-            paper: mode === 'dark' ? '#1e293b' : '#ffffff',
+            default: mode === 'dark' ? '#1a120b' : '#fffbeb',
+            paper: mode === 'dark' ? '#231810' : '#ffffff',
         },
         text: {
-            primary: mode === 'dark' ? '#f1f5f9' : '#333333',
-            secondary: mode === 'dark' ? '#94a3b8' : '#666666',
+            primary: mode === 'dark' ? '#ffffff' : '#333333',
+            secondary: mode === 'dark' ? '#cba990' : '#666666',
         },
     },
     typography: {
@@ -89,30 +89,43 @@ const createSchoolTheme = (mode: 'light' | 'dark' = 'light') => createTheme({
         MuiOutlinedInput: {
             styleOverrides: {
                 root: {
-                    backgroundColor: mode === 'dark' ? '#1e293b' : '#ffffff',
+                    backgroundColor: mode === 'dark' ? '#1a120b' : '#ffffff',
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: mode === 'dark' ? '#64748b' : '#9CA3AF',
+                        borderColor: mode === 'dark' ? '#cba990' : '#9CA3AF',
+                    },
+                    '&.Mui-disabled': {
+                        backgroundColor: mode === 'dark' ? '#231810' : '#f9fafb',
+                    },
+                    '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+                        borderColor: mode === 'dark' ? '#3e2a1b' : '#E5E7EB',
                     },
                 },
                 notchedOutline: {
-                    borderColor: mode === 'dark' ? '#475569' : '#E5E7EB',
+                    borderColor: mode === 'dark' ? '#493322' : '#E5E7EB',
                 },
                 input: {
-                    color: mode === 'dark' ? '#f1f5f9' : '#333333',
+                    color: mode === 'dark' ? '#ffffff' : '#333333',
+                    '&.Mui-disabled': {
+                        WebkitTextFillColor: mode === 'dark' ? '#8e715b' : '#9CA3AF',
+                        color: mode === 'dark' ? '#8e715b' : '#9CA3AF',
+                    },
                 },
             },
         },
         MuiInputLabel: {
             styleOverrides: {
                 root: {
-                    color: mode === 'dark' ? '#94a3b8' : '#6B7280',
+                    color: mode === 'dark' ? '#cba990' : '#6B7280',
+                    '&.Mui-disabled': {
+                        color: mode === 'dark' ? '#8e715b' : '#9CA3AF',
+                    },
                 },
             },
         },
         MuiSelect: {
             styleOverrides: {
                 select: {
-                    color: mode === 'dark' ? '#f1f5f9' : '#333333',
+                    color: mode === 'dark' ? '#ffffff' : '#333333',
                 },
             },
         },
@@ -127,8 +140,8 @@ const createSchoolTheme = (mode: 'light' | 'dark' = 'light') => createTheme({
             styleOverrides: {
                 root: {
                     '& .MuiTableCell-root': {
-                        backgroundColor: mode === 'dark' ? '#1e293b' : '#fffbeb',
-                        color: mode === 'dark' ? '#f1f5f9' : '#333333',
+                        backgroundColor: mode === 'dark' ? '#231810' : '#fffbeb',
+                        color: mode === 'dark' ? '#cba990' : '#333333',
                     },
                 },
             },
@@ -136,8 +149,8 @@ const createSchoolTheme = (mode: 'light' | 'dark' = 'light') => createTheme({
         MuiTableCell: {
             styleOverrides: {
                 root: {
-                    borderBottomColor: mode === 'dark' ? '#334155' : '#E5E7EB',
-                    color: mode === 'dark' ? '#cbd5e1' : '#374151',
+                    borderBottomColor: mode === 'dark' ? '#493322' : '#E5E7EB',
+                    color: mode === 'dark' ? '#ffffff' : '#374151',
                 },
             },
         },
@@ -145,7 +158,7 @@ const createSchoolTheme = (mode: 'light' | 'dark' = 'light') => createTheme({
             styleOverrides: {
                 root: {
                     '&:hover': {
-                        backgroundColor: mode === 'dark' ? 'rgba(148, 163, 184, 0.05)' : 'rgba(180, 83, 9, 0.04)',
+                        backgroundColor: mode === 'dark' ? 'rgba(73, 51, 34, 0.3)' : 'rgba(180, 83, 9, 0.04)',
                     },
                 },
             },
@@ -153,7 +166,7 @@ const createSchoolTheme = (mode: 'light' | 'dark' = 'light') => createTheme({
         MuiDivider: {
             styleOverrides: {
                 root: {
-                    borderColor: mode === 'dark' ? '#334155' : '#E5E7EB',
+                    borderColor: mode === 'dark' ? '#493322' : '#E5E7EB',
                 },
             },
         },
@@ -161,8 +174,8 @@ const createSchoolTheme = (mode: 'light' | 'dark' = 'light') => createTheme({
             styleOverrides: {
                 root: {
                     '&.MuiChip-colorDefault': {
-                        backgroundColor: mode === 'dark' ? '#334155' : undefined,
-                        color: mode === 'dark' ? '#cbd5e1' : undefined,
+                        backgroundColor: mode === 'dark' ? '#493322' : undefined,
+                        color: mode === 'dark' ? '#ffffff' : undefined,
                     },
                 },
             },
@@ -170,21 +183,21 @@ const createSchoolTheme = (mode: 'light' | 'dark' = 'light') => createTheme({
         MuiDialog: {
             styleOverrides: {
                 paper: {
-                    backgroundColor: mode === 'dark' ? '#1e293b' : '#ffffff',
+                    backgroundColor: mode === 'dark' ? '#231810' : '#ffffff',
                 },
             },
         },
         MuiDialogTitle: {
             styleOverrides: {
                 root: {
-                    color: mode === 'dark' ? '#f1f5f9' : '#333333',
+                    color: mode === 'dark' ? '#ffffff' : '#333333',
                 },
             },
         },
         MuiDialogContent: {
             styleOverrides: {
                 root: {
-                    color: mode === 'dark' ? '#cbd5e1' : '#374151',
+                    color: mode === 'dark' ? '#cba990' : '#374151',
                 },
             },
         },

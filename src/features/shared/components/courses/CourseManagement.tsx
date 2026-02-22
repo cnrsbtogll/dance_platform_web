@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   collection,
   getDocs,
@@ -14,7 +15,9 @@ import {
   QuerySnapshot,
   limit,
   where,
-  getDoc
+  getDoc,
+  arrayUnion,
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../../../../api/firebase/firebase';
 import { auth } from '../../../../api/firebase/firebase';
@@ -22,6 +25,9 @@ import { motion } from 'framer-motion';
 import Button from '../../../../common/components/ui/Button';
 import CustomSelect from '../../../../common/components/ui/CustomSelect';
 import CustomInput from '../../../../common/components/ui/CustomInput';
+import SimpleModal from '../../../../common/components/ui/SimpleModal';
+import Avatar from '../../../../common/components/ui/Avatar';
+import { generateInitialsAvatar } from '../../../../common/utils/imageUtils';
 
 // Dans stilleri için interface
 interface DanceStyle {
@@ -64,12 +70,19 @@ const dayOptions = [
   { label: 'Pazar', value: 'Pazar' }
 ];
 
-// Durum options
 const statusOptions = [
   { label: 'Aktif', value: 'active' },
-  { label: 'Pasif', value: 'inactive' },
-  { label: 'Taslak', value: 'draft' }
+  { label: 'Pasif', value: 'inactive' }
 ];
+
+// Stil bazlı görsel eşleşmeleri (Dinamik asset yapısı için)
+const STYLE_IMAGES: Record<string, string[]> = {
+  'salsa': ['salsa-1.jpeg', 'salsa-2.jpeg', 'salsa-3.jpeg', 'salsa-4.jpeg'],
+  'bachata': ['bachata-1.jpeg', 'bachata-2.jpeg', 'bachata-3.jpeg', 'bachata-4.jpeg'],
+  'kizomba': ['kizomba-1.jpeg', 'kizomba-2.jpeg', 'kizomba-3.jpeg', 'kizomba-4.jpeg'],
+  'tango': ['tango-1.jpeg', 'tango-2.jpeg', 'tango-3.jpeg', 'tango-4.jpeg'],
+  'moderndance': ['moderndance-1.jpeg', 'moderndance-2.jpeg', 'moderndance-3.jpeg', 'moderndance-4.jpeg']
+};
 
 interface Location {
   address: string;
@@ -89,8 +102,8 @@ interface Course {
   id: string;
   name: string;
   description: string;
-  instructorId: string;
-  instructorName: string;
+  instructorIds: string[];
+  instructorNames: string[];
   schoolId: string;
   schoolName: string;
   danceStyle: string;
@@ -109,18 +122,19 @@ interface Course {
   imageUrl: string;
   highlights: string[];
   tags: string[];
-  instructorPhone: string;
+  instructorPhone?: string;
   schoolPhone: string;
   schoolAddress: string;
   createdAt?: any;
   updatedAt?: any;
+  rating?: number;
 }
 
 interface FormData {
   name: string;
   description: string;
-  instructorId: string;
-  instructorName: string;
+  instructorIds: string[];
+  instructorNames: string[];
   schoolId: string;
   schoolName: string;
   danceStyle: string;
@@ -170,21 +184,24 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, course }) 
           </button>
         </div>
 
-        {/* Eğitmen Bilgileri */}
         <div className="mb-6">
-          <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">Eğitmen</h4>
-          <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              <span className="font-medium">İsim:</span> {course.instructorName}
-            </p>
-            {course.instructorPhone && (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                <span className="font-medium">Telefon:</span>{' '}
-                <a href={`tel:${course.instructorPhone}`} className="text-blue-600 hover:underline">
-                  {course.instructorPhone}
-                </a>
-              </p>
-            )}
+          <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">Eğitmen(ler)</h4>
+          <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg space-y-3">
+            {course.instructorNames.map((name, idx) => (
+              <div key={idx} className="border-b border-gray-100 dark:border-slate-800 last:border-0 pb-2 last:pb-0">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  <span className="font-medium">İsim:</span> {name}
+                </p>
+                {course.instructorPhone && idx === 0 && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="font-medium">Telefon:</span>{' '}
+                    <a href={`tel:${course.instructorPhone}`} className="text-blue-600 hover:underline">
+                      {course.instructorPhone}
+                    </a>
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -221,6 +238,12 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, course }) 
   );
 };
 
+const StarIcon = ({ filled = true }: { filled?: boolean }) => (
+  <svg className={`w-4 h-4 ${filled ? 'text-school-yellow fill-school-yellow' : 'text-gray-300 fill-gray-300'}`} viewBox="0 0 20 20">
+    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+  </svg>
+);
+
 // Timestamp'i tarihe çeviren yardımcı fonksiyon ekle
 const timestampToDate = (timestamp: any): string => {
   if (!timestamp) return '';
@@ -244,6 +267,7 @@ const timestampToDate = (timestamp: any): string => {
 };
 
 function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVariant = 'instructor' }: CourseManagementProps): JSX.Element {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
   const [editMode, setEditMode] = useState<boolean>(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -254,8 +278,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
-    instructorId: '',
-    instructorName: 'Bilinmeyen Eğitmen',
+    instructorIds: [],
+    instructorNames: [],
     schoolId: '',
     schoolName: 'Bilinmeyen Okul',
     danceStyle: '',
@@ -265,7 +289,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     duration: 90,
     date: null,
     time: '18:00',
-    price: 0,
+    price: 1500,
     currency: 'TRY',
     status: 'active',
     recurring: true,
@@ -282,15 +306,35 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     highlights: [],
     tags: []
   });
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const totalSteps = 4;
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [instructors, setInstructors] = useState<Array<{ label: string; value: string }>>([]);
+  const [instructors, setInstructors] = useState<Array<{ label: string; value: string; courseIds?: string[]; photoURL?: string; addedBySchoolName?: string; isCertifiedConfirmed?: boolean }>>([]);
   const [schools, setSchools] = useState<Array<{ label: string; value: string }>>([]);
   const [loadingInstructors, setLoadingInstructors] = useState<boolean>(true);
   const [loadingSchools, setLoadingSchools] = useState<boolean>(true);
   const [selectedContactCourse, setSelectedContactCourse] = useState<Course | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'draft'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'draft'>('active');
+  const [instructorSearchTerm, setInstructorSearchTerm] = useState<string>('');
+  const [students, setStudents] = useState<any[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState<boolean>(true);
+  const [selectedCourseForStudents, setSelectedCourseForStudents] = useState<Course | null>(null);
+  const [selectedCourseForInstructors, setSelectedCourseForInstructors] = useState<Course | null>(null);
+  const [studentSearchInModal, setStudentSearchInModal] = useState<string>('');
+  const [instructorSearchInModal, setInstructorSearchInModal] = useState<string>('');
+  const [showQuickAddStudent, setShowQuickAddStudent] = useState<boolean>(false);
+  const [quickAddStudentData, setQuickAddStudentData] = useState({ displayName: '', email: '', password: '', phoneNumber: '' });
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
+
+  const [showQuickAddInstructor, setShowQuickAddInstructor] = useState<boolean>(false);
+  const [quickAddInstructorData, setQuickAddInstructorData] = useState({ displayName: '', email: '', password: '', phoneNumber: '' });
+  const [isQuickAddingInstructor, setIsQuickAddingInstructor] = useState(false);
+  const [instructorToRemove, setInstructorToRemove] = useState<{ id: string, name: string, courseId: string } | null>(null);
+
+  const sectionBorderColor = isAdmin ? 'border-indigo-600' : colorVariant === 'school' ? 'border-school' : 'border-instructor';
+  const inputFocusRing = colorVariant === 'school' ? 'focus:ring-school focus:border-school' : 'focus:ring-instructor focus:border-instructor';
 
   // Dans stillerini getir
   const fetchDanceStyles = async () => {
@@ -410,18 +454,22 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         let q = query(coursesRef, orderBy('createdAt', 'desc')); // Default query for admin
 
         if (!isAdmin) {
-          if (userRole === 'school') {
-            console.log('School: Okula ait kurslar getiriliyor -', currentUser.uid);
+          // If a schoolId prop is provided, prioritize it. Otherwise use the specific target (instructorId or schoolId)
+          const targetSchoolId = schoolId || (userRole === 'school' ? currentUser.uid : null);
+          const targetInstructorId = instructorId || (userRole === 'instructor' ? currentUser.uid : null);
+
+          if (targetSchoolId) {
+            console.log('School: Okula ait kurslar getiriliyor -', targetSchoolId);
             q = query(
               coursesRef,
-              where('schoolId', '==', currentUser.uid),
+              where('schoolId', '==', targetSchoolId),
               orderBy('createdAt', 'desc')
             );
-          } else if (userRole === 'instructor') {
-            console.log('Instructor: Eğitmene ait kurslar getiriliyor -', currentUser.uid);
+          } else if (targetInstructorId) {
+            console.log('Instructor: Eğitmene ait kurslar getiriliyor -', targetInstructorId);
             q = query(
               coursesRef,
-              where('instructorId', '==', currentUser.uid),
+              where('instructorId', '==', targetInstructorId),
               orderBy('createdAt', 'desc')
             );
           }
@@ -519,30 +567,22 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     }
 
     try {
-      console.log('Eğitmenler getiriliyor...');
-      const instructorsRef = collection(db, 'instructors');
+      console.log('[DEBUG-COURSE-MODAL] Eğitmenler getiriliyor...');
+      const instructorsRef = collection(db, 'users');
 
       let q;
-      // Okul yöneticisi için kendi ID'sine bağlı eğitmenleri getir
-      if (!isAdmin) {
-        console.log('Okul yöneticisi için eğitmen sorgusu oluşturuluyor:', auth.currentUser.uid);
-        q = query(
-          instructorsRef,
-          where('schoolId', '==', auth.currentUser.uid),
-          where('status', '==', 'active')
-        );
-      } else {
-        console.log('Admin için tüm eğitmenler sorgusu oluşturuluyor');
-        q = query(
-          instructorsRef,
-          where('status', '==', 'active')
-        );
-      }
+      const targetSchoolId = schoolId || auth.currentUser.uid;
 
-      console.log('Eğitmenler için query oluşturuldu, çalıştırılıyor...', {
+      // We need to fetch from 'users' and then filter by role='instructor' and school
+      q = query(
+        instructorsRef,
+        orderBy('createdAt', 'desc')
+      );
+
+      console.log('[DEBUG-COURSE-MODAL] Query oluşturuldu, çalıştırılıyor...', {
         currentUserId: auth.currentUser.uid,
         isAdmin,
-        queryConditions: q
+        targetSchoolId
       });
 
       try {
@@ -553,26 +593,35 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           )
         ]) as QuerySnapshot<DocumentData>;
 
-        console.log('Query sonuçları:', {
-          empty: querySnapshot.empty,
-          size: querySnapshot.size,
-          docs: querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            data: {
-              displayName: doc.data().displayName,
-              email: doc.data().email,
-              schoolId: doc.data().schoolId,
-              status: doc.data().status
-            }
-          }))
+        console.log('[DEBUG-COURSE-MODAL] Fetched docs count:', querySnapshot.size);
+
+        const validDocs: any[] = [];
+        querySnapshot.forEach(doc => {
+          const data = doc.data();
+          const roles = Array.isArray(data.role) ? data.role : [data.role];
+
+          if (roles.includes('instructor') || roles.includes('draft-instructor')) {
+            validDocs.push({ id: doc.id, ...data });
+          }
         });
 
-        const instructorsData = querySnapshot.docs
-          .map(doc => {
-            const data = doc.data();
+        console.log('[DEBUG-COURSE-MODAL] Query sonuçları (Valid Instructors):', validDocs.map(d => ({
+          id: d.id,
+          displayName: d.displayName,
+          email: d.email,
+          schoolId: d.schoolId,
+          schoolIds: d.schoolIds
+        })));
+
+        const instructorsData = validDocs
+          .map(data => {
             return {
               label: data.displayName || data.email || 'İsimsiz Eğitmen',
-              value: doc.id
+              value: data.id,
+              courseIds: data.courseIds || [],
+              photoURL: data.photoURL || '',
+              addedBySchoolName: data.addedBySchoolName,
+              isCertifiedConfirmed: data.isCertifiedConfirmed
             };
           })
           .sort((a, b) => a.label.localeCompare(b.label));
@@ -607,7 +656,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
   // Okulları getir
   const fetchSchools = async () => {
-    if (!isAdmin) return;
+    // Both admins and instructors can see the school list for course affiliation
+    if (!isAdmin && colorVariant !== 'instructor') return;
 
     try {
       console.log('Okullar getiriliyor...');
@@ -673,6 +723,448 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     }
   };
 
+  // Öğrencileri getir (Kayıtlı sayısı için)
+  const fetchStudents = async () => {
+    try {
+      // Okul kısıtlamasını kaldırıyoruz: Tüm öğrencileri arayabilmek için okulId filtresini sildik
+      const usersRef = collection(db, 'users');
+      // Rol filtresini Firestore tarafında veya yerel olarak yapabiliriz. 
+      // Firestore 'array-contains' filtresi için index gerektirebilir, 
+      // bu yüzden tüm kullanıcıları çekip yerel filtrelemeye devam ediyoruz.
+      const q = query(usersRef);
+
+      const querySnapshot = await getDocs(q);
+      const studentList = querySnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        // Filter by role locally since Firestore doesn't allow multiple array-contains
+        .filter((user: any) =>
+          typeof user.role === 'string'
+            ? user.role === 'student'
+            : Array.isArray(user.role) && user.role.includes('student')
+        );
+      setStudents(studentList);
+    } catch (error) {
+      console.error('Öğrenciler yüklenirken hata:', error);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  // Öğrenciyi kursa ekle
+  const handleAddStudentToCourse = async (studentId: string, courseId: string) => {
+    try {
+      const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as string[]).includes('school') : false;
+      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
+      await updateDoc(doc(db, 'users', studentId), {
+        courseIds: arrayUnion(courseId),
+        // Eğer bir okul bağlamındaysak, öğrenciyi o okulun listesine de ekleyelim
+        ...(effectiveSchoolId ? { schoolIds: arrayUnion(effectiveSchoolId) } : {}),
+        updatedAt: serverTimestamp()
+      });
+      // State'i güncelle
+      setStudents(prev => prev.map(s => {
+        if (s.id === studentId) {
+          const currentCourseIds = s.courseIds || [];
+          const currentSchoolIds = s.schoolIds || [];
+          return {
+            ...s,
+            courseIds: currentCourseIds.includes(courseId) ? currentCourseIds : [...currentCourseIds, courseId],
+            schoolIds: effectiveSchoolId && !currentSchoolIds.includes(effectiveSchoolId) ? [...currentSchoolIds, effectiveSchoolId] : currentSchoolIds
+          };
+        }
+        return s;
+      }));
+      setSuccess('Öğrenci kursa başarıyla eklendi ve okul öğrencilerine dahil edildi.');
+      setStudentSearchInModal('');
+    } catch (err) {
+      console.error('Öğrenci eklenirken hata:', err);
+      setError('Öğrenci eklenemedi.');
+    }
+  };
+
+  // Yeni öğrenci oluştur ve kursa ekle
+  const handleQuickAddStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickAddStudentData.email || !quickAddStudentData.displayName || !quickAddStudentData.password) {
+      setError('E-posta, İsim ve Şifre alanları zorunludur.');
+      return;
+    }
+
+    try {
+      setIsQuickAdding(true);
+      setError(null);
+
+      const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as any as string[]).includes('school') : false;
+      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
+      if (!effectiveSchoolId && !isAdmin) {
+        throw new Error("Okul bilgisi bulunamadı");
+      }
+
+      // Check if user already exists
+      const userSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', quickAddStudentData.email)));
+      if (!userSnapshot.empty) {
+        setError('Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var. Lütfen arama kısmından ekleyin.');
+        setIsQuickAdding(false);
+        return;
+      }
+
+      // We need to use dynamic import for firebase auth methods to avoid top level issues or use existing imports
+      // Firebase auth module is imported at top
+      const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+      const { secondaryAuth } = await import('../../../../api/firebase/firebase');
+
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, quickAddStudentData.email, quickAddStudentData.password);
+      const newUser = userCredential.user;
+
+      await updateProfile(newUser, {
+        displayName: quickAddStudentData.displayName
+      });
+
+      const schoolRef = doc(db, 'users', effectiveSchoolId);
+      const schoolDoc = await getDoc(schoolRef);
+      const schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : 'Bilinmeyen Okul';
+
+      // Assign to user collection
+      const newStudentData = {
+        id: newUser.uid,
+        displayName: quickAddStudentData.displayName,
+        email: quickAddStudentData.email,
+        phoneNumber: quickAddStudentData.phoneNumber || '',
+        role: ['student'],
+        level: 'beginner',
+        schoolId: effectiveSchoolId,
+        schoolIds: [effectiveSchoolId],
+        schoolName: schoolNameData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        photoURL: '',
+        courseIds: selectedCourseForStudents?.id ? [selectedCourseForStudents.id] : []
+      };
+
+      await setDoc(doc(db, 'users', newUser.uid), newStudentData);
+
+      // Update local state
+      setStudents(prev => [{ ...newStudentData } as any, ...prev]);
+
+      setSuccess('Yeni öğrenci oluşturuldu ve kursa eklendi.');
+      setShowQuickAddStudent(false);
+      setQuickAddStudentData({ displayName: '', email: '', password: '', phoneNumber: '' });
+
+      // Sign out from the secondary auth so it doesn't affect main session
+      await secondaryAuth.signOut();
+    } catch (err: any) {
+      console.error('Yeni öğrenci eklenirken hata:', err);
+      setError(err.message || 'Öğrenci eklenirken bir hata oluştu');
+    } finally {
+      setIsQuickAdding(false);
+    }
+  };
+
+  // Yeni eğitmen oluştur (Kurstan hızlı ekleme)
+  const handleQuickAddInstructor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickAddInstructorData.email || !quickAddInstructorData.displayName || !quickAddInstructorData.password) {
+      setError('E-posta, İsim ve Şifre alanları zorunludur.');
+      return;
+    }
+
+    try {
+      setIsQuickAddingInstructor(true);
+      setError(null);
+
+      const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as any as string[]).includes('school') : false;
+      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
+      if (!effectiveSchoolId && !isAdmin) {
+        throw new Error("Okul bilgisi bulunamadı");
+      }
+
+      const userSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', quickAddInstructorData.email)));
+      if (!userSnapshot.empty) {
+        setError('Bu e-posta adresiyle kayıtlı bir kullanıcı zaten var.');
+        setIsQuickAddingInstructor(false);
+        return;
+      }
+
+      const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+      const { secondaryAuth } = await import('../../../../api/firebase/firebase');
+
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, quickAddInstructorData.email, quickAddInstructorData.password);
+      const newUser = userCredential.user;
+
+      await updateProfile(newUser, {
+        displayName: quickAddInstructorData.displayName
+      });
+
+      const schoolRef = doc(db, 'users', effectiveSchoolId);
+      const schoolDoc = await getDoc(schoolRef);
+      const schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : 'Bilinmeyen Okul';
+
+      const newInstructorData = {
+        id: newUser.uid,
+        displayName: quickAddInstructorData.displayName,
+        email: quickAddInstructorData.email,
+        phoneNumber: quickAddInstructorData.phoneNumber || '',
+        role: isSchoolUser ? ['instructor'] : ['draft-instructor'],
+        isInstructor: true,
+        status: 'active',
+        schoolId: effectiveSchoolId,
+        schoolIds: [effectiveSchoolId], // Liste olarak da ekleyelim
+        schoolName: schoolNameData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        photoURL: '',
+        danceStyles: [],
+        experience: 0,
+        // Eğer course içindeysek ve modal ile ekliyorsak o kursa ata
+        courseIds: selectedCourseForInstructors?.id ? [selectedCourseForInstructors.id] : []
+      };
+
+      // 1. Users koleksiyonuna ekle
+      await setDoc(doc(db, 'users', newUser.uid), newInstructorData);
+
+      // 2. Instructors koleksiyonuna da ekle (Admin panelinde görünmesi için)
+      const instructorEntryId = `instructor_${newUser.uid}`;
+      await setDoc(doc(db, 'instructors', instructorEntryId), {
+        userId: newUser.uid,
+        ad: quickAddInstructorData.displayName,
+        displayName: quickAddInstructorData.displayName,
+        email: quickAddInstructorData.email,
+        phoneNumber: quickAddInstructorData.phoneNumber || '',
+        okul_id: effectiveSchoolId,
+        schoolId: effectiveSchoolId,
+        schoolName: schoolNameData,
+        status: isSchoolUser ? 'active' : 'pending', // Okul eklerse aktif, admin eklerse onay bekliyor
+        role: ['instructor'],
+        uzmanlık: [],
+        tecrube: 0,
+        biyografi: '',
+        gorsel: '',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        courseIds: newInstructorData.courseIds
+      });
+
+      // Listeye ekle (DropDown için)
+      const newInstructorLabel = {
+        label: newInstructorData.displayName,
+        value: newInstructorData.id,
+        courseIds: newInstructorData.courseIds,
+        photoURL: ''
+      };
+      setInstructors(prev => [newInstructorLabel, ...prev]);
+
+      // Eğer mevcut bir modal içindeysek (Manage Instructors modal)
+      if (selectedCourseForInstructors) {
+        // Kurs dokümanını güncelle
+        const courseRef = doc(db, 'courses', selectedCourseForInstructors.id);
+        await updateDoc(courseRef, {
+          instructorIds: arrayUnion(newInstructorData.id),
+          instructorNames: arrayUnion(newInstructorData.displayName),
+          updatedAt: serverTimestamp()
+        });
+
+        // Local courses state'ini güncelle
+        setCourses(prev => prev.map(c =>
+          c.id === selectedCourseForInstructors.id
+            ? {
+              ...c,
+              instructorIds: [...(c.instructorIds || []), newInstructorData.id],
+              instructorNames: [...(c.instructorNames || []), newInstructorData.displayName]
+            }
+            : c
+        ));
+
+        // Modal state'ini güncelle
+        setSelectedCourseForInstructors(prev => prev ? ({
+          ...prev,
+          instructorIds: [...(prev.instructorIds || []), newInstructorData.id],
+          instructorNames: [...(prev.instructorNames || []), newInstructorData.displayName]
+        }) : null);
+      } else {
+        // Sadece form data'ya ekle (Yeni kurs oluşturma flow'u)
+        setFormData(prev => ({
+          ...prev,
+          instructorIds: [...prev.instructorIds, newInstructorData.id],
+          instructorNames: [...prev.instructorNames, newInstructorData.displayName]
+        }));
+      }
+
+      setSuccess('Yeni eğitmen oluşturuldu ve kursa eklendi.');
+      setShowQuickAddInstructor(false);
+      setQuickAddInstructorData({ displayName: '', email: '', password: '', phoneNumber: '' });
+
+      await secondaryAuth.signOut();
+    } catch (err: any) {
+      console.error('Yeni eğitmen eklenirken hata:', err);
+      setError(err.message || 'Eğitmen eklenirken bir hata oluştu');
+    } finally {
+      setIsQuickAddingInstructor(false);
+    }
+  };
+
+  // Öğrenciyi kurstan çıkar
+  const handleRemoveStudentFromCourse = async (studentId: string, courseId: string) => {
+    if (!window.confirm('Öğrenciyi bu kurstan çıkarmak istediğinizden emin misiniz?')) return;
+    try {
+      const student = students.find(s => s.id === studentId);
+      const newCourseIds = student.courseIds.filter((id: string) => id !== courseId);
+      await updateDoc(doc(db, 'users', studentId), {
+        courseIds: newCourseIds,
+        updatedAt: serverTimestamp()
+      });
+      // State'i güncelle
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, courseIds: newCourseIds } : s));
+      setSuccess('Öğrenci kurstan çıkarıldı.');
+    } catch (err) {
+      console.error('Öğrenci çıkarılırken hata:', err);
+      setError('Öğrenci çıkarılamadı.');
+    }
+  };
+
+  // Eğitmeni kursa ekle
+  const handleAddInstructorToCourse = async (instructorId: string, instructorName: string, courseId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const courseRef = doc(db, 'courses', courseId);
+
+      const courseSnapshot = await getDoc(courseRef);
+      if (!courseSnapshot.exists()) throw new Error('Kurs bulunamadı.');
+
+      const courseData = courseSnapshot.data();
+      const currentInstructorIds = courseData.instructorIds || [];
+      const currentInstructorNames = courseData.instructorNames || [];
+
+      if (!currentInstructorIds.includes(instructorId)) {
+        await updateDoc(courseRef, {
+          instructorIds: arrayUnion(instructorId),
+          instructorNames: arrayUnion(instructorName),
+          updatedAt: serverTimestamp()
+        });
+
+        // Update the instructor user document with the courseId
+        const instructorRef = doc(db, 'users', instructorId);
+
+        // Okul bağlamını belirle
+        const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as any as string[]).includes('school') : false;
+        const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
+        await updateDoc(instructorRef, {
+          courseIds: arrayUnion(courseId),
+          // Eğer eğitmen bu okula bağlı değilse, okul listesine ekle
+          ...(effectiveSchoolId ? { schoolIds: arrayUnion(effectiveSchoolId) } : {}),
+          updatedAt: serverTimestamp()
+        });
+
+        // Modalı ve course id statelerini güncelle
+        setCourses(prev => prev.map(c =>
+          c.id === courseId ? { ...c, instructorIds: [...currentInstructorIds, instructorId], instructorNames: [...currentInstructorNames, instructorName] } : c
+        ));
+
+        if (selectedCourseForInstructors && selectedCourseForInstructors.id === courseId) {
+          setSelectedCourseForInstructors(prev => prev ? {
+            ...prev,
+            instructorIds: [...currentInstructorIds, instructorId],
+            instructorNames: [...currentInstructorNames, instructorName]
+          } : null);
+        }
+
+        // Global eğitmen listesini de güncelle ki UI anında tepki versin
+        setInstructors(prev => prev.map(inst =>
+          inst.value === instructorId
+            ? { ...inst, courseIds: [...(inst.courseIds || []), courseId] }
+            : inst
+        ));
+
+        setSuccess('Eğitmen hesaba atandı.');
+        setInstructorSearchInModal('');
+      } else {
+        setError('Bu eğitmen zaten kursa atanmış.');
+      }
+    } catch (error) {
+      console.error('Eğitmen atanırken hata:', error);
+      setError('Eğitmen atanamadı.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Eğitmeni kurstan çıkar
+  const handleRemoveInstructorFromCourse = async (id?: string, name?: string, cId?: string) => {
+    const instructorId = id || instructorToRemove?.id;
+    const instructorName = name || instructorToRemove?.name;
+    const courseId = cId || instructorToRemove?.courseId;
+
+    if (!instructorId || !courseId) return;
+
+    setInstructorToRemove(null);
+    try {
+      setLoading(true);
+      setError(null);
+      const courseRef = doc(db, 'courses', courseId);
+      const courseSnapshot = await getDoc(courseRef);
+      if (!courseSnapshot.exists()) throw new Error('Kurs bulunamadı.');
+
+      const courseData = courseSnapshot.data();
+      const currentInstructorIds = courseData.instructorIds || [];
+      const currentInstructorNames = courseData.instructorNames || [];
+
+      const newInstructorIds = currentInstructorIds.filter((id: string) => id !== instructorId);
+      const newInstructorNames = currentInstructorNames.filter((name: string) => name !== instructorName);
+
+      await updateDoc(courseRef, {
+        instructorIds: newInstructorIds,
+        instructorNames: newInstructorNames,
+        updatedAt: serverTimestamp()
+      });
+
+      // Update the instructor user document, removing the courseId
+      const instructorRef = doc(db, 'users', instructorId);
+      const instructorSnap = await getDoc(instructorRef);
+      if (instructorSnap.exists()) {
+        const instData = instructorSnap.data();
+        const currentCourseIds = instData.courseIds || [];
+        const newCourseIds = currentCourseIds.filter((id: string) => id !== courseId);
+        await updateDoc(instructorRef, {
+          courseIds: newCourseIds,
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      setCourses(prev => prev.map(c =>
+        c.id === courseId ? { ...c, instructorIds: newInstructorIds, instructorNames: newInstructorNames } : c
+      ));
+
+      if (selectedCourseForInstructors && selectedCourseForInstructors.id === courseId) {
+        setSelectedCourseForInstructors(prev => prev ? {
+          ...prev,
+          instructorIds: newInstructorIds,
+          instructorNames: newInstructorNames
+        } : null);
+      }
+
+      // Global eğitmen listesini de güncelle ki UI anında tepki versin
+      setInstructors(prev => prev.map(inst =>
+        inst.value === instructorId
+          ? { ...inst, courseIds: (inst.courseIds || []).filter(id => id !== courseId) }
+          : inst
+      ));
+
+      setSuccess('Eğitmen kurstan başarıyla çıkarıldı.');
+    } catch (err) {
+      console.error('Eğitmen çıkarılırken hata:', err);
+      setError('Eğitmen çıkarılamadı.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Eğitmen ve okul seçimlerini yönet
   const handleInstructorSchoolSelection = () => {
     const currentUser = auth.currentUser;
@@ -690,19 +1182,22 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         fetchInstructors();
         fetchSchools();
       } else if (role === 'instructor') {
-        // Eğitmen: Sadece okul seçebilir, eğitmen kendisidir
+        // Eğitmen: Otomatik olarak kendini ekle
         fetchSchools();
         setFormData(prev => ({
           ...prev,
-          instructorId: currentUser.uid,
-          instructorName: userData?.displayName || 'Bilinmeyen Eğitmen'
+          instructorIds: [currentUser.uid],
+          instructorNames: [userData?.displayName || 'Bilinmeyen Eğitmen']
         }));
       } else if (role === 'school') {
         // Okul: Sadece eğitmen seçebilir, okul kendisidir
+        const effectiveSchoolId = userData?.schoolId || currentUser.uid;
+        console.log('Role school detected, setting effective schoolId:', effectiveSchoolId);
+
         fetchInstructors();
         setFormData(prev => ({
           ...prev,
-          schoolId: currentUser.uid,
+          schoolId: effectiveSchoolId,
           schoolName: userData?.displayName || 'Bilinmeyen Okul'
         }));
       }
@@ -713,81 +1208,439 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     handleInstructorSchoolSelection();
   }, [isAdmin]);
 
+  // Stil bazlı görsel seçici bileşeni
+  const renderImagePicker = () => {
+    const selectedStyle = formData.danceStyle.toLowerCase().replace(/\s/g, '');
+    const images = STYLE_IMAGES[selectedStyle] || [];
+
+    if (!formData.danceStyle) return (
+      <div className="p-4 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-lg text-center text-sm text-gray-500">
+        Resim seçmek için önce bir dans stili seçin.
+      </div>
+    );
+
+    if (images.length === 0) return (
+      <div className="p-4 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-lg text-center text-sm text-gray-500">
+        Bu stil için ön tanımlı görsel bulunamadı.
+      </div>
+    );
+
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {images.map((img) => {
+          const folder = selectedStyle;
+          const fullPath = `/assets/images/lessons/${folder}/${img}`;
+          const isSelected = formData.imageUrl === fullPath;
+          return (
+            <button
+              key={img}
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, imageUrl: fullPath }))}
+              className={`relative rounded-lg overflow-hidden border-2 transition-all h-24 group ${isSelected
+                ? (colorVariant === 'school' ? 'border-school ring-2 ring-school/20' : 'border-instructor ring-2 ring-instructor/20')
+                : 'border-transparent hover:border-gray-300 dark:hover:border-slate-600'
+                }`}
+            >
+              <img src={fullPath} alt={img} className="w-full h-full object-cover" />
+              <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? 'opacity-100 bg-black/30' : 'opacity-0 group-hover:opacity-100 bg-black/10'}`}>
+                {isSelected && (
+                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
   // Form render edilirken kullanıcı rolüne göre alanları göster/gizle
   const renderFormFields = () => {
     const currentUser = auth.currentUser;
     if (!currentUser) return null;
 
     return (
-      <div className="space-y-4 md:col-span-2">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
-          Temel Bilgiler
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <CustomInput
-              type="text"
-              name="name"
-              label="Kurs Adı"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div>
-            <CustomSelect
-              name="danceStyle"
-              label="Dans Stili"
-              options={danceStyles}
-              value={formData.danceStyle}
-              onChange={(value) => setFormData({ ...formData, danceStyle: value as string })}
-              placeholder="Dans Stili Seçin"
-              required
-            />
-          </div>
-        </div>
+      <div className="space-y-8 md:col-span-2">
+        {currentStep === 1 && (
+          <div className="space-y-8 animate-in fade-in">
+            {/* 1. Dans Stili */}
+            <section className="space-y-4">
+              <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
+                1. Dans Stili Seçimi
+              </h3>
+              <CustomSelect
+                name="danceStyle"
+                label="Dans Stili"
+                options={danceStyles}
+                value={formData.danceStyle}
+                onChange={(value) => {
+                  const style = value as string;
+                  setFormData(prev => ({
+                    ...prev,
+                    danceStyle: style,
+                    // Stil değişince otomatik ilk resmi seçelim (varsa)
+                    imageUrl: STYLE_IMAGES[style.toLowerCase().replace(/\s/g, '')]?.[0]
+                      ? `/assets/images/lessons/${style.toLowerCase().replace(/\s/g, '')}/${STYLE_IMAGES[style.toLowerCase().replace(/\s/g, '')][0]}`
+                      : prev.imageUrl
+                  }));
+                }}
+                placeholder="Dans Stili Seçin"
+                colorVariant={colorVariant}
+                required
+              />
+            </section>
 
-        {/* Eğitmen Seçimi - Sadece süper admin ve okul kullanıcıları için */}
-        {(isAdmin || userRole === 'school') && (
-          <div className="mt-4">
-            <CustomSelect
-              name="instructorId"
-              label="Eğitmen"
-              options={instructors}
-              value={formData.instructorId}
-              onChange={(value) => {
-                const selectedInstructor = instructors.find(i => i.value === value);
-                setFormData({
-                  ...formData,
-                  instructorId: value as string,
-                  instructorName: selectedInstructor?.label || ''
-                });
-              }}
-              placeholder="Eğitmen Seçin"
-              required
-            />
+            {/* 2. Görsel Seçimi */}
+            <section className="space-y-4">
+              <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
+                2. Kurs Görseli
+              </h3>
+              {renderImagePicker()}
+            </section>
           </div>
         )}
 
-        {/* Okul Seçimi - Sadece süper admin ve eğitmen kullanıcıları için */}
-        {(isAdmin || userRole === 'instructor') && (
-          <div className="mt-4">
-            <CustomSelect
-              name="schoolId"
-              label="Okul"
-              options={schools}
-              value={formData.schoolId}
-              onChange={(value) => {
-                const selectedSchool = schools.find(s => s.value === value);
-                setFormData({
-                  ...formData,
-                  schoolId: value as string,
-                  schoolName: selectedSchool?.label || ''
-                });
-              }}
-              placeholder="Okul Seçin"
-              required
-            />
+        {currentStep === 2 && (
+          <div className="space-y-8 animate-in fade-in">
+            {/* 3. İsim ve Açıklama */}
+            <section className="space-y-4">
+              <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
+                3. Kurs Bilgileri
+              </h3>
+              <div className="space-y-4">
+                <CustomInput
+                  type="text"
+                  name="name"
+                  label="Kurs Adı"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  colorVariant={colorVariant}
+                  required
+                />
+                <CustomInput
+                  name="description"
+                  label="Açıklama"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  multiline
+                  rows={3}
+                  colorVariant={colorVariant}
+                  required
+                />
+
+                {/* Freelance / School selection for instructors */}
+                {colorVariant === 'instructor' && !isAdmin && (
+                  <div className="pt-2">
+                    <CustomSelect
+                      name="schoolId"
+                      label="Okul Bağlantısı (Opsiyonel)"
+                      options={schools}
+                      value={formData.schoolId}
+                      onChange={(value) => {
+                        const style = value as string;
+                        const selectedSchool = schools.find(s => s.value === style);
+                        setFormData({
+                          ...formData,
+                          schoolId: style,
+                          schoolName: selectedSchool?.label || ''
+                        });
+                      }}
+                      placeholder="Freelance (Okulsuz)"
+                      colorVariant={colorVariant}
+                    />
+                    <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
+                      Okul seçerseniz, kurs o okulun adı ve konumuyla yayınlanır. Seçmezseniz "Freelance" olarak görünür.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* 4. Seviye ve Kapasite */}
+            <section className="space-y-4">
+              <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
+                4. Seviye ve Kontenjan
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <CustomSelect
+                  name="level"
+                  label="Seviye"
+                  options={levelOptions}
+                  value={formData.level}
+                  onChange={(value) => setFormData({ ...formData, level: value as string })}
+                  colorVariant={colorVariant}
+                  required
+                />
+                <CustomInput
+                  type="number"
+                  name="maxParticipants"
+                  label="Maksimum Katılımcı"
+                  value={formData.maxParticipants.toString()}
+                  onChange={(e) => setFormData({ ...formData, maxParticipants: parseInt(e.target.value) || 0 })}
+                  colorVariant={colorVariant}
+                  required
+                />
+              </div>
+            </section>
+          </div>
+        )}
+
+        {currentStep === 3 && (
+          <div className="space-y-8 animate-in fade-in">
+            <section className="space-y-4">
+              <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
+                5. Ücretlendirme ve Süre
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <CustomInput
+                  type="number"
+                  name="price"
+                  label="Fiyat"
+                  value={formData.price.toString()}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                  colorVariant={colorVariant}
+                  required
+                />
+                <CustomSelect
+                  name="currency"
+                  label="Birim"
+                  options={currencyOptions}
+                  value={formData.currency}
+                  onChange={(value) => setFormData({ ...formData, currency: value as string })}
+                  colorVariant={colorVariant}
+                  required
+                />
+                <CustomInput
+                  type="number"
+                  name="duration"
+                  label="Süre (dk)"
+                  value={formData.duration.toString()}
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })}
+                  colorVariant={colorVariant}
+                  required
+                />
+              </div>
+            </section>
+
+            {/* 6. Eğitmen Seçimi */}
+            <section className="space-y-4">
+              <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
+                6. Eğitmenler
+              </h3>
+              <div className="space-y-4">
+                <CustomInput
+                  name="instructorSearch"
+                  label=""
+                  placeholder="İsim veya e-posta ile eğitmen ara..."
+                  value={instructorSearchTerm}
+                  onChange={(e: any) => setInstructorSearchTerm(e.target.value)}
+                  colorVariant={colorVariant}
+                  startIcon={
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  }
+                />
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[200px] overflow-y-auto p-1">
+                  {instructors
+                    .filter(i =>
+                      i.label.toLowerCase().includes(instructorSearchTerm.toLowerCase())
+                    )
+                    .map((instructor) => {
+                      const isSelected = formData.instructorIds.includes(instructor.value);
+                      return (
+                        <button
+                          key={instructor.value}
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => {
+                              const newIds = isSelected
+                                ? prev.instructorIds.filter(id => id !== instructor.value)
+                                : [...prev.instructorIds, instructor.value];
+                              const newNames = isSelected
+                                ? prev.instructorNames.filter(name => name !== instructor.label)
+                                : [...prev.instructorNames, instructor.label];
+                              return { ...prev, instructorIds: newIds, instructorNames: newNames };
+                            });
+                          }}
+                          className={`flex items-center p-3 rounded-lg border transition-all text-sm ${isSelected
+                            ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
+                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                            }`}
+                        >
+                          <div className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center border ${isSelected
+                            ? (colorVariant === 'school' ? 'bg-school border-school' : 'bg-instructor border-instructor')
+                            : 'border-gray-300 dark:border-slate-500'
+                            }`}>
+                            {isSelected && (
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="truncate">{instructor.label}</span>
+                        </button>
+                      );
+                    })}
+                  {instructors.filter(i => i.label.toLowerCase().includes(instructorSearchTerm.toLowerCase())).length === 0 && (
+                    <div className="col-span-full py-4 text-center text-gray-500 dark:text-gray-400 text-sm italic">
+                      Eğitmen bulunamadı.
+                    </div>
+                  )}
+                </div>
+                {!showQuickAddInstructor ? (
+                  <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
+                    Eğitmen Feriha'da kayıtlı değil mi? <button type="button" onClick={(e) => { e.preventDefault(); setShowQuickAddInstructor(true); }} className="text-school dark:text-school-light font-medium hover:underline">Sıfırdan Eğitmen Ekle</button>
+                  </div>
+                ) : (
+                  <div className="bg-school/5 border border-school/20 rounded-xl p-4 mt-2 animate-in fade-in zoom-in-95 duration-200">
+                    <h4 className="text-sm font-semibold text-school mb-3 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Yeni Eğitmen Oluştur ve Seç
+                    </h4>
+                    {/* Browser Autofill Prevention Hacks */}
+                    <input type="text" style={{ display: 'none' }} />
+                    <input type="password" style={{ display: 'none' }} />
+
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        placeholder="Ad Soyad"
+                        value={quickAddInstructorData.displayName}
+                        onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, displayName: e.target.value }))}
+                        autoComplete="off"
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                      />
+                      <input
+                        type="email"
+                        placeholder="E-posta Adresi"
+                        value={quickAddInstructorData.email}
+                        onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, email: e.target.value }))}
+                        autoComplete="off"
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                      />
+                      <input
+                        type="tel"
+                        placeholder="Telefon Numarası (Opsiyonel)"
+                        value={quickAddInstructorData.phoneNumber}
+                        onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                        autoComplete="dont-fill-this"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute('readonly')}
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                      />
+                      <input
+                        type="password"
+                        placeholder="Giriş Şifresi Belirle"
+                        value={quickAddInstructorData.password}
+                        onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, password: e.target.value }))}
+                        autoComplete="new-password-no-fill"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute('readonly')}
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                      />
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowQuickAddInstructor(false)}
+                          className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 font-medium"
+                          disabled={isQuickAddingInstructor}
+                        >
+                          İptal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleQuickAddInstructor}
+                          disabled={isQuickAddingInstructor}
+                          className="text-xs px-4 py-1.5 bg-school text-white rounded shadow-sm hover:bg-school-light font-medium transition-colors disabled:opacity-50"
+                        >
+                          {isQuickAddingInstructor ? 'Ekleniyor...' : 'Kaydet ve Seç'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {currentStep === 4 && (
+          <div className="space-y-8 animate-in fade-in">
+            {/* 7. Program */}
+            <section className="space-y-4">
+              <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
+                7. Kurs Programı
+              </h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {dayOptions.map((day) => {
+                    const scheduleItem = formData.schedule.find(s => s.day === day.value);
+                    const isSelected = !!scheduleItem;
+                    return (
+                      <div key={day.value} className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => {
+                              const newSchedule = isSelected
+                                ? prev.schedule.filter(s => s.day !== day.value)
+                                : [...prev.schedule, { day: day.value, time: '18:00' }];
+                              return { ...prev, schedule: newSchedule, recurring: true };
+                            });
+                          }}
+                          className={`w-full py-2 rounded-lg border text-xs font-medium transition-all ${isSelected
+                            ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
+                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50'
+                            }`}
+                        >
+                          {day.label}
+                        </button>
+                        {isSelected && (
+                          <input
+                            type="time"
+                            value={scheduleItem.time}
+                            onChange={(e) => {
+                              const newSchedule = formData.schedule.map(s =>
+                                s.day === day.value ? { ...s, time: e.target.value } : s
+                              );
+                              setFormData({ ...formData, schedule: newSchedule });
+                            }}
+                            className={`block w-full px-2 py-1 rounded border-gray-300 dark:border-slate-600 text-[10px] dark:bg-slate-700 dark:text-white ${colorVariant === 'school' ? 'focus:ring-school focus:border-school' : 'focus:ring-instructor focus:border-instructor'}`}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* 8. Durum */}
+            <section className="space-y-4 pt-4 border-t border-gray-100 dark:border-slate-800">
+              <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
+                8. Yayınlanma Durumu
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                {statusOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, status: opt.value as any })}
+                    className={`py-3 rounded-xl border-2 font-medium transition-all ${formData.status === opt.value
+                      ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
+                      : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300'
+                      }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </section>
           </div>
         )}
       </div>
@@ -838,6 +1691,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           console.error('Okullar yüklenirken hata:', e);
         }
 
+        try {
+          await fetchStudents();
+        } catch (e) {
+          console.error('Öğrenciler yüklenirken hata:', e);
+        }
+
       } catch (err) {
         if (isMounted) {
           console.error('Veriler yüklenirken genel hata:', err);
@@ -858,10 +1717,13 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     setSelectedCourse(course);
     setFormData({
       ...course,
+      instructorIds: course.instructorIds || [],
+      instructorNames: course.instructorNames || [],
       schedule: course.schedule || [],
       date: course.date,
       time: course.time || '18:00'
     });
+    setCurrentStep(1);
     setEditMode(true);
   };
 
@@ -871,8 +1733,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     setFormData({
       name: '',
       description: '',
-      instructorId: instructorId || '',
-      instructorName: instructorId ? auth.currentUser?.displayName || 'Bilinmeyen Eğitmen' : '',
+      instructorIds: instructorId ? [instructorId] : [],
+      instructorNames: instructorId ? [auth.currentUser?.displayName || 'Bilinmeyen Eğitmen'] : [],
       schoolId: schoolId || '',
       schoolName: 'Bilinmeyen Okul',
       danceStyle: '',
@@ -882,7 +1744,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       duration: 90,
       date: null,
       time: '18:00',
-      price: 0,
+      price: 1500,
       currency: 'TRY',
       status: 'active',
       recurring: true,
@@ -899,6 +1761,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       highlights: [],
       tags: []
     });
+    setCurrentStep(1);
     setEditMode(true);
   };
 
@@ -915,6 +1778,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const cleanDataForFirebase = (data: any) => {
     const cleanData = { ...data };
 
+    // Obsolete fields from old single-instructor structure
+    delete cleanData.instructorId;
+    delete cleanData.instructorName;
+
     // Undefined değerleri kaldır
     Object.keys(cleanData).forEach(key => {
       if (cleanData[key] === undefined) {
@@ -922,13 +1789,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       }
     });
 
-    // Eğer recurring true değilse date alanını kaldır
-    if (!cleanData.recurring) {
-      delete cleanData.date;
-    }
-
-    // Timestamp alanlarını koru
-    const { createdAt, updatedAt, ...restData } = cleanData;
+    // Bazı alanları Firestore'a uygun hale getir
+    const { id, createdAt, updatedAt, ...restData } = cleanData;
 
     return restData;
   };
@@ -940,8 +1802,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       id: doc.id,
       name: courseData.name || '',
       description: courseData.description || '',
-      instructorId: courseData.instructorId || '',
-      instructorName: courseData.instructorName || 'Bilinmeyen Eğitmen',
+      instructorIds: courseData.instructorIds || (courseData.instructorId ? [courseData.instructorId] : []),
+      instructorNames: courseData.instructorNames || (courseData.instructorName ? [courseData.instructorName] : ['Bilinmeyen Eğitmen']),
       instructorPhone: courseData.instructorPhone || '',
       schoolId: courseData.schoolId || '',
       schoolName: courseData.schoolName || 'Bilinmeyen Okul',
@@ -971,29 +1833,70 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       highlights: courseData.highlights || [],
       tags: courseData.tags || [],
       createdAt: courseData.createdAt,
-      updatedAt: courseData.updatedAt
+      updatedAt: courseData.updatedAt,
+      rating: courseData.rating
     };
   };
 
   // Form gönderimi
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    // Eğer son adımda değilsek, "Enter" tuşu bir sonraki adıma geçirmeli
+    if (currentStep < totalSteps) {
+      const form = document.getElementById('course-form') as HTMLFormElement;
+      if (form && form.reportValidity()) {
+        setCurrentStep(prev => prev + 1);
+      }
+      return;
+    }
+
+    // Kurs programı kontrolü
+    if (formData.schedule.length === 0) {
+      setError('Lütfen en az bir ders günü seçerek kurs programını oluşturun.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
+      // Inherit school location
+      let finalLocation = formData.location;
+      if (formData.schoolId) {
+        // Try schools collection first as it's the standard for schoolId
+        const schoolRef = doc(db, 'schools', formData.schoolId);
+        let schoolSnap = await getDoc(schoolRef);
+
+        // Fallback to users if not found in schools (legacy or specific setup)
+        if (!schoolSnap.exists()) {
+          const userRef = doc(db, 'users', formData.schoolId);
+          schoolSnap = await getDoc(userRef);
+        }
+
+        if (schoolSnap.exists()) {
+          const schoolData = schoolSnap.data();
+          if (schoolData.location) {
+            finalLocation = schoolData.location;
+          }
+        }
+      } else {
+        // Freelance course - clear school name if it was somehow set
+        formData.schoolName = 'Freelance';
+      }
+
+      const cleanedData = cleanDataForFirebase(formData);
       const courseDataToSave = {
-        ...formData,
-        recurring: formData.recurring,
-        schedule: formData.recurring ? formData.schedule : [],
-        date: formData.recurring ? null : formData.date,
-        time: formData.time,
-        instructorPhone: '',
-        schoolPhone: '',
-        schoolAddress: '',
+        ...cleanedData,
+        location: finalLocation,
+        recurring: true,
+        schedule: formData.schedule,
         updatedAt: serverTimestamp()
       };
+
+      console.log('Kurs kaydediliyor (Payload):', courseDataToSave);
+      console.log('Kullanıcı UID:', auth.currentUser?.uid);
 
       if (selectedCourse) {
         // Mevcut kursu güncelle
@@ -1065,400 +1968,242 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Kurs Yönetimi</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Kurslarınızı ekleyin, düzenleyin ve yönetin</p>
         </div>
-        <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
-          <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden text-sm h-9">
-            {([
-              { value: 'all', label: 'Tümü' },
-              { value: 'active', label: 'Aktif' },
-              { value: 'inactive', label: 'Pasif' },
-              { value: 'draft', label: 'Taslak' },
-            ] as const).map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setStatusFilter(value)}
-                className={`px-3 py-1.5 font-medium transition-colors whitespace-nowrap ${statusFilter === value
-                  ? value === 'active'
-                    ? 'bg-green-600 text-white'
-                    : value === 'inactive'
-                      ? 'bg-gray-500 text-white'
-                      : value === 'draft'
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-violet-600 text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
-                  }`}
-              >
-                {label}
-                <span className="ml-1.5 text-xs opacity-75">
-                  ({courses.filter(c => value === 'all' ? true : c.status === value).length})
-                </span>
-              </button>
-            ))}
-          </div>
-          <div className="relative flex-grow sm:max-w-[200px]">
-            <input
-              type="text"
-              placeholder="Kurs ara..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 ${colorVariant === 'school' ? 'focus:ring-school dark:focus:ring-school-light' : 'focus:ring-instructor dark:focus:ring-instructor-light'} focus:border-transparent`}
-            />
-            <span className="absolute right-3 top-2.5 text-gray-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
-          </div>
-          <Button
-            onClick={addNewCourse}
-            type="button"
-            variant={isAdmin ? 'violet' : colorVariant}
-          >
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Yeni Kurs Ekle
+        <div className="w-full sm:w-auto flex flex-col lg:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 flex-grow">
+            <div className="flex-grow sm:max-w-[240px]">
+              <CustomInput
+                name="search"
+                label=""
+                placeholder="Kurs ara..."
+                value={searchTerm}
+                onChange={(e: { target: { name: string; value: any } }) => setSearchTerm(e.target.value)}
+                fullWidth
+                colorVariant={colorVariant}
+                startIcon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                }
+              />
             </div>
-          </Button>
+            <Button
+              onClick={addNewCourse}
+              type="button"
+              variant={isAdmin ? 'indigo' : colorVariant}
+              className="h-10 px-4"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span className="whitespace-nowrap">Yeni Kurs</span>
+              </div>
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Form Bölümü */}
-      {(editMode || selectedCourse) && (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 sm:p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Form Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-              {renderFormFields()}
+      {/* Form Modal */}
+      <SimpleModal
+        open={editMode || !!selectedCourse}
+        onClose={() => {
+          setEditMode(false);
+          setSelectedCourse(null);
+        }}
+        title={`${selectedCourse ? 'Kursu Düzenle' : 'Yeni Kurs Ekle'} (Adım ${currentStep}/${totalSteps})`}
+        colorVariant={isAdmin ? 'admin' : (colorVariant as 'school' | 'instructor')}
+        bodyClassName={
+          isAdmin
+            ? 'bg-indigo-50/50 dark:bg-slate-900/80'
+            : colorVariant === 'school'
+              ? 'bg-orange-50/30 dark:bg-[#1a120b]'
+              : 'bg-instructor-bg/90 dark:bg-slate-900/80'
+        }
+        actions={
+          <div className="flex w-full justify-between items-center">
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={() => {
+                setEditMode(false);
+                setSelectedCourse(null);
+              }}
+              className="mr-auto"
+            >
+              İptal
+            </Button>
 
-              {/* Program ve Kapasite */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
-                  Program ve Kapasite
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <CustomSelect
-                      name="level"
-                      label="Seviye"
-                      options={levelOptions}
-                      value={formData.level}
-                      onChange={(value) => setFormData({ ...formData, level: value as string })}
-                      placeholder="Seviye Seçin"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <CustomInput
-                      type="text"
-                      name="maxParticipants"
-                      label="Maksimum Katılımcı"
-                      value={formData.maxParticipants.toString()}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        maxParticipants: parseInt(e.target.value) || 0
-                      })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Fiyat ve Süre */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
-                  Fiyat ve Süre
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <div className="flex flex-col">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fiyat</label>
-                      <div className="flex items-stretch">
-                        <input
-                          type="text"
-                          name="price"
-                          value={formData.price.toString()}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            price: parseFloat(e.target.value) || 0
-                          })}
-                          className={`flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 sm:text-sm border-r-0 outline-none transition-all`}
-                          required
-                        />
-                        <div className="flex items-center px-3 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-md bg-gray-50 dark:bg-slate-900 h-[38px] mt-[1px]">
-                          <span className="text-gray-500 dark:text-gray-400 text-sm">₺</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <CustomInput
-                      type="text"
-                      name="duration"
-                      label="Süre (dakika)"
-                      value={formData.duration.toString()}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        duration: parseInt(e.target.value) || 0
-                      })}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Durum ve Tekrar */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
-                  Durum
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <CustomSelect
-                      name="status"
-                      label="Durum"
-                      options={statusOptions}
-                      value={formData.status}
-                      onChange={(value) => setFormData({
-                        ...formData,
-                        status: value as 'active' | 'inactive' | 'draft'
-                      })}
-                      placeholder="Durum Seçin"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Lokasyon */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
-                  Lokasyon
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <CustomSelect
-                      name="city"
-                      label="Şehir"
-                      options={cityOptions}
-                      value={formData.location.city}
-                      onChange={(value) => setFormData({
-                        ...formData,
-                        location: { ...formData.location, city: value as string }
-                      })}
-                      placeholder="Şehir Seçin"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <CustomInput
-                      type="text"
-                      name="address"
-                      label="Adres"
-                      value={formData.location.address}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        location: { ...formData.location, address: e.target.value }
-                      })}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Açıklama */}
-              <div className="md:col-span-2">
-                <CustomInput
-                  type="text"
-                  name="description"
-                  label="Açıklama"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  multiline
-                  rows={4}
-                />
-              </div>
-
-              {/* Program Seçimi */}
-              <div className="md:col-span-2 space-y-4 mt-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 border-violet-600 pl-3">
-                  Program Detayları
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kurs Tipi</label>
-                    <div className="mt-2">
-                      <label className="inline-flex items-center mr-4">
-                        <input
-                          type="radio"
-                          name="recurring"
-                          checked={formData.recurring}
-                          onChange={(e) => setFormData({ ...formData, recurring: true })}
-                          className={`form-radio h-4 w-4 ${colorVariant === 'school' ? 'text-school dark:text-school-light' : 'text-instructor dark:text-instructor-light'}`}
-                        />
-                        <span className="ml-2">Periyodik Kurs</span>
-                      </label>
-                      <label className="inline-flex items-center">
-                        <input
-                          type="radio"
-                          name="recurring"
-                          checked={!formData.recurring}
-                          onChange={(e) => setFormData({ ...formData, recurring: false })}
-                          className={`form-radio h-4 w-4 ${colorVariant === 'school' ? 'text-school dark:text-school-light' : 'text-instructor dark:text-instructor-light'}`}
-                        />
-                        <span className="ml-2">Tek Seferlik Kurs</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {formData.recurring ? (
-                    <div className="space-y-4">
-                      {formData.schedule.map((scheduleItem, index) => (
-                        <div key={index} className="flex items-center gap-4">
-                          <div className="flex-1">
-                            <CustomSelect
-                              name={`schedule-day-${index}`}
-                              label="Gün"
-                              options={dayOptions}
-                              value={scheduleItem.day}
-                              onChange={(value) => {
-                                const newSchedule = [...formData.schedule];
-                                newSchedule[index].day = value as string;
-                                setFormData({ ...formData, schedule: newSchedule });
-                              }}
-                              placeholder="Gün Seçin"
-                              required
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Saat</label>
-                            <input
-                              type="time"
-                              value={scheduleItem.time}
-                              onChange={(e) => {
-                                const newSchedule = [...formData.schedule];
-                                newSchedule[index].time = e.target.value;
-                                setFormData({ ...formData, schedule: newSchedule });
-                              }}
-                              className={`mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm ${colorVariant === 'school' ? 'focus:border-school focus:ring-school dark:focus:ring-school-light' : 'focus:border-instructor focus:ring-instructor dark:focus:ring-instructor-light'} sm:text-sm`}
-                              required
-                            />
-                          </div>
-                          <div className="flex items-end pb-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newSchedule = formData.schedule.filter((_, i) => i !== index);
-                                setFormData({ ...formData, schedule: newSchedule });
-                              }}
-                              className="p-2 text-red-600 hover:text-red-800"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData({
-                            ...formData,
-                            schedule: [...formData.schedule, { day: 'Pazartesi', time: '18:00' }]
-                          });
-                        }}
-                        className={`flex items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg ${colorVariant === 'school' ? 'hover:border-school hover:text-school dark:hover:border-school-light dark:hover:text-school-light' : 'hover:border-instructor hover:text-instructor dark:hover:border-instructor-light dark:hover:text-instructor-light'} w-full`}
-                      >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Program Ekle
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kurs Tarihi</label>
-                        <input
-                          type="date"
-                          name="date"
-                          value={timestampToDate(formData.date)}
-                          onChange={(e) => {
-                            const selectedDate = e.target.value ? new Date(e.target.value) : null;
-                            setFormData({ ...formData, date: selectedDate });
-                          }}
-                          className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-brand-pink focus:ring-brand-pink sm:text-sm"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kurs Saati</label>
-                        <input
-                          type="time"
-                          name="time"
-                          value={formData.time}
-                          onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                          className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-brand-pink focus:ring-brand-pink sm:text-sm"
-                          required
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="flex gap-2">
+              {currentStep > 1 && (
+                <Button
+                  type="button"
+                  variant="outlined"
+                  onClick={() => setCurrentStep(prev => prev - 1)}
+                >
+                  Geri
+                </Button>
+              )}
+              {currentStep < totalSteps ? (
+                <Button
+                  type="button"
+                  variant={isAdmin ? 'indigo' : colorVariant}
+                  onClick={() => {
+                    const form = document.getElementById('course-form') as HTMLFormElement;
+                    if (form && form.reportValidity()) {
+                      setError(null);
+                      setCurrentStep(prev => prev + 1);
+                    } else if (!form) {
+                      setError(null);
+                      setCurrentStep(prev => prev + 1);
+                    }
+                  }}
+                >
+                  İleri
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const form = document.getElementById('course-form') as HTMLFormElement;
+                    if (form && form.reportValidity()) {
+                      handleSubmit();
+                    }
+                  }}
+                  variant={isAdmin ? 'indigo' : colorVariant}
+                  disabled={loading}
+                >
+                  {loading ? 'Kaydediliyor...' : (selectedCourse ? 'Güncelle' : 'Kaydet')}
+                </Button>
+              )}
             </div>
-
-            {/* Form Butonları */}
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setEditMode(false);
-                  setSelectedCourse(null);
-                }}
-              >
-                İptal
-              </Button>
-              <Button
-                type="submit"
-                variant={isAdmin ? 'violet' : colorVariant}
-              >
-                {selectedCourse ? 'Güncelle' : 'Kaydet'}
-              </Button>
+          </div>
+        }
+      >
+        <form
+          id="course-form"
+          className="space-y-6"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.type !== 'textarea') {
+              e.preventDefault();
+              if (currentStep < totalSteps) {
+                const form = document.getElementById('course-form') as HTMLFormElement;
+                if (form && form.reportValidity()) {
+                  setError(null);
+                  setCurrentStep(prev => prev + 1);
+                }
+              }
+            }
+          }}
+        >
+          {error && (
+            <div className="col-span-full p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 rounded-lg text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {error}
             </div>
-          </form>
+          )}
+          {success && (
+            <div className="col-span-full p-3 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/50 text-green-600 dark:text-green-400 rounded-lg text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {success}
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            {renderFormFields()}
+          </div>
+        </form>
+      </SimpleModal>
+
+      {/* Kurs Listesi Sekmeleri */}
+      <div className="flex justify-start md:justify-end mb-4 overflow-x-auto scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0">
+        <div className={`flex w-full md:w-auto p-1 rounded-xl whitespace-nowrap ${colorVariant === 'school' ? 'bg-school-bg/50 dark:bg-school/5' : 'bg-gray-100 dark:bg-slate-800/50'} border border-gray-200 dark:border-slate-700/50`}>
+          {([
+            { value: 'all', label: 'Tümü' },
+            { value: 'active', label: 'Aktif' },
+            { value: 'inactive', label: 'Pasif' },
+            { value: 'draft', label: 'Taslak' },
+          ] as const).map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setStatusFilter(value)}
+              className={`flex-1 md:flex-none justify-center px-2 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 ${statusFilter === value
+                ? `${isAdmin ? 'bg-indigo-600' : colorVariant === 'school' ? 'bg-school' : 'bg-instructor'} text-white shadow-sm`
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-transparent'
+                }`}
+            >
+              <span className="truncate">{label}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${statusFilter === value
+                ? 'bg-white/20 text-white'
+                : (colorVariant === 'school' ? 'bg-school/10 text-school' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400')
+                }`}>
+                {courses.filter(c => value === 'all' ? true : c.status === value).length}
+              </span>
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
       {/* Kurs Listesi */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className={`rounded-lg shadow overflow-hidden border ${isAdmin
+        ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+        : colorVariant === 'school'
+          ? 'bg-school-bg border-school/40 dark:border-school/30 dark:bg-[#1a120b]'
+          : 'bg-instructor-bg/50 dark:bg-[#0f172a] border-instructor/30 dark:border-instructor/20'
+        }`}>
+        <div className="hidden lg:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50 dark:bg-slate-900">
+            <thead className={isAdmin
+              ? 'bg-gray-50 dark:bg-slate-900'
+              : colorVariant === 'school'
+                ? 'bg-school-bg dark:bg-school/20'
+                : 'bg-instructor-bg/80 dark:bg-instructor/10'
+            }>
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kurs</th>
                 <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Program</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Yönetim</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kapasite</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durum</th>
+                <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
+                <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durum</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
+            <tbody className={`divide-y ${isAdmin
+              ? 'bg-white dark:bg-slate-800 divide-gray-200 dark:divide-slate-700'
+              : colorVariant === 'school'
+                ? 'bg-school-bg dark:bg-[#1a120b] divide-school/20 dark:divide-[#493322]'
+                : 'bg-instructor-bg/30 dark:bg-slate-900/40 divide-instructor/20 dark:divide-slate-800'
+              }`}>
               {courses.filter(course =>
                 (statusFilter === 'all' || course.status === statusFilter) &&
                 (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase()))
               ).map((course) => (
-                <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">{course.name}</div>
+                <tr
+                  key={course.id}
+                  onClick={() => navigate(`/courses/${course.id}`)}
+                  className={`transition-colors cursor-pointer ${isAdmin
+                    ? 'hover:bg-gray-50 dark:hover:bg-slate-800'
+                    : colorVariant === 'school'
+                      ? 'hover:bg-school/5 dark:hover:bg-school/10'
+                      : 'hover:bg-instructor/5 dark:hover:bg-instructor/10'
+                    }`}>
+                  <td className="px-4 py-4 max-w-[180px]">
+                    <Link
+                      to={`/courses/${course.id}`}
+                      className="flex items-center group cursor-pointer"
+                    >
+                      <div className="min-w-0">
+                        <div className={`text-sm font-medium truncate max-w-[140px] transition-colors ${colorVariant === 'school' ? 'group-hover:text-school' : 'group-hover:text-instructor'
+                          } text-gray-900 dark:text-white`}>
+                          {course.name}
+                        </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">{course.danceStyle}</div>
                       </div>
-                    </div>
+                    </Link>
                   </td>
                   <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
@@ -1475,10 +2220,56 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       )}
                     </div>
                   </td>
-                  <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {course.currentParticipants}/{course.maxParticipants}
+                  <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCourseForStudents(course);
+                        }}
+                        title="Öğrenci Listesi"
+                        className={`p-1.5 rounded-lg border transition-all ${colorVariant === 'school' ? 'bg-school/5 border-school/20 text-school hover:bg-school/10' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCourseForInstructors(course);
+                        }}
+                        title="Eğitmen Atama/Listesi"
+                        className={`p-1.5 rounded-lg border transition-all ${colorVariant === 'school' ? 'bg-school/5 border-school/20 text-school hover:bg-school/10' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                  <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-12 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-full ${colorVariant === 'school' ? 'bg-school' : 'bg-instructor'}`}
+                          style={{ width: `${Math.min(100, (students.filter(s => s.courseIds?.includes(course.id)).length / course.maxParticipants) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {students.filter(s => s.courseIds?.includes(course.id)).length}/{course.maxParticipants}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1">
+                      <StarIcon filled={true} />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                        {course.rating ? course.rating.toFixed(1) : '0.0'}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${course.status === 'active'
                       ? 'bg-green-100 text-green-800'
                       : course.status === 'draft'
@@ -1491,16 +2282,22 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                   <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => editCourse(course)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          editCourse(course);
+                        }}
                         className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm active:scale-95 ${isAdmin
-                            ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/40'
+                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                          : colorVariant === 'school'
+                            ? 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30 hover:bg-school/20 dark:hover:bg-school/30'
                             : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-slate-600'
                           }`}
                       >
                         Düzenle
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (window.confirm('Bu kursu silmek istediğinizden emin misiniz?')) {
                             deleteCourse(course.id);
                           }
@@ -1517,6 +2314,579 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           </table>
         </div>
       </div>
+
+      {/* Mobile Card View */}
+      <div className="lg:hidden space-y-3 mt-2">
+        {courses.filter(course =>
+          (statusFilter === 'all' || course.status === statusFilter) &&
+          (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase()))
+        ).length === 0 ? (
+          <div className={`text-center py-8 text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+            {searchTerm ? 'Aramanıza uygun kurs bulunamadı.' : 'Henüz hiç kurs eklenmemiş.'}
+          </div>
+        ) : courses.filter(course =>
+          (statusFilter === 'all' || course.status === statusFilter) &&
+          (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase()))
+        ).map((course) => (
+          <div
+            key={course.id}
+            className={`rounded-xl border shadow-sm overflow-hidden ${isAdmin
+              ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+              : colorVariant === 'school'
+                ? 'bg-white dark:bg-[#231810] border-school/20 dark:border-[#493322]'
+                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+              }`}
+          >
+            {/* Card Header */}
+            <div className="flex items-start justify-between p-4 gap-3">
+              <Link to={`/courses/${course.id}`} className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className={`text-sm font-semibold text-gray-900 dark:text-white leading-tight ${colorVariant === 'school' ? 'group-hover:text-school' : 'group-hover:text-instructor'
+                    }`}>{course.name}</h3>
+                  <span className={`px-2 py-0.5 inline-flex text-xs font-semibold rounded-full flex-shrink-0 ${course.status === 'active'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    : course.status === 'draft'
+                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                    {course.status === 'active' ? 'Aktif' : course.status === 'draft' ? 'Taslak' : 'Pasif'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{course.danceStyle}</p>
+              </Link>
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                <svg className="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{course.rating ? course.rating.toFixed(1) : '0.0'}</span>
+              </div>
+            </div>
+
+            {/* Card Body */}
+            <div className={`px-4 pb-3 space-y-2 text-xs border-t ${isAdmin ? 'border-gray-100 dark:border-slate-700' : 'border-school/10 dark:border-[#493322]'
+              }`}>
+              <div className="flex items-center justify-between pt-2">
+                {/* Schedule */}
+                <div className="text-gray-600 dark:text-gray-400">
+                  {course.recurring ? (
+                    <span>{course.schedule.map(s => `${s.day} ${s.time}`).join(', ')}</span>
+                  ) : (
+                    <span>{timestampToDate(course.date)} {course.time}</span>
+                  )}
+                </div>
+                {/* Capacity */}
+                <div className="flex items-center gap-1.5">
+                  <div className="w-16 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${colorVariant === 'school' ? 'bg-school' : 'bg-instructor'
+                        }`}
+                      style={{ width: `${Math.min(100, (students.filter(s => s.courseIds?.includes(course.id)).length / course.maxParticipants) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    {students.filter(s => s.courseIds?.includes(course.id)).length}/{course.maxParticipants}
+                  </span>
+                </div>
+              </div>
+
+              {/* Management buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedCourseForStudents(course); }}
+                  title="Öğrenci Listesi"
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium transition-all ${colorVariant === 'school' ? 'bg-school/5 border-school/20 text-school hover:bg-school/10' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                  Öğrenciler
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedCourseForInstructors(course); }}
+                  title="Eğitmen Atama"
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium transition-all ${colorVariant === 'school' ? 'bg-school/5 border-school/20 text-school hover:bg-school/10' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                  Eğitmen
+                </button>
+              </div>
+            </div>
+
+            {/* Card Footer Actions */}
+            <div className={`flex justify-end gap-2 px-4 py-2.5 border-t ${isAdmin
+              ? 'bg-gray-50/70 dark:bg-slate-900/40 border-gray-100 dark:border-slate-700'
+              : colorVariant === 'school'
+                ? 'bg-school/5 dark:bg-school/10 border-school/10 dark:border-[#493322]'
+                : 'bg-gray-50/50 dark:bg-slate-900/30 border-gray-100 dark:border-slate-700'
+              }`}>
+              <button
+                onClick={(e) => { e.stopPropagation(); editCourse(course); }}
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isAdmin
+                  ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100'
+                  : colorVariant === 'school'
+                    ? 'bg-school/10 text-school border border-school/20 hover:bg-school/20'
+                    : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                  }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                Düzenle
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); if (window.confirm('Bu kursu silmek istediğinizden emin misiniz?')) deleteCourse(course.id); }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-all"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                Sil
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Modal - Kayıtlı Öğrenciler */}
+      <SimpleModal
+        open={!!selectedCourseForStudents}
+        onClose={() => setSelectedCourseForStudents(null)}
+        title={`"${selectedCourseForStudents?.name}" - Kayıtlı Öğrenciler`}
+        colorVariant={isAdmin ? 'admin' : (colorVariant as 'school' | 'instructor')}
+        bodyClassName={isAdmin
+          ? 'bg-white dark:bg-slate-900'
+          : colorVariant === 'school'
+            ? 'bg-orange-50/30 dark:bg-[#1a120b]'
+            : 'bg-instructor-bg/20 dark:bg-slate-900/60'}
+        actions={
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={() => setSelectedCourseForStudents(null)}
+          >
+            Kapat
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <div className={`flex justify-between items-center p-3 rounded-lg border ${colorVariant === 'school' ? 'bg-school/5 border-school/20 dark:border-school/10' : 'bg-gray-50 dark:bg-slate-800/50 border-gray-100 dark:border-slate-700'}`}>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Toplam: <span className="font-bold text-gray-900 dark:text-white">{students.filter(s => s.courseIds?.includes(selectedCourseForStudents?.id)).length}</span> öğrenci
+            </div>
+          </div>
+
+          {/* Öğrenci Ekleme Alanı */}
+          <div className="space-y-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="İsim veya email ile öğrenci ara ve ekle..."
+                value={studentSearchInModal}
+                onChange={(e) => setStudentSearchInModal(e.target.value)}
+                className={`w-full px-4 py-2 rounded-xl border text-sm focus:ring-2 outline-none transition-all bg-white dark:bg-[#231810] dark:border-school/20 dark:text-white ${inputFocusRing}`}
+              />
+              <svg className="w-4 h-4 absolute right-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            {/* Hızlı Öğrenci Ekleme Formu */}
+            {showQuickAddStudent ? (
+              <div className="bg-school/5 border border-school/20 rounded-xl p-4 mt-2 mb-4 animate-in fade-in zoom-in-95 duration-200">
+                <h4 className="text-sm font-semibold text-school mb-3 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Yeni Öğrenci Oluştur ve Ekle
+                </h4>
+                {/* Browser Autofill Prevention Hacks */}
+                <input type="text" style={{ display: 'none' }} />
+                <input type="password" style={{ display: 'none' }} />
+
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Ad Soyad"
+                    value={quickAddStudentData.displayName}
+                    onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, displayName: e.target.value }))}
+                    autoComplete="off"
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <input
+                    type="email"
+                    placeholder="E-posta Adresi"
+                    value={quickAddStudentData.email}
+                    onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, email: e.target.value }))}
+                    autoComplete="off"
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Telefon Numarası (Opsiyonel)"
+                    value={quickAddStudentData.phoneNumber}
+                    onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                    autoComplete="dont-fill-this"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute('readonly')}
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Giriş Şifresi Belirle"
+                    value={quickAddStudentData.password}
+                    onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, password: e.target.value }))}
+                    autoComplete="new-password-no-fill"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute('readonly')}
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickAddStudent(false)}
+                      className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 font-medium"
+                      disabled={isQuickAdding}
+                    >
+                      İptal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleQuickAddStudent}
+                      disabled={isQuickAdding}
+                      className="text-xs px-4 py-1.5 bg-school text-white rounded shadow-sm hover:bg-school-light font-medium transition-colors disabled:opacity-50"
+                    >
+                      {isQuickAdding ? 'Ekleniyor...' : 'Kaydet ve Kursa Ata'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-right text-gray-500 dark:text-gray-400 mt-1">
+                Öğrenciniz Feriha'da kayıtlı değil mi? <button type="button" onClick={() => setShowQuickAddStudent(true)} className="text-school hover:underline font-medium">Sıfırdan Öğrenci Oluştur</button>
+              </div>
+            )}
+
+            {studentSearchInModal.length >= 2 && !showQuickAddStudent && (
+              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-10">
+                {students
+                  .filter(s => {
+                    const isAlreadyInCourse = s.courseIds?.includes(selectedCourseForStudents?.id);
+                    const matchesSearch = (s.displayName?.toLowerCase().includes(studentSearchInModal.toLowerCase()) ||
+                      s.email?.toLowerCase().includes(studentSearchInModal.toLowerCase()));
+                    // Eğer admin ise tüm sistemdeki "student" rollü kişileri görsün
+                    // Okul ise zaten sadece kendi öğrencilerini fetch ettik
+                    return !isAlreadyInCourse && matchesSearch;
+                  })
+                  .map(student => (
+                    <button
+                      key={student.id}
+                      onClick={() => handleAddStudentToCourse(student.id, selectedCourseForStudents!.id)}
+                      className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors text-left border-b border-gray-50 last:border-0 dark:border-slate-700"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-600 flex items-center justify-center text-[10px] font-bold text-gray-400">
+                          {student.displayName?.charAt(0) || '?'}
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium dark:text-white">{student.displayName}</div>
+                          <div className="text-xs text-gray-500">{student.email}</div>
+                        </div>
+                      </div>
+                      <div className={`p-1 rounded-full ${colorVariant === 'school' ? 'bg-school/10 text-school' : 'bg-instructor/10 text-instructor'}`}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </div>
+                    </button>
+                  ))
+                }
+                {students.filter(s =>
+                  !s.courseIds?.includes(selectedCourseForStudents?.id) &&
+                  (s.displayName?.toLowerCase().includes(studentSearchInModal.toLowerCase()) ||
+                    s.email?.toLowerCase().includes(studentSearchInModal.toLowerCase()))
+                ).length === 0 && (
+                    <div className="p-4 text-center text-sm text-gray-500">Öğrenci bulunamadı.</div>
+                  )}
+              </div>
+            )}
+          </div>
+
+          <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+            {students.filter(s => s.courseIds?.includes(selectedCourseForStudents?.id)).length > 0 ? (
+              students.filter(s => s.courseIds?.includes(selectedCourseForStudents?.id)).map((student) => (
+                <div key={student.id} className={`group flex items-center justify-between p-3 rounded-xl border transition-colors ${colorVariant === 'school' ? 'border-school/10 dark:border-school/20 hover:bg-school/5 dark:hover:bg-school/10' : 'border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border border-gray-100 dark:border-slate-700">
+                      <Avatar
+                        src={student.photoURL}
+                        alt={student.displayName}
+                        className="w-full h-full"
+                        userType="student"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">{student.displayName}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{student.email}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${student.level === 'advanced' ? 'bg-purple-100 text-purple-700' : student.level === 'intermediate' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                      {student.level === 'advanced' ? 'İleri' : student.level === 'intermediate' ? 'Orta' : 'Başlangıç'}
+                    </span>
+                    <button
+                      onClick={() => handleRemoveStudentFromCourse(student.id, selectedCourseForStudents!.id)}
+                      className="hidden group-hover:flex p-1 text-red-400 hover:text-red-600 transition-colors"
+                      title="Kurstan Çıkar"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-gray-400 dark:text-gray-600 italic">
+                Bu kursa henüz öğrenci kaydı yapılmamış.
+              </div>
+            )}
+          </div>
+        </div>
+      </SimpleModal>
+
+      {/* Modal - Eğitmen Listesi */}
+      <SimpleModal
+        open={!!selectedCourseForInstructors}
+        onClose={() => setSelectedCourseForInstructors(null)}
+        title={`"${selectedCourseForInstructors?.name}" - Görevli Eğitmenler`}
+        colorVariant={isAdmin ? 'admin' : (colorVariant as 'school' | 'instructor')}
+        bodyClassName={isAdmin
+          ? 'bg-white dark:bg-slate-900'
+          : colorVariant === 'school'
+            ? 'bg-orange-50/30 dark:bg-[#1a120b]'
+            : 'bg-instructor-bg/20 dark:bg-slate-900/60'}
+        actions={
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={() => setSelectedCourseForInstructors(null)}
+          >
+            Kapat
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <div className={`flex justify-between items-center p-3 rounded-lg border ${colorVariant === 'school' ? 'bg-school/5 border-school/20 dark:border-school/10' : 'bg-gray-50 dark:bg-slate-800/50 border-gray-100 dark:border-slate-700'}`}>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Görevli: <span className="font-bold text-gray-900 dark:text-white">
+                {Array.from(new Set([
+                  ...(selectedCourseForInstructors?.instructorIds || []),
+                  ...instructors.filter(i => i.courseIds?.includes(selectedCourseForInstructors?.id || '')).map(i => i.value)
+                ])).length}
+              </span> eğitmen
+            </div>
+          </div>
+
+          {/* Eğitmen Ara / Ata */}
+          <div className="space-y-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="İsim ile eğitmen ara ve ata..."
+                value={instructorSearchInModal}
+                onChange={(e) => setInstructorSearchInModal(e.target.value)}
+                className={`w-full px-4 py-2 rounded-xl border text-sm focus:ring-2 outline-none transition-all bg-white dark:bg-[#231810] dark:border-school/20 dark:text-white ${inputFocusRing}`}
+              />
+              <svg className="w-4 h-4 absolute right-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            {/* Arama Sonuçları */}
+            {instructorSearchInModal.length >= 2 && (
+              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-10">
+                {instructors
+                  .filter(i =>
+                    !selectedCourseForInstructors?.instructorIds?.includes(i.value) &&
+                    !i.courseIds?.includes(selectedCourseForInstructors?.id || '') &&
+                    i.label.toLowerCase().includes(instructorSearchInModal.toLowerCase())
+                  )
+                  .map(instructor => (
+                    <button
+                      key={instructor.value}
+                      onClick={() => handleAddInstructorToCourse(instructor.value, instructor.label, selectedCourseForInstructors!.id)}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors flex items-center justify-between border-b border-gray-50 dark:border-slate-700/50 last:border-0`}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900 dark:text-white">{instructor.label}</span>
+                        {instructor.isCertifiedConfirmed && instructor.addedBySchoolName && (
+                          <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                            <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {instructor.addedBySchoolName} tarafından onaylı
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs bg-school/10 text-school px-2 py-1 rounded-full">Ata</span>
+                    </button>
+                  ))}
+                {instructors.filter(i =>
+                  !selectedCourseForInstructors?.instructorIds?.includes(i.value) &&
+                  !i.courseIds?.includes(selectedCourseForInstructors?.id || '') &&
+                  i.label.toLowerCase().includes(instructorSearchInModal.toLowerCase())
+                ).length === 0 && (
+                    <div className="px-4 py-3 text-sm text-gray-500 text-center">Eğitmen bulunamadı.</div>
+                  )}
+              </div>
+            )}
+
+            {/* Hızlı Eğitmen Ekleme Formu */}
+            {showQuickAddInstructor ? (
+              <div className="bg-school/5 border border-school/20 rounded-xl p-4 mt-2 mb-4 animate-in fade-in zoom-in-95 duration-200">
+                <h4 className="text-sm font-semibold text-school mb-3 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Yeni Eğitmen Oluştur ve Ata
+                </h4>
+                {/* Browser Autofill Prevention Hacks */}
+                <input type="text" style={{ display: 'none' }} />
+                <input type="password" style={{ display: 'none' }} />
+
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Eğitmen Ad Soyad"
+                    value={quickAddInstructorData.displayName}
+                    onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, displayName: e.target.value }))}
+                    autoComplete="off"
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <input
+                    type="email"
+                    placeholder="E-posta Adresi"
+                    value={quickAddInstructorData.email}
+                    onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, email: e.target.value }))}
+                    autoComplete="off"
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Telefon Numarası (Opsiyonel)"
+                    value={quickAddInstructorData.phoneNumber}
+                    onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                    autoComplete="dont-fill-this"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute('readonly')}
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Giriş Şifresi Belirle"
+                    value={quickAddInstructorData.password}
+                    onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, password: e.target.value }))}
+                    autoComplete="new-password-no-fill"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute('readonly')}
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickAddInstructor(false)}
+                      className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 font-medium"
+                      disabled={isQuickAddingInstructor}
+                    >
+                      İptal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleQuickAddInstructor}
+                      disabled={isQuickAddingInstructor}
+                      className="text-xs px-4 py-1.5 bg-school text-white rounded shadow-sm hover:bg-school-light font-medium transition-colors disabled:opacity-50"
+                    >
+                      {isQuickAddingInstructor ? 'Ekleniyor...' : 'Kaydet ve Kursa Ata'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-right text-gray-500 dark:text-gray-400 mt-1">
+                Eğitmen Feriha'da kayıtlı değil mi? <button type="button" onClick={() => setShowQuickAddInstructor(true)} className="text-school dark:text-school-light font-medium hover:underline">Sıfırdan Eğitmen Ekle</button>
+              </div>
+            )}
+          </div>
+
+          <div className="max-h-80 overflow-y-auto space-y-2 pr-1 mt-4">
+            {Array.from(new Set([
+              ...(selectedCourseForInstructors?.instructorIds || []),
+              ...instructors.filter(i => i.courseIds?.includes(selectedCourseForInstructors?.id || '')).map(i => i.value)
+            ])).map((id) => {
+              const matchedInstructor = instructors.find((i) => i.value === id);
+              // Asıl kurs datasındaki isimlere fallback olmasını da sağlıyoruz.
+              const fallbackIndex = selectedCourseForInstructors?.instructorIds?.indexOf(id);
+              const fallbackName = fallbackIndex !== undefined && fallbackIndex > -1 ? selectedCourseForInstructors?.instructorNames?.[fallbackIndex] : undefined;
+              const name = matchedInstructor?.label || fallbackName || 'İsimsiz Eğitmen';
+
+              return (
+                <div key={id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${colorVariant === 'school' ? 'border-school/10 dark:border-school/20 hover:bg-school/5 dark:hover:bg-school/10' : 'border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border border-gray-100 dark:border-slate-700">
+                      <Avatar
+                        src={matchedInstructor?.photoURL}
+                        alt={name}
+                        className="w-full h-full"
+                        userType="instructor"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">{name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">ID: {id.substring(0, 8)}...</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setInstructorToRemove({ id, name, courseId: selectedCourseForInstructors!.id })}
+                    className="p-1.5 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                    title="Kurstan Çıkar"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </SimpleModal>
+
+      {/* Instructor Remove Confirmation Modal */}
+      <SimpleModal
+        open={!!instructorToRemove}
+        onClose={() => setInstructorToRemove(null)}
+        title="Eğitmeni Kurstan Çıkar"
+        colorVariant={colorVariant}
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => setInstructorToRemove(null)}>Vazgeç</Button>
+            <Button variant="danger" onClick={() => handleRemoveInstructorFromCourse()}>Çıkar</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-100 dark:border-red-900/30 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0 text-red-600 dark:text-red-400">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-gray-900 dark:text-white font-medium">Bu işlem geri alınamaz.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <strong>{instructorToRemove?.name}</strong> isimli eğitmeni bu kurstan çıkarmak istediğinizden emin misiniz?
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Eğitmen bu kurstan çıkarıldığında artık derslere katılamayacak ve kurs listesinde görünmeyecektir.
+          </p>
+        </div>
+      </SimpleModal>
     </div>
   );
 }

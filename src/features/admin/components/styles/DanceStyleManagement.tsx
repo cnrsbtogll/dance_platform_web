@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
   serverTimestamp,
   query,
   orderBy
@@ -44,7 +44,7 @@ function DanceStyleManagement(): JSX.Element {
       const danceStylesRef = collection(db, 'danceStyles');
       const q = query(danceStylesRef, orderBy('label'));
       const querySnapshot = await getDocs(q);
-      
+
       const styles: DanceStyle[] = [];
       querySnapshot.forEach((doc) => {
         styles.push({
@@ -52,7 +52,7 @@ function DanceStyleManagement(): JSX.Element {
           ...doc.data()
         } as DanceStyle);
       });
-      
+
       setDanceStyles(styles);
     } catch (err) {
       console.error('Error fetching dance styles:', err);
@@ -90,19 +90,19 @@ function DanceStyleManagement(): JSX.Element {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Form validation
     if (!formData.label.trim()) {
       setError('Dans stili adı boş olamaz.');
       return;
     }
-    
+
     // Generate value from label if not provided
     const styleValue = formData.value.trim() || generateSlug(formData.label);
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       if (isEditing && selectedStyle) {
         // Update existing style
@@ -121,7 +121,7 @@ function DanceStyleManagement(): JSX.Element {
           updatedAt: serverTimestamp()
         });
       }
-      
+
       // Reset form and fetch updated styles
       resetForm();
       fetchDanceStyles();
@@ -148,10 +148,10 @@ function DanceStyleManagement(): JSX.Element {
     if (!window.confirm('Bu dans stilini silmek istediğinizden emin misiniz?')) {
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       await deleteDoc(doc(db, 'danceStyles', id));
       fetchDanceStyles();
@@ -178,7 +178,7 @@ function DanceStyleManagement(): JSX.Element {
   const initializeDefaultStyles = async () => {
     if (danceStyles.length === 0 && !loading) {
       setLoading(true);
-      
+
       const defaultStyles = [
         { label: 'Salsa', value: 'salsa' },
         { label: 'Bachata', value: 'bachata' },
@@ -186,7 +186,7 @@ function DanceStyleManagement(): JSX.Element {
         { label: 'Tango', value: 'tango' },
         { label: 'Vals', value: 'vals' }
       ];
-      
+
       try {
         for (const style of defaultStyles) {
           await addDoc(collection(db, 'danceStyles'), {
@@ -195,7 +195,7 @@ function DanceStyleManagement(): JSX.Element {
             updatedAt: serverTimestamp()
           });
         }
-        
+
         fetchDanceStyles();
       } catch (err) {
         console.error('Error initializing default styles:', err);
@@ -210,9 +210,9 @@ function DanceStyleManagement(): JSX.Element {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Dans Stilleri Yönetimi</h2>
-        
+
         {danceStyles.length === 0 && !loading && (
-          <button 
+          <button
             onClick={initializeDefaultStyles}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
@@ -220,19 +220,19 @@ function DanceStyleManagement(): JSX.Element {
           </button>
         )}
       </div>
-      
+
       {error && (
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
           <p>{error}</p>
         </div>
       )}
-      
+
       {/* Form for adding/editing dance styles */}
       <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-lg mb-6">
         <h3 className="text-lg font-semibold mb-4">
           {isEditing ? 'Dans Stili Düzenle' : 'Yeni Dans Stili Ekle'}
         </h3>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -250,7 +250,7 @@ function DanceStyleManagement(): JSX.Element {
                 placeholder="Örn: Salsa"
               />
             </div>
-            
+
             <div>
               <label htmlFor="value" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Teknik Değer (Boş bırakılırsa otomatik oluşturulur)
@@ -266,7 +266,7 @@ function DanceStyleManagement(): JSX.Element {
               />
             </div>
           </div>
-          
+
           <div className="flex justify-end gap-3">
             {isEditing && (
               <button
@@ -280,18 +280,18 @@ function DanceStyleManagement(): JSX.Element {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:bg-indigo-400"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-indigo-400"
             >
               {loading ? 'İşleniyor...' : isEditing ? 'Güncelle' : 'Ekle'}
             </button>
           </div>
         </form>
       </div>
-      
+
       {/* List of dance styles */}
       {loading ? (
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
           <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
         </div>
       ) : (
@@ -321,7 +321,7 @@ function DanceStyleManagement(): JSX.Element {
                             type="text"
                             value={formData.label}
                             onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md focus:ring-violet-500 focus:border-violet-600"
+                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md focus:ring-indigo-500 focus:border-indigo-600"
                           />
                         ) : (
                           style.label
@@ -333,7 +333,7 @@ function DanceStyleManagement(): JSX.Element {
                             type="text"
                             value={formData.value}
                             onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md focus:ring-violet-500 focus:border-violet-600"
+                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md focus:ring-indigo-500 focus:border-indigo-600"
                           />
                         ) : (
                           style.value
@@ -359,7 +359,7 @@ function DanceStyleManagement(): JSX.Element {
                           <>
                             <button
                               onClick={() => handleEdit(style)}
-                              className="text-violet-600 hover:text-indigo-900 font-medium"
+                              className="text-indigo-600 hover:text-indigo-900 font-medium"
                             >
                               Düzenle
                             </button>
