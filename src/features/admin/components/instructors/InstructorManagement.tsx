@@ -27,6 +27,7 @@ import { resizeImageFromBase64 } from '../../../../api/services/userService';
 import { generateInitialsAvatar } from '../../../../common/utils/imageUtils';
 import CustomSelect from '../../../../common/components/ui/CustomSelect';
 import CustomPhoneInput from '../../../../common/components/ui/CustomPhoneInput';
+import CustomInput from '../../../../common/components/ui/CustomInput';
 
 // Tip tanımlamaları
 interface Egitmen {
@@ -858,12 +859,18 @@ function InstructorManagement(): JSX.Element {
       ) : (
         <>
           <div className="mb-4">
-            <input
-              type="text"
+            <CustomInput
+              name="search"
+              label=""
               placeholder="Eğitmen adı veya uzmanlık ara..."
               value={aramaTerimi}
-              onChange={(e) => setAramaTerimi(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-600"
+              onChange={(e: { target: { name: string; value: any } }) => setAramaTerimi(e.target.value)}
+              fullWidth
+              startIcon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              }
             />
           </div>
 

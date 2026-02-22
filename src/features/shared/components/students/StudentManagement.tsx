@@ -31,8 +31,10 @@ import ImageUploader from '../../../../common/components/ui/ImageUploader';
 import CustomInput from '../../../../common/components/ui/CustomInput';
 import CustomSelect from '../../../../common/components/ui/CustomSelect';
 import CustomPhoneInput from '../../../../common/components/ui/CustomPhoneInput';
-import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, TextField } from '@mui/material';
+import Button from '../../../../common/components/ui/Button';
+import { IconButton } from '@mui/material';
 import { SchoolProfile } from '../../../school/components/SchoolProfile/SchoolProfile';
+import SimpleModal from '../../../../common/components/ui/SimpleModal';
 
 // Default placeholder image for students
 const DEFAULT_STUDENT_IMAGE = '/assets/placeholders/default-student.png';
@@ -1140,34 +1142,39 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Öğrenci Yönetimi</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Öğrencilerinizi ekleyin, düzenleyin ve yönetin</p>
         </div>
-        <div className="flex flex-col gap-2 w-full sm:w-64">
-          <div className="relative w-full">
-            <input
-              type="text"
-              placeholder="Ad veya e-posta ile ara..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:border-transparent ${colorVariant === 'school' ? 'border-gray-300 dark:border-[#493322] bg-white dark:bg-[#1a120b] placeholder-gray-400 dark:placeholder-[#cba990]/50 focus:ring-school dark:focus:ring-school-light' : 'border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-instructor dark:focus:ring-instructor-light'}`}
-            />
-            <span className="absolute right-3 top-2.5 text-gray-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
-          </div>
-          {!editMode && (
-            <button
+
+        {/* Toolbar: search left, add button right */}
+        {!editMode && (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="flex-1 sm:max-w-xs">
+              <CustomInput
+                name="search"
+                label=""
+                placeholder="Ad veya e-posta ile ara..."
+                value={searchTerm}
+                onChange={(e: { target: { name: string; value: any } }) => setSearchTerm(e.target.value)}
+                fullWidth
+                colorVariant={colorVariant as 'school' | 'instructor'}
+                startIcon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                }
+              />
+            </div>
+            <Button
+              variant={colorVariant as 'school' | 'instructor'}
               onClick={addNewStudent}
-              className={`w-full px-4 py-2 text-white rounded-md transition-colors flex items-center justify-center gap-2 ${colorVariant === 'school' ? 'bg-school hover:bg-school-dark dark:bg-school-light dark:text-school-dark dark:hover:bg-school-lighter' : 'bg-instructor hover:bg-instructor-dark dark:bg-instructor-light dark:text-instructor-dark dark:hover:bg-instructor-lighter'}`}
               disabled={loading}
+              className="flex items-center justify-center gap-2 whitespace-nowrap"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               {loading ? 'Yükleniyor...' : 'Yeni Öğrenci'}
-            </button>
-          )}
-        </div>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Photo Modal */}
@@ -1181,17 +1188,26 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         />
       )}
 
-      {editMode ? (
-        <div className={`p-4 sm:p-6 rounded-lg border ${colorVariant === 'school' ? 'bg-gray-50 dark:bg-[#231810] border-transparent dark:border-[#493322]' : 'bg-gray-50 dark:bg-slate-900 border-transparent dark:border-slate-800'}`}>
-          <h3 className="text-lg font-semibold mb-4">
-            {selectedStudent ? 'Öğrenci Düzenle' : 'Yeni Öğrenci Ekle'}
-          </h3>
-
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      {/* Edit/Add Modal */}
+      <SimpleModal
+        open={editMode}
+        onClose={() => setEditMode(false)}
+        title={selectedStudent ? 'Öğrenciyi Düzenle' : 'Yeni Öğrenci Ekle'}
+        colorVariant={colorVariant as 'school' | 'instructor'}
+        bodyClassName={
+          isAdmin
+            ? 'bg-indigo-50/50 dark:bg-slate-900/80'
+            : colorVariant === 'school'
+              ? 'bg-orange-50/30 dark:bg-[#1a120b]'
+              : 'bg-instructor-bg/90 dark:bg-slate-900/80'
+        }
+      >
+        <form id="student-form" onSubmit={handleSubmit}>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Profil Fotoğrafı - Hide for new student in school mode */}
               {(!userRole.includes('school') || !!selectedStudent) && (
-                <div className="md:col-span-2">
+                <div className="md:col-span-2 flex justify-center mb-2">
                   <ImageUploader
                     currentPhotoURL={formData.photoURL}
                     onImageChange={handlePhotoChange}
@@ -1205,154 +1221,150 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 </div>
               )}
 
-              <div>
-                <CustomInput
-                  name="displayName"
-                  label="Ad Soyad"
-                  type="text"
-                  required
-                  value={formData.displayName}
-                  onChange={handleInputChange}
-                  fullWidth
-                />
-              </div>
+              <CustomInput
+                name="displayName"
+                label="Ad Soyad"
+                type="text"
+                required
+                value={formData.displayName}
+                onChange={handleInputChange}
+                fullWidth
+                colorVariant={colorVariant as "school" | "instructor"}
+              />
 
-              <div>
-                <CustomInput
-                  type="email"
-                  name="email"
-                  label="E-posta"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  error={false}
-                  fullWidth
-                  helperText={selectedStudent ? "Mevcut öğrencilerin e-posta adresleri değiştirilemez." : ""}
-                  disabled={!!selectedStudent}
-                />
-              </div>
+              <CustomInput
+                type="email"
+                name="email"
+                label="E-posta"
+                required
+                value={formData.email}
+                onChange={handleInputChange}
+                error={false}
+                fullWidth
+                helperText={selectedStudent ? "Mevcut öğrencilerin e-posta adresleri değiştirilemez." : ""}
+                disabled={!!selectedStudent}
+                colorVariant={colorVariant as "school" | "instructor"}
+                autoComplete="new-password"
+              />
 
-              <div>
-                <CustomPhoneInput
-                  name="phone"
-                  label="Telefon"
-                  required
-                  countryCode="+90"
-                  phoneNumber={formData.phone}
-                  onCountryCodeChange={() => { }}
-                  onPhoneNumberChange={(value: string) => setFormData(prev => ({ ...prev, phone: value }))}
-                  fullWidth
-                />
-              </div>
+              <CustomPhoneInput
+                name="phone"
+                label="Telefon"
+                required
+                countryCode="+90"
+                phoneNumber={formData.phone}
+                onCountryCodeChange={() => { }}
+                onPhoneNumberChange={(value: string) => setFormData(prev => ({ ...prev, phone: value }))}
+                fullWidth
+                autoComplete="new-password"
+              />
 
               {/* Password field - show only for new student in school mode */}
               {(userRole.includes('school') && !selectedStudent) && (
-                <div>
-                  <CustomInput
-                    label="Şifre"
-                    name="password"
-                    type="password"
-                    value={formData.password || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    fullWidth
-                    required
-                    colorVariant="school"
-                  />
-                </div>
+                <CustomInput
+                  label="Şifre"
+                  name="password"
+                  type="password"
+                  value={formData.password || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  fullWidth
+                  required
+                  colorVariant="school"
+                  autoComplete="new-password"
+                />
               )}
+
               {(!userRole.includes('school') || !!selectedStudent) && (
-                <div>
-                  <CustomSelect
-                    name="level"
-                    label="Dans Seviyesi"
-                    value={formData.level}
-                    onChange={(value: string | string[]) => {
-                      if (typeof value === 'string') {
-                        handleSelectChange(value, 'level');
-                      }
-                    }}
-                    options={[
-                      { value: 'beginner', label: 'Başlangıç' },
-                      { value: 'intermediate', label: 'Orta' },
-                      { value: 'advanced', label: 'İleri' },
-                      { value: 'professional', label: 'Profesyonel' }
-                    ]}
-                    fullWidth
-                    required
-                  />
-                </div>
+                <CustomSelect
+                  name="level"
+                  label="Dans Seviyesi"
+                  value={formData.level}
+                  onChange={(value: string | string[]) => {
+                    if (typeof value === 'string') {
+                      handleSelectChange(value, 'level');
+                    }
+                  }}
+                  options={[
+                    { value: 'beginner', label: 'Başlangıç' },
+                    { value: 'intermediate', label: 'Orta' },
+                    { value: 'advanced', label: 'İleri' },
+                    { value: 'professional', label: 'Profesyonel' }
+                  ]}
+                  fullWidth
+                  required
+                  colorVariant={colorVariant as "school" | "instructor"}
+                />
               )}
 
               {isAdmin && (
-                <div>
-                  <CustomSelect
-                    name="instructorId"
-                    label="Eğitmen"
-                    value={formData.instructorId}
-                    onChange={(value: string | string[]) => {
-                      if (typeof value === 'string') {
-                        handleSelectChange(value, 'instructorId');
-                      }
-                    }}
-                    options={[
-                      { value: '', label: 'Eğitmen Seç...' },
-                      ...instructors.map(instructor => ({
-                        value: instructor.id,
-                        label: instructor.displayName
-                      }))
-                    ]}
-                    fullWidth
-                    required
-                  />
-                </div>
+                <CustomSelect
+                  name="instructorId"
+                  label="Eğitmen"
+                  value={formData.instructorId}
+                  onChange={(value: string | string[]) => {
+                    if (typeof value === 'string') {
+                      handleSelectChange(value, 'instructorId');
+                    }
+                  }}
+                  options={[
+                    { value: '', label: 'Eğitmen Seç...' },
+                    ...instructors.map(instructor => ({
+                      value: instructor.id,
+                      label: instructor.displayName
+                    }))
+                  ]}
+                  fullWidth
+                  required
+                  colorVariant={colorVariant as "school" | "instructor"}
+                />
               )}
 
               {/* School selection - Hide for new student in school mode */}
               {isAdmin && (
-                <div>
-                  <CustomSelect
-                    name="schoolId"
-                    label="Okul"
-                    value={formData.schoolId}
-                    onChange={(value: string | string[]) => {
-                      if (typeof value === 'string') {
-                        console.log('School selection changed to:', value);
-                        handleSelectChange(value, 'schoolId');
-                      }
-                    }}
-                    options={schools.map(school => ({
-                      value: school.id,
-                      label: school.displayName
-                    }))}
-                    fullWidth
-                    required
-                  />
-                </div>
+                <CustomSelect
+                  name="schoolId"
+                  label="Okul"
+                  value={formData.schoolId}
+                  onChange={(value: string | string[]) => {
+                    if (typeof value === 'string') {
+                      handleSelectChange(value, 'schoolId');
+                    }
+                  }}
+                  options={schools.map(school => ({
+                    value: school.id,
+                    label: school.displayName
+                  }))}
+                  fullWidth
+                  required
+                  colorVariant={colorVariant as "school" | "instructor"}
+                />
               )}
+
               {(!isAdmin && userRole.includes('school') && !!selectedStudent) && (
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Okul:</span>
-                  <SchoolProfile
-                    school={{
-                      id: currentUser?.uid || '',
-                      displayName: schools.find(s => s.id === currentUser?.uid)?.displayName || '',
-                      email: schools.find(s => s.id === currentUser?.uid)?.email || ''
-                    }}
-                    variant="card"
-                  />
+                <div className="md:col-span-2 mt-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Okul:</span>
+                  <div className="max-w-xs">
+                    <SchoolProfile
+                      school={{
+                        id: currentUser?.uid || '',
+                        displayName: schools.find(s => s.id === currentUser?.uid)?.displayName || '',
+                        email: schools.find(s => s.id === currentUser?.uid)?.email || ''
+                      }}
+                      variant="card"
+                    />
+                  </div>
                 </div>
               )}
 
               {/* Course selection - Show for school admin adding or editing */}
               {(userRole.includes('school') || isAdmin) && (
-                <div>
+                <div className="md:col-span-2">
                   <CustomSelect
                     name="courseIds"
                     label="Kurslar"
                     value={formData.courseIds}
                     onChange={(value: string | string[]) => {
                       if (Array.isArray(value)) {
-                        console.log('Course selection changed to:', value);
                         setFormData(prev => ({
                           ...prev,
                           courseIds: value
@@ -1366,15 +1378,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                     fullWidth
                     multiple
                     required
+                    colorVariant={colorVariant as "school" | "instructor"}
                   />
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-100 dark:border-slate-800">
               <Button
                 variant="outlined"
-                color="secondary"
                 onClick={() => setEditMode(false)}
                 disabled={loading}
               >
@@ -1382,176 +1394,175 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               </Button>
               <Button
                 type="submit"
-                variant="contained"
-                color="primary"
+                variant={colorVariant as 'school' | 'instructor'}
                 disabled={loading}
               >
                 {loading ? 'Kaydediliyor...' : (selectedStudent ? 'Güncelle' : 'Ekle')}
               </Button>
             </div>
-          </form>
-        </div>
-      ) : (
-        <>
-          {loading && (
-            <div className="flex justify-center my-4">
-              <div className={`animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 ${colorVariant === 'school' ? 'border-school' : 'border-instructor'}`}></div>
-            </div>
-          )}
-
-          {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className={`min-w-full divide-y ${colorVariant === 'school' ? 'divide-gray-200 dark:divide-[#493322]' : 'divide-gray-200 dark:divide-gray-700'}`}>
-              <thead className={colorVariant === 'school' ? 'bg-gray-50 dark:bg-[#231810]' : 'bg-gray-50 dark:bg-slate-900'}>
-                <tr>
-                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                    Öğrenci
-                  </th>
-                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                    E-posta
-                  </th>
-                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                    Dans Seviyesi
-                  </th>
-                  {userRole !== 'instructor' && (
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                      Eğitmen
-                    </th>
-                  )}
-                  {userRole !== 'school' && (
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                      Okul
-                    </th>
-                  )}
-                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                    Kurslar
-                  </th>
-                  <th scope="col" className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                    İşlemler
-                  </th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${colorVariant === 'school' ? 'bg-white dark:bg-[#1a120b] divide-gray-200 dark:divide-[#493322]' : 'bg-white dark:bg-slate-800 divide-gray-200 dark:divide-slate-700'}`}>
-                {filteredStudents.length > 0 ? (
-                  filteredStudents.map((student) => renderStudent(student))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className={`px-6 py-4 text-center text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                      {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
+        </form>
+      </SimpleModal>
 
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-4">
-            {filteredStudents.length > 0 ? (
-              filteredStudents.map((student) => (
-                <div key={student.id} className={`rounded-lg shadow-sm border p-4 ${colorVariant === 'school' ? 'bg-white dark:bg-[#231810] border-gray-200 dark:border-[#493322]' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center max-w-[60%]">
-                      <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
-                        <img
-                          className="h-10 w-10 rounded-full object-cover absolute inset-0"
-                          src={student.photoURL || generateInitialsAvatar(student.displayName, 'student')}
-                          alt={student.displayName}
-                          onError={(e) => {
-                            const target = e.currentTarget;
-                            target.onerror = null;
-                            target.src = generateInitialsAvatar(student.displayName, 'student');
-                          }}
-                        />
-                      </div>
-                      <div className="ml-3 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{student.displayName}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate" title={student.email}>{student.email}</div>
-                      </div>
+      <>
+        {loading && (
+          <div className="flex justify-center my-4">
+            <div className={`animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 ${colorVariant === 'school' ? 'border-school' : 'border-instructor'}`}></div>
+          </div>
+        )}
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className={`min-w-full divide-y ${colorVariant === 'school' ? 'divide-gray-200 dark:divide-[#493322]' : 'divide-gray-200 dark:divide-gray-700'}`}>
+            <thead className={colorVariant === 'school' ? 'bg-gray-50 dark:bg-[#231810]' : 'bg-gray-50 dark:bg-slate-900'}>
+              <tr>
+                <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+                  Öğrenci
+                </th>
+                <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+                  E-posta
+                </th>
+                <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+                  Dans Seviyesi
+                </th>
+                {userRole !== 'instructor' && (
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+                    Eğitmen
+                  </th>
+                )}
+                {userRole !== 'school' && (
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+                    Okul
+                  </th>
+                )}
+                <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+                  Kurslar
+                </th>
+                <th scope="col" className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+                  İşlemler
+                </th>
+              </tr>
+            </thead>
+            <tbody className={`divide-y ${colorVariant === 'school' ? 'bg-white dark:bg-[#1a120b] divide-gray-200 dark:divide-[#493322]' : 'bg-white dark:bg-slate-800 divide-gray-200 dark:divide-slate-700'}`}>
+              {filteredStudents.length > 0 ? (
+                filteredStudents.map((student) => renderStudent(student))
+              ) : (
+                <tr>
+                  <td colSpan={6} className={`px-6 py-4 text-center text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+                    {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4">
+          {filteredStudents.length > 0 ? (
+            filteredStudents.map((student) => (
+              <div key={student.id} className={`rounded-lg shadow-sm border p-4 ${colorVariant === 'school' ? 'bg-white dark:bg-[#231810] border-gray-200 dark:border-[#493322]' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center max-w-[60%]">
+                    <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
+                      <img
+                        className="h-10 w-10 rounded-full object-cover absolute inset-0"
+                        src={student.photoURL || generateInitialsAvatar(student.displayName, 'student')}
+                        alt={student.displayName}
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.onerror = null;
+                          target.src = generateInitialsAvatar(student.displayName, 'student');
+                        }}
+                      />
                     </div>
-                    <div className="flex space-x-2 flex-shrink-0">
-                      <button
-                        onClick={() => editStudent(student)}
-                        className={colorVariant === 'school' ? 'text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter' : 'text-instructor hover:text-instructor-dark dark:text-instructor-light dark:hover:text-instructor-lighter'}
-                      >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => deleteStudentHandler(student.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                    <div className="ml-3 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{student.displayName}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 truncate" title={student.email}>{student.email}</div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Dans Seviyesi:</span>
-                      <p className="font-medium">
-                        {student.level === 'beginner' && 'Başlangıç'}
-                        {student.level === 'intermediate' && 'Orta'}
-                        {student.level === 'advanced' && 'İleri'}
-                        {student.level === 'professional' && 'Profesyonel'}
-                        {!student.level && '-'}
-                      </p>
-                    </div>
-                    {student.phoneNumber && (
-                      <div>
-                        <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Telefon:</span>
-                        <p className="font-medium">{student.phoneNumber}</p>
-                      </div>
-                    )}
-                    {userRole !== 'instructor' && (
-                      <div>
-                        <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Eğitmen:</span>
-                        <p className="font-medium">{student.instructorName || '-'}</p>
-                      </div>
-                    )}
-                    {userRole !== 'school' && (
-                      <div>
-                        <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Okul:</span>
-                        <SchoolProfile
-                          school={{
-                            id: student.schoolId || '',
-                            displayName: student.schoolName || '',
-                            email: ''
-                          }}
-                          variant="card"
-                        />
-                      </div>
-                    )}
-                    <div className="col-span-2">
-                      <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Kurslar:</span>
-                      {student.courseIds && student.courseIds.length > 0 ? (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {student.courseIds.map(courseId => {
-                            const course = courses.find(c => c.id === courseId);
-                            return course ? (
-                              <span key={courseId} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800">
-                                {course.name}
-                              </span>
-                            ) : null;
-                          })}
-                        </div>
-                      ) : (
-                        <p className="font-medium">-</p>
-                      )}
-                    </div>
+                  <div className="flex space-x-2 flex-shrink-0">
+                    <button
+                      onClick={() => editStudent(student)}
+                      className={colorVariant === 'school' ? 'text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter' : 'text-instructor hover:text-instructor-dark dark:text-instructor-light dark:hover:text-instructor-lighter'}
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => deleteStudentHandler(student.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className={`text-center py-4 text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Dans Seviyesi:</span>
+                    <p className="font-medium">
+                      {student.level === 'beginner' && 'Başlangıç'}
+                      {student.level === 'intermediate' && 'Orta'}
+                      {student.level === 'advanced' && 'İleri'}
+                      {student.level === 'professional' && 'Profesyonel'}
+                      {!student.level && '-'}
+                    </p>
+                  </div>
+                  {student.phoneNumber && (
+                    <div>
+                      <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Telefon:</span>
+                      <p className="font-medium">{student.phoneNumber}</p>
+                    </div>
+                  )}
+                  {userRole !== 'instructor' && (
+                    <div>
+                      <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Eğitmen:</span>
+                      <p className="font-medium">{student.instructorName || '-'}</p>
+                    </div>
+                  )}
+                  {userRole !== 'school' && (
+                    <div>
+                      <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Okul:</span>
+                      <SchoolProfile
+                        school={{
+                          id: student.schoolId || '',
+                          displayName: student.schoolName || '',
+                          email: ''
+                        }}
+                        variant="card"
+                      />
+                    </div>
+                  )}
+                  <div className="col-span-2">
+                    <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Kurslar:</span>
+                    {student.courseIds && student.courseIds.length > 0 ? (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {student.courseIds.map(courseId => {
+                          const course = courses.find(c => c.id === courseId);
+                          return course ? (
+                            <span key={courseId} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800">
+                              {course.name}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    ) : (
+                      <p className="font-medium">-</p>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        </>
-      )}
+            ))
+          ) : (
+            <div className={`text-center py-4 text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+              {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
+            </div>
+          )}
+        </div>
+      </>
     </div>
   );
-} 
+}

@@ -8,56 +8,19 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  deleteDoc,
   serverTimestamp,
   Timestamp,
   orderBy
 } from 'firebase/firestore';
 import { db } from '../../../../api/firebase/firebase';
 import { useAuth } from '../../../../contexts/AuthContext';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CardActions,
-  Grid,
-  TextField,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Typography,
-  Chip,
-  IconButton,
-  Avatar,
-  Tooltip,
-  Alert,
-  CircularProgress,
-  Rating,
-  Divider
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Search as SearchIcon,
-  School as SchoolIcon,
-  Person as PersonIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  Star as StarIcon
-} from '@mui/icons-material';
 import { DanceLevel, DanceStyle } from '../../../../types';
-import { SelectChangeEvent } from '@mui/material';
 import CustomInput from '../../../../common/components/ui/CustomInput';
 import CustomSelect from '../../../../common/components/ui/CustomSelect';
 import CustomPhoneInput from '../../../../common/components/ui/CustomPhoneInput';
 import ImageUploader from '../../../../common/components/ui/ImageUploader';
+import Button from '../../../../common/components/ui/Button';
+import Avatar from '../../../../common/components/ui/Avatar';
 
 interface Instructor {
   id: string;
@@ -87,11 +50,7 @@ interface InstructorFormData {
   danceStyles: DanceStyle[];
   biography: string;
   experience: number;
-}
-
-interface Option {
-  value: string;
-  label: string;
+  password?: string;
 }
 
 const defaultInstructorFormData: InstructorFormData = {
@@ -102,11 +61,54 @@ const defaultInstructorFormData: InstructorFormData = {
   photoURL: '',
   danceStyles: [],
   biography: '',
-  experience: 0
+  experience: 0,
+  password: ''
 };
+
+// SVG icons (no MUI dependency)
+const PlusIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+  </svg>
+);
+const PencilIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+);
+const TrashIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+const SearchIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+const StarIcon = ({ filled = true }: { filled?: boolean }) => (
+  <svg className={`w-4 h-4 ${filled ? 'text-school-yellow fill-school-yellow' : 'text-gray-300 fill-gray-300'}`} viewBox="0 0 20 20">
+    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+  </svg>
+);
+const EmailIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+);
+const PhoneIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+  </svg>
+);
+
+import SimpleModal from '../../../../common/components/ui/SimpleModal';
 
 const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo }) => {
   const { currentUser } = useAuth();
+  const [userRole, setUserRole] = useState<string[]>([]);
+  const isAdmin = userRole.includes('admin');
+  const isSchool = userRole.includes('school');
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [filteredInstructors, setFilteredInstructors] = useState<Instructor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -134,14 +136,28 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   ];
 
   useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!currentUser) return;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const roles = userDoc.data().role || [];
+          setUserRole(Array.isArray(roles) ? roles : [roles]);
+        }
+      } catch (err) {
+        console.error('Error fetching user role:', err);
+      }
+    };
+    fetchUserRole();
+  }, [currentUser]);
+
+  useEffect(() => {
     fetchInstructors();
-  }, [currentUser?.uid]);
+  }, [currentUser?.uid, userRole]);
 
   useEffect(() => {
     if (successMessage) {
-      const timer = setTimeout(() => {
-        setSuccessMessage(null);
-      }, 5000);
+      const timer = setTimeout(() => setSuccessMessage(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
@@ -157,37 +173,19 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   const fetchInstructors = async () => {
     try {
       if (!currentUser?.uid) return;
-
       setLoading(true);
       const instructorsRef = collection(db, 'users');
-      console.log('Fetching instructors for currentUser.uid:', currentUser.uid);
-
       const q = query(
         instructorsRef,
         where('role', '==', 'instructor'),
         where('schoolId', '==', currentUser.uid),
         orderBy('createdAt', 'desc')
       );
-
       const querySnapshot = await getDocs(q);
-      console.log('Query snapshot size:', querySnapshot.size);
-      console.log('Raw query results:');
-      querySnapshot.forEach((doc) => {
-        console.log('Document ID:', doc.id);
-        console.log('Document data:', doc.data());
-      });
-
       const instructorsData: Instructor[] = [];
-
       querySnapshot.forEach((doc) => {
-        instructorsData.push({
-          id: doc.id,
-          ...doc.data()
-        } as Instructor);
+        instructorsData.push({ id: doc.id, ...doc.data() } as Instructor);
       });
-
-      console.log('Processed instructors data:', instructorsData);
-
       setInstructors(instructorsData);
       setFilteredInstructors(instructorsData);
       setLoading(false);
@@ -200,7 +198,6 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
   const handleOpenDialog = (isEditMode: boolean, instructor?: Instructor) => {
     setIsEdit(isEditMode);
-
     if (isEditMode && instructor) {
       setFormData({
         id: instructor.id,
@@ -210,12 +207,12 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
         photoURL: instructor.photoURL || '',
         danceStyles: instructor.danceStyles || [],
         biography: instructor.biography || '',
-        experience: instructor.experience || 0
+        experience: instructor.experience || 0,
+        password: ''
       });
     } else {
       setFormData(defaultInstructorFormData);
     }
-
     setOpenDialog(true);
   };
 
@@ -238,24 +235,15 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   };
 
   const handleImageChange = (base64Image: string | null) => {
-    if (base64Image) {
-      setFormData(prev => ({ ...prev, photoURL: base64Image }));
-    }
+    if (base64Image) setFormData(prev => ({ ...prev, photoURL: base64Image }));
   };
 
   const handleSubmit = async () => {
-    if (!currentUser?.uid) {
-      setError('Oturum bilgisi bulunamadı.');
-      return;
-    }
-
+    if (!currentUser?.uid) { setError('Oturum bilgisi bulunamadı.'); return; }
     const currentUserId = currentUser.uid;
-
     try {
       setLoading(true);
-
       if (isEdit) {
-        // Update existing instructor
         const instructorRef = doc(db, 'users', formData.id);
         await updateDoc(instructorRef, {
           displayName: formData.displayName,
@@ -266,97 +254,32 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
           updatedAt: serverTimestamp()
         });
-
-        // Update the instructor in the local state
         setInstructors(instructors.map(instructor =>
           instructor.id === formData.id
-            ? {
-              ...instructor,
-              displayName: formData.displayName,
-              phoneNumber: formData.phoneNumber,
-              danceStyles: formData.danceStyles,
-              biography: formData.biography,
-              experience: formData.experience,
-              photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
-            }
+            ? { ...instructor, displayName: formData.displayName, phoneNumber: formData.phoneNumber, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience, photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png' }
             : instructor
         ));
-
         setSuccessMessage('Eğitmen bilgileri başarıyla güncellendi.');
       } else {
-        // Check if instructor with this email already exists
         const userSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', formData.email)));
-
         if (!userSnapshot.empty) {
-          // Email already exists, check if user is an instructor
           const existingUser = userSnapshot.docs[0];
           const existingUserId = existingUser.id;
           const userData = existingUser.data();
-
           if (userData.role === 'instructor' || (Array.isArray(userData.role) && userData.role.includes('instructor'))) {
-            // Already an instructor, just update the school association
-            await updateDoc(doc(db, 'users', existingUserId), {
-              schoolId: currentUserId,
-              schoolName: schoolInfo.displayName,
-              updatedAt: serverTimestamp()
-            });
-
-            // Add to the local state
-            const existingInstructorData = existingUser.data() as Instructor;
-            const updatedInstructor = {
-              ...existingInstructorData,
-              id: existingUserId,
-              schoolId: currentUserId,
-              schoolName: schoolInfo.displayName,
-            };
-
-            setInstructors([updatedInstructor, ...instructors]);
+            await updateDoc(doc(db, 'users', existingUserId), { schoolId: currentUserId, schoolName: schoolInfo.displayName, updatedAt: serverTimestamp() });
+            setInstructors([{ ...userData as Instructor, id: existingUserId, schoolId: currentUserId, schoolName: schoolInfo.displayName } as any, ...instructors]);
             setSuccessMessage('Mevcut eğitmen okulunuza bağlandı.');
           } else {
-            // User exists but not an instructor - update role to include instructor
             const currentRole = userData.role;
-            let newRole;
-
-            if (Array.isArray(currentRole)) {
-              if (!currentRole.includes('instructor')) {
-                newRole = [...currentRole, 'instructor'];
-              } else {
-                newRole = currentRole;
-              }
-            } else if (typeof currentRole === 'string') {
-              newRole = currentRole === 'instructor' ? currentRole : ['instructor', currentRole];
-            } else {
-              newRole = 'instructor';
-            }
-
-            await updateDoc(doc(db, 'users', existingUserId), {
-              role: newRole,
-              schoolId: currentUserId,
-              schoolName: schoolInfo.displayName,
-              danceStyles: formData.danceStyles,
-              biography: formData.biography,
-              experience: formData.experience,
-              updatedAt: serverTimestamp()
-            });
-
-            // Add to the local state
-            const existingUserData = existingUser.data() as Instructor;
-            const updatedInstructor = {
-              ...existingUserData,
-              id: existingUserId,
-              role: newRole,
-              schoolId: currentUserId,
-              schoolName: schoolInfo.displayName,
-              danceStyles: formData.danceStyles,
-              biography: formData.biography,
-              experience: formData.experience,
-            };
-
-            setInstructors([updatedInstructor, ...instructors]);
+            let newRole = Array.isArray(currentRole)
+              ? (!currentRole.includes('instructor') ? [...currentRole, 'instructor'] : currentRole)
+              : (typeof currentRole === 'string' ? (currentRole === 'instructor' ? currentRole : ['instructor', currentRole]) : 'instructor');
+            await updateDoc(doc(db, 'users', existingUserId), { role: newRole, schoolId: currentUserId, schoolName: schoolInfo.displayName, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience, updatedAt: serverTimestamp() });
+            setInstructors([{ ...userData as Instructor, id: existingUserId, role: newRole, schoolId: currentUserId, schoolName: schoolInfo.displayName, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience } as any, ...instructors]);
             setSuccessMessage('Kullanıcı eğitmen rolüne yükseltildi ve okulunuza bağlandı.');
           }
         } else {
-          // Create a new instructor
           const newInstructorId = `instructor_${Date.now()}`;
           const newInstructorData = {
             id: newInstructorId,
@@ -371,22 +294,14 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
             schoolName: schoolInfo.displayName,
             photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
             createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
+            updatedAt: serverTimestamp(),
+            password: formData.password || null
           };
-
           await setDoc(doc(db, 'users', newInstructorId), newInstructorData);
-
-          // Add the new instructor to the local state
-          const newInstructor = {
-            ...newInstructorData,
-            createdAt: Timestamp.now()
-          } as Instructor;
-
-          setInstructors([newInstructor, ...instructors]);
+          setInstructors([{ ...newInstructorData, createdAt: Timestamp.now() } as Instructor, ...instructors]);
           setSuccessMessage('Yeni eğitmen başarıyla eklendi.');
         }
       }
-
       setLoading(false);
       handleCloseDialog();
     } catch (err) {
@@ -403,22 +318,12 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
   const handleDeleteInstructor = async () => {
     if (!selectedInstructorId) return;
-
     try {
       setLoading(true);
-
-      // Remove the school association from the instructor
       const instructorRef = doc(db, 'users', selectedInstructorId);
-      await updateDoc(instructorRef, {
-        schoolId: null,
-        schoolName: null,
-        updatedAt: serverTimestamp()
-      });
-
-      // Remove from local state
+      await updateDoc(instructorRef, { schoolId: null, schoolName: null, updatedAt: serverTimestamp() });
       setInstructors(instructors.filter(instructor => instructor.id !== selectedInstructorId));
       setSuccessMessage('Eğitmen okul listenizden kaldırıldı.');
-
       setLoading(false);
       setDeleteConfirmOpen(false);
       setSelectedInstructorId(null);
@@ -430,7 +335,6 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
     }
   };
 
-  // Helper function to get a label for experience level
   const getExperienceText = (years: number) => {
     if (years < 1) return '1 yıldan az';
     if (years <= 3) return '1-3 yıl';
@@ -440,251 +344,298 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   };
 
   return (
-    <div>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" component="h1" gutterBottom fontWeight="bold">
-          Eğitmen Yönetimi
-        </Typography>
-        <Typography variant="body1" color="text.secondary" paragraph>
-          Okulunuza kayıtlı eğitmenleri yönetin, yeni eğitmenler ekleyin ve mevcut eğitmenleri düzenleyin.
-        </Typography>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Eğitmen Yönetimi</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Okulunuza kayıtlı eğitmenleri yönetin, yeni eğitmenler ekleyin ve düzenleyin.
+          </p>
+        </div>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {successMessage && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {successMessage}
-          </Alert>
-        )}
-      </Box>
-
-      <Box sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', sm: 'row' },
-        justifyContent: 'space-between',
-        alignItems: { xs: 'stretch', sm: 'center' },
-        gap: { xs: 2, sm: 0 },
-        mb: 3
-      }}>
-        <Box sx={{
-          flex: { xs: '1', sm: '0 1 300px' },
-          order: { xs: 2, sm: 1 },
-          position: 'relative',
-          '& .MuiInputBase-root': {
-            paddingLeft: '40px'
-          }
-        }}>
-          <SearchIcon
-            sx={{
-              position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'action.active',
-              pointerEvents: 'none'
-            }}
-          />
-          <CustomInput
-            name="search"
-            label=""
-            placeholder="Eğitmen Ara..."
-            value={searchTerm}
-            onChange={(e: { target: { name: string; value: any } }) => setSearchTerm(e.target.value)}
-            fullWidth
-            colorVariant="school"
-          />
-        </Box>
-
-        <Box sx={{
-          order: { xs: 1, sm: 2 },
-          width: { xs: '100%', sm: 'auto' }
-        }}>
+        {/* Toolbar: search + add button */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="flex-1 sm:max-w-xs">
+            <CustomInput
+              name="search"
+              label=""
+              placeholder="Eğitmen Ara..."
+              value={searchTerm}
+              onChange={(e: { target: { name: string; value: any } }) => setSearchTerm(e.target.value)}
+              fullWidth
+              colorVariant="school"
+              startIcon={<SearchIcon />}
+            />
+          </div>
           <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
+            variant="school"
             onClick={() => handleOpenDialog(false)}
-            fullWidth={false}
-            sx={{
-              width: { xs: '100%', sm: 'auto' },
-              minWidth: { sm: '160px' },
-              bgcolor: 'primary.main',
-              '&:hover': { bgcolor: 'primary.dark' }
-            }}
+            className="flex items-center justify-center gap-2 whitespace-nowrap"
           >
-            Yeni Eğitmen
+            <PlusIcon />
+            <span>Yeni Eğitmen</span>
           </Button>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      {loading && instructors.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <Grid container spacing={3}>
-          {filteredInstructors.length > 0 ? (
-            filteredInstructors.map((instructor) => (
-              <Grid item xs={12} sm={6} md={4} key={instructor.id}>
-                <Card
-                  elevation={2}
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 8
-                    }
-                  }}
-                >
-                  <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Avatar
-                      src={instructor.photoURL}
-                      alt={instructor.displayName}
-                      sx={{ width: 100, height: 100, mb: 2 }}
-                    />
-                    <Typography variant="h6" align="center" gutterBottom>
-                      {instructor.displayName}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Rating
-                        value={instructor.rating || 0}
-                        readOnly
-                        precision={0.5}
-                        size="small"
-                      />
-                      <Typography variant="body2" sx={{ ml: 1 }}>
-                        {instructor.rating ? instructor.rating.toFixed(1) : 'Değerlendirilmemiş'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 0.5, mb: 1 }}>
-                      {instructor.danceStyles && instructor.danceStyles.map((style) => (
-                        <Chip
-                          key={style}
-                          label={style.charAt(0).toUpperCase() + style.slice(1)}
-                          size="small"
-                          sx={{ fontWeight: 'medium' }}
-                        />
-                      ))}
-                    </Box>
-                  </Box>
-
-                  <Divider />
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    {instructor.biography && (
-                      <Typography variant="body2" color="text.secondary" paragraph>
-                        {instructor.biography.length > 100
-                          ? `${instructor.biography.substring(0, 100)}...`
-                          : instructor.biography}
-                      </Typography>
-                    )}
-
-                    <Box sx={{ mt: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <EmailIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
-                        <Typography variant="body2">{instructor.email}</Typography>
-                      </Box>
-                      {instructor.phoneNumber && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <PhoneIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
-                          <Typography variant="body2">{instructor.phoneNumber}</Typography>
-                        </Box>
-                      )}
-                      {instructor.experience && (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <StarIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
-                          <Typography variant="body2">
-                            Deneyim: {getExperienceText(instructor.experience)}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  </CardContent>
-
-                  <CardActions sx={{ p: 2, pt: 0 }}>
-                    <Button
-                      size="small"
-                      color="primary"
-                      onClick={() => handleOpenDialog(true, instructor)}
-                      startIcon={<EditIcon />}
-                    >
-                      Düzenle
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() => handleDeleteConfirmOpen(instructor.id)}
-                      startIcon={<DeleteIcon />}
-                    >
-                      Kaldır
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))
-          ) : (
-            <Grid item xs={12}>
-              <Box sx={{
-                p: 4,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                bgcolor: 'background.paper',
-                borderRadius: 2
-              }}>
-                <SchoolIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  {searchTerm ? 'Arama kriterine uygun eğitmen bulunamadı.' : 'Henüz hiç eğitmen kaydı bulunmuyor.'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" align="center">
-                  {searchTerm
-                    ? 'Farklı bir arama terimi deneyin veya yeni eğitmen ekleyin.'
-                    : 'Yeni bir eğitmen eklemek için "Yeni Eğitmen" butonuna tıklayın.'}
-                </Typography>
-              </Box>
-            </Grid>
-          )}
-        </Grid>
+      {/* Alerts */}
+      {error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-400 rounded-xl text-sm">
+          {error}
+        </div>
+      )}
+      {successMessage && (
+        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-sm">
+          {successMessage}
+        </div>
       )}
 
-      {/* Add/Edit Instructor Dialog */}
-      <Dialog
+      {/* Instructor Grid */}
+      {loading && instructors.length === 0 ? (
+        <div className="flex justify-center my-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-school" />
+        </div>
+      ) : filteredInstructors.length > 0 ? (
+        <>
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-[#493322]">
+              <thead className="bg-gray-50 dark:bg-[#231810]">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
+                    Eğitmen
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
+                    E-posta
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
+                    Dans Alanları
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
+                    Değerlendirme
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
+                    İşlemler
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-[#1a120b] divide-y divide-gray-200 dark:divide-[#493322]">
+                {filteredInstructors.map((instructor) => (
+                  <tr key={instructor.id} className="hover:bg-gray-50 dark:hover:bg-[#231810] transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <Avatar
+                            src={instructor.photoURL}
+                            alt={instructor.displayName}
+                            className="h-10 w-10 ring-1 ring-school/20"
+                          />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-school transition-colors">
+                            {instructor.displayName}
+                          </div>
+                          {instructor.phoneNumber && (
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {instructor.phoneNumber}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-gray-300">{instructor.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex flex-wrap gap-1">
+                        {instructor.danceStyles && instructor.danceStyles.length > 0 ? (
+                          instructor.danceStyles.map(style => (
+                            <span key={style} className="px-2 py-0.5 rounded-full bg-school/10 dark:bg-school/20 text-xs font-medium text-school-dark dark:text-school-light capitalize">
+                              {style}
+                            </span>
+                          ))
+                        ) : (
+                          <span>-</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-1">
+                        <StarIcon filled={true} />
+                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                          {instructor.rating ? instructor.rating.toFixed(1) : '0.0'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleOpenDialog(true, instructor)}
+                          className="text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter transition-colors"
+                          title="Düzenle"
+                        >
+                          <PencilIcon />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteConfirmOpen(instructor.id)}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                          title="Kaldır"
+                        >
+                          <TrashIcon />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {filteredInstructors.map((instructor) => (
+              <div
+                key={instructor.id}
+                className="bg-white dark:bg-[#231810] rounded-lg border border-gray-200 dark:border-[#493322] shadow-sm p-4"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center max-w-[70%]">
+                    <div className="flex-shrink-0 h-10 w-10">
+                      <Avatar
+                        src={instructor.photoURL}
+                        alt={instructor.displayName}
+                        className="h-10 w-10 ring-1 ring-school/20"
+                      />
+                    </div>
+                    <div className="ml-3 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {instructor.displayName}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 truncate" title={instructor.email}>
+                        {instructor.email}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleOpenDialog(true, instructor)}
+                      className="text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter p-1"
+                    >
+                      <PencilIcon />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteConfirmOpen(instructor.id)}
+                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="col-span-2">
+                    <span className="text-sm text-gray-500 dark:text-[#cba990]">Dans Alanları:</span>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {instructor.danceStyles && instructor.danceStyles.length > 0 ? (
+                        instructor.danceStyles.map(style => (
+                          <span key={style} className="px-2 py-0.5 rounded-full bg-school/10 dark:bg-school/20 text-xs font-medium text-school-dark dark:text-school-light capitalize">
+                            {style}
+                          </span>
+                        ))
+                      ) : (
+                        <p className="font-medium">-</p>
+                      )}
+                    </div>
+                  </div>
+                  {instructor.phoneNumber && (
+                    <div>
+                      <span className="text-sm text-gray-500 dark:text-[#cba990]">Telefon:</span>
+                      <p className="font-medium">{instructor.phoneNumber}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-sm text-gray-500 dark:text-[#cba990]">Değerlendirme:</span>
+                    <div className="flex items-center gap-1 font-medium mt-0.5">
+                      <StarIcon filled={true} />
+                      <span>{instructor.rating ? instructor.rating.toFixed(1) : '0.0'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="py-16 text-center">
+          <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-10 max-w-md mx-auto border border-dashed border-gray-200 dark:border-slate-700">
+            <div className="w-16 h-16 bg-school/10 dark:bg-school/20 rounded-full flex items-center justify-center mx-auto mb-4 text-school">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+              {searchTerm ? 'Eğitmen Bulunamadı' : 'Henüz Eğitmen Yok'}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              {searchTerm
+                ? 'Arama kriterlerinize uygun eğitmen bulunamadı. Farklı bir terim deneyin.'
+                : 'Yeni bir eğitmen eklemek için aşağıdaki butona tıklayın.'}
+            </p>
+            {!searchTerm && (
+              <Button variant="school" onClick={() => handleOpenDialog(false)} className="flex items-center gap-2 mx-auto">
+                <PlusIcon />
+                <span>Yeni Eğitmen Ekle</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
+      <SimpleModal
         open={openDialog}
         onClose={handleCloseDialog}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            m: { xs: 2, sm: 4 },
-            width: '100%',
-            maxWidth: { xs: '100%', sm: '600px', md: '800px' }
-          }
-        }}
+        title={isEdit ? 'Eğitmen Düzenle' : 'Yeni Eğitmen Ekle'}
+        colorVariant={isAdmin ? 'admin' : 'school'}
+        bodyClassName={
+          isAdmin
+            ? 'bg-indigo-50/50 dark:bg-slate-900/80'
+            : 'bg-orange-50/30 dark:bg-[#1a120b]' /* Only School or Admin manages instructors directly */
+        }
+        actions={
+          <>
+            <Button variant="outlined" onClick={handleCloseDialog}>İptal</Button>
+            <Button
+              variant="school"
+              onClick={handleSubmit}
+              disabled={!formData.displayName || !formData.email || (!isEdit && !formData.password)}
+            >
+              {isEdit ? 'Güncelle' : 'Ekle'}
+            </Button>
+          </>
+        }
       >
-        <DialogTitle sx={{
-          pb: 1,
-          fontSize: { xs: '1.25rem', sm: '1.5rem' }
-        }}>
-          {isEdit ? 'Eğitmen Düzenle' : 'Yeni Eğitmen Ekle'}
-        </DialogTitle>
-        <DialogContent sx={{
-          p: { xs: 2, sm: 3 },
-          '&:first-of-type': { pt: { xs: 2, sm: 3 } }
-        }}>
-          <Grid container spacing={{ xs: 2, sm: 3 }}>
-            {/* Kişisel Bilgiler */}
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
-                Kişisel Bilgiler
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+        <div className="space-y-6">
+          {/* Profile Picture at Top */}
+          <div className="flex flex-col items-center justify-center pb-4 border-b border-gray-100 dark:border-slate-800">
+            <ImageUploader
+              currentPhotoURL={formData.photoURL}
+              onImageChange={handleImageChange}
+              displayName={formData.displayName}
+              userType="instructor"
+            />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Eğitmen Profil Fotoğrafı
+            </p>
+          </div>
+
+          {/* Personal info */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              Kişisel Bilgiler
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <CustomInput
                 name="displayName"
                 label="Ad Soyad"
@@ -694,8 +645,6 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 fullWidth
                 colorVariant="school"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <CustomInput
                 name="email"
                 label="E-posta"
@@ -706,9 +655,8 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 disabled={isEdit}
                 fullWidth
                 colorVariant="school"
+                autoComplete="new-password"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <CustomPhoneInput
                 name="phoneNumber"
                 label="Telefon"
@@ -716,123 +664,98 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 phoneNumber={formData.phoneNumber.replace('+90', '')}
                 onCountryCodeChange={(code) => handlePhoneChange(code, formData.phoneNumber.replace('+90', ''))}
                 onPhoneNumberChange={(number) => handlePhoneChange('+90', number)}
+                autoComplete="new-password"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <ImageUploader
-                currentPhotoURL={formData.photoURL}
-                onImageChange={handleImageChange}
-                displayName={formData.displayName}
-                userType="instructor"
-              />
-            </Grid>
+              {!isEdit && (
+                <CustomInput
+                  name="password"
+                  label="Şifre"
+                  type="password"
+                  value={formData.password || ''}
+                  onChange={handleInputChange}
+                  required
+                  fullWidth
+                  colorVariant="school"
+                  placeholder="Giriş şifresi oluşturun"
+                  autoComplete="new-password"
+                />
+              )}
+            </div>
+          </div>
 
-            {/* Dans Bilgileri */}
-            <Grid item xs={12} sx={{ mt: { xs: 2, sm: 3 } }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
-                Dans Bilgileri
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+          {/* Dance info */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              Dans Bilgileri
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <CustomSelect
                 name="experience"
                 label="Deneyim"
                 value={String(formData.experience)}
                 onChange={(value) => handleSelectChange('experience', value)}
-                options={experienceLevels.map(level => ({
-                  value: String(level.value),
-                  label: level.label
-                }))}
+                options={experienceLevels.map(level => ({ value: String(level.value), label: level.label }))}
                 fullWidth
                 colorVariant="school"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <CustomSelect
                 name="danceStyles"
                 label="Uzmanlık Alanları"
                 value={formData.danceStyles}
                 onChange={(value) => handleSelectChange('danceStyles', value)}
-                options={danceStyles.map(style => ({
-                  value: style,
-                  label: style.charAt(0).toUpperCase() + style.slice(1)
-                }))}
+                options={danceStyles.map(style => ({ value: style, label: style.charAt(0).toUpperCase() + style.slice(1) }))}
                 multiple
                 fullWidth
                 colorVariant="school"
               />
-            </Grid>
+            </div>
+          </div>
 
-            {/* Biyografi */}
-            <Grid item xs={12} sx={{ mt: { xs: 2, sm: 3 } }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
-                Biyografi
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <CustomInput
-                name="biography"
-                label="Biyografi"
-                value={formData.biography}
-                onChange={handleInputChange}
-                multiline
-                rows={4}
-                placeholder="Eğitmen hakkında kısa bir tanıtım yazısı..."
-                fullWidth
-                colorVariant="school"
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{
-          p: { xs: 2, sm: 3 },
-          gap: 1
-        }}>
-          <Button
-            onClick={handleCloseDialog}
-            color="secondary"
-            sx={{
-              minWidth: { xs: '80px', sm: '100px' }
-            }}
-          >
-            İptal
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            color="primary"
-            disabled={!formData.displayName || !formData.email}
-            sx={{
-              minWidth: { xs: '80px', sm: '100px' }
-            }}
-          >
-            {isEdit ? 'Güncelle' : 'Ekle'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          {/* Biography */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              Biyografi
+            </p>
+            <CustomInput
+              name="biography"
+              label="Biyografi"
+              value={formData.biography}
+              onChange={handleInputChange}
+              multiline
+              rows={4}
+              placeholder="Eğitmen hakkında kısa bir tanıtım yazısı..."
+              fullWidth
+              colorVariant="school"
+            />
+          </div>
+        </div>
+      </SimpleModal>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
+      {/* Delete Confirmation Modal */}
+      <SimpleModal
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
+        title="Eğitmeni Kaldır"
+        colorVariant={isAdmin ? 'admin' : 'school'}
+        bodyClassName={
+          isAdmin
+            ? 'bg-indigo-50/50 dark:bg-slate-900/80'
+            : 'bg-orange-50/30 dark:bg-[#1a120b]'
+        }
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => setDeleteConfirmOpen(false)}>İptal</Button>
+            <Button variant="danger" onClick={handleDeleteInstructor}>Kaldır</Button>
+          </>
+        }
       >
-        <DialogTitle>Eğitmeni Kaldır</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Bu eğitmeni okulunuzun listesinden kaldırmak istediğinize emin misiniz? Bu işlem, eğitmeni tamamen silmez, sadece okulunuzla olan bağlantısını kaldırır.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)} color="secondary">
-            İptal
-          </Button>
-          <Button onClick={handleDeleteInstructor} color="error" variant="contained">
-            Kaldır
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+          Bu eğitmeni okulunuzun listesinden kaldırmak istediğinize emin misiniz?
+          Bu işlem eğitmeni tamamen silmez, yalnızca okulunuzla bağlantısını kaldırır.
+        </p>
+      </SimpleModal>
     </div>
   );
 };
 
-export default InstructorManagement; 
+export default InstructorManagement;

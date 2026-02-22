@@ -2,6 +2,7 @@ import React, { useState, useEffect, ChangeEvent } from 'react';
 import { School } from '../../../../types';
 import Button from '../../../../common/components/ui/Button';
 import CustomInput from '../../../../common/components/ui/CustomInput';
+import SimpleModal from '../../../../common/components/ui/SimpleModal';
 
 interface SchoolProfileProps {
   school: School;
@@ -20,6 +21,7 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
   const [editedSchool, setEditedSchool] = useState<School>(school);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setEditedSchool(school);
@@ -39,6 +41,8 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
   };
 
   const handleSave = async () => {
+    setLoading(true);
+    setError(null);
     try {
       if (onUpdate) {
         const updateData = {
@@ -56,6 +60,8 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
     } catch (err) {
       setError('Güncelleme sırasında bir hata oluştu.');
       console.error('Error in handleSave:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,63 +77,118 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
 
   return (
     <div className={`flex flex-col ${className}`}>
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded">
-          {error}
-        </div>
-      )}
       {success && (
-        <div className="mb-4 p-3 bg-green-50 text-green-700 rounded">
+        <div className="mb-4 p-3 bg-green-50 text-green-700 rounded border border-green-200">
           {success}
         </div>
       )}
 
-      <div className="flex justify-end mb-4">
-        {!isEditing ? (
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Okul Profili</h2>
+        {!isEditing && (
           <Button
             variant="school"
-            onClick={() => setIsEditing(true)}
+            onClick={() => {
+              setEditedSchool(school);
+              setIsEditing(true);
+            }}
           >
-            Düzenle
+            Bilgileri Düzenle
           </Button>
-        ) : (
-          <div className="space-x-2">
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Read-only View */}
+        <div className="bg-white dark:bg-[#231810] p-6 rounded-xl border border-gray-100 dark:border-[#493322] shadow-sm space-y-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-100 dark:border-[#493322] pb-2">Genel Bilgiler</h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Okul Adı</label>
+              <p className="text-gray-900 dark:text-white font-medium">{school.displayName || '-'}</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">E-posta</label>
+              <p className="text-gray-900 dark:text-white">{school.email || '-'}</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Telefon</label>
+              <p className="text-gray-900 dark:text-white">{school.phoneNumber || '-'}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-[#231810] p-6 rounded-xl border border-gray-100 dark:border-[#493322] shadow-sm space-y-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-100 dark:border-[#493322] pb-2">Konum ve Ödeme</h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Şehir</label>
+              <p className="text-gray-900 dark:text-white">{school.city || '-'}</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Adres</label>
+              <p className="text-gray-900 dark:text-white whitespace-pre-wrap">{school.address || '-'}</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Alıcı Ad Soyad</label>
+              <p className="text-gray-900 dark:text-white">{school.recipientName || '-'}</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">IBAN</label>
+              <p className="text-gray-900 dark:text-white font-mono text-sm">{school.iban || '-'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Edit Modal */}
+      <SimpleModal
+        open={isEditing}
+        onClose={() => setIsEditing(false)}
+        title="Okul Bilgilerini Düzenle"
+        colorVariant="school"
+        bodyClassName="bg-orange-50/30 dark:bg-[#1a120b]"
+        actions={
+          <div className="flex justify-end space-x-3 w-full">
             <Button
-              variant="secondary"
+              variant="outlined"
               onClick={() => {
                 setIsEditing(false);
                 setEditedSchool(school);
                 setError(null);
-                setSuccess(null);
               }}
+              disabled={loading}
             >
               İptal
             </Button>
             <Button
               variant="school"
               onClick={handleSave}
+              loading={loading}
             >
-              Kaydet
+              Değişiklikleri Kaydet
             </Button>
           </div>
-        )}
-      </div>
+        }
+      >
+        <div className="space-y-6 p-1">
+          {error && (
+            <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CustomInput
               label="Okul Adı"
               name="displayName"
-              value={isEditing ? editedSchool.displayName : school.displayName}
+              value={editedSchool.displayName}
               onChange={handleInputChange}
-              disabled={!isEditing}
               required
-              fullWidth
               colorVariant="school"
             />
-          </div>
-          <div>
             <CustomInput
               label="E-posta"
               name="email"
@@ -135,76 +196,52 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
               value={school.email}
               onChange={() => { }}
               disabled={true}
-              required
-              fullWidth
               colorVariant="school"
             />
-          </div>
-          <div>
             <CustomInput
               label="Telefon"
               name="phoneNumber"
-              value={isEditing ? editedSchool.phoneNumber || '' : school.phoneNumber || ''}
+              value={editedSchool.phoneNumber || ''}
               onChange={handleInputChange}
-              disabled={!isEditing}
-              fullWidth
               colorVariant="school"
             />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <CustomInput
-              label="Adres"
-              name="address"
-              value={isEditing ? editedSchool.address || '' : school.address || ''}
-              onChange={handleInputChange}
-              disabled={!isEditing}
-              fullWidth
-              colorVariant="school"
-            />
-          </div>
-          <div>
             <CustomInput
               label="Şehir"
               name="city"
-              value={isEditing ? editedSchool.city || '' : school.city || ''}
+              value={editedSchool.city || ''}
               onChange={handleInputChange}
-              disabled={!isEditing}
-              fullWidth
               colorVariant="school"
             />
-          </div>
-        </div>
-
-        <div className="space-y-4 md:col-span-2">
-          <div>
-            <CustomInput
-              label="IBAN"
-              name="iban"
-              value={isEditing ? editedSchool.iban || '' : school.iban || ''}
-              onChange={handleInputChange}
-              disabled={!isEditing}
-              fullWidth
-              colorVariant="school"
-            />
-          </div>
-          <div>
+            <div className="md:col-span-2">
+              <CustomInput
+                label="Adres"
+                name="address"
+                value={editedSchool.address || ''}
+                onChange={handleInputChange}
+                multiline
+                rows={2}
+                colorVariant="school"
+              />
+            </div>
             <CustomInput
               label="Alıcı Ad Soyad"
               name="recipientName"
-              value={isEditing ? editedSchool.recipientName || '' : school.recipientName || ''}
+              value={editedSchool.recipientName || ''}
               onChange={handleInputChange}
-              disabled={!isEditing}
-              fullWidth
+              colorVariant="school"
+            />
+            <CustomInput
+              label="IBAN"
+              name="iban"
+              value={editedSchool.iban || ''}
+              onChange={handleInputChange}
               colorVariant="school"
             />
           </div>
         </div>
-      </div>
+      </SimpleModal>
     </div>
   );
 };
 
-export default SchoolProfile; 
+export default SchoolProfile;

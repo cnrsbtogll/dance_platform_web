@@ -19,6 +19,8 @@ export interface CustomInputProps {
   required?: boolean;
   disabled?: boolean;
   colorVariant?: 'default' | 'school' | 'instructor';
+  startIcon?: React.ReactNode;
+  autoComplete?: string;
 }
 
 export const CustomInput: React.FC<CustomInputProps> = ({
@@ -37,6 +39,8 @@ export const CustomInput: React.FC<CustomInputProps> = ({
   required = false,
   disabled = false,
   colorVariant = 'default',
+  startIcon,
+  autoComplete,
 }) => {
   const { isDark } = useTheme();
 
@@ -69,6 +73,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
       required={required}
       disabled={disabled}
       margin="none"
+      autoComplete={autoComplete}
       sx={{
         margin: 0,
         '& .MuiOutlinedInput-root': {
@@ -97,7 +102,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
           },
         },
         '& .MuiOutlinedInput-input': {
-          padding: '10.5px 14px',
+          padding: startIcon ? '10.5px 14px 10.5px 4px' : '10.5px 14px',
           height: 'auto',
           minHeight: '21px',
           boxSizing: 'border-box',
@@ -109,6 +114,13 @@ export const CustomInput: React.FC<CustomInputProps> = ({
           '&.Mui-disabled': {
             WebkitTextFillColor: disabledText,
           },
+        },
+        '& .MuiInputAdornment-root': {
+          color: labelColor,
+          marginRight: 0,
+          '& .MuiSvgIcon-root': {
+            fontSize: '1.25rem',
+          }
         },
         '& .MuiInputLabel-root': {
           color: labelColor,
@@ -126,7 +138,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
           },
         },
         '& .MuiInputLabel-outlined': {
-          transform: 'translate(14px, 16px) scale(1)',
+          transform: startIcon ? 'translate(40px, 16px) scale(1)' : 'translate(14px, 16px) scale(1)',
           '&.MuiInputLabel-shrink': {
             transform: 'translate(14px, -9px) scale(0.75)',
           },
@@ -142,6 +154,13 @@ export const CustomInput: React.FC<CustomInputProps> = ({
         '& .MuiFormHelperText-root': {
           color: error ? '#f87171' : (isDark ? (isSchool ? '#cba990' : '#94a3b8') : '#6B7280'),
         },
+      }}
+      InputProps={{
+        startAdornment: startIcon ? (
+          <div className="flex items-center pl-3 pr-1 text-gray-400">
+            {startIcon}
+          </div>
+        ) : null,
       }}
     />
   );

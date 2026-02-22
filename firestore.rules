@@ -22,6 +22,11 @@ service cloud.firestore {
       return request.auth != null && getUserRole() == 'admin';
     }
     
+    // Kullanıcı okul mu?
+    function isSchool() {
+      return request.auth != null && getUserRole() == 'school';
+    }
+    
     // Kullanıcı authenticated mi?
     function isAuthenticated() {
       return request.auth != null;
@@ -34,22 +39,30 @@ service cloud.firestore {
       // Herkes okuyabilir (giriş yapmadan da)
       allow read: if true;
       
-      // Sadece instructor'lar kendi kurslarını oluşturabilir
+      // Eğitmen kendi kursunu, Okul kendi kursunu ve Admin tüm kursları oluşturabilir
       allow create: if isAuthenticated() && 
-                      isInstructor() && 
-                      request.resource.data.instructorId == request.auth.uid;
+                      (
+                        (isInstructor() && request.resource.data.instructorId == request.auth.uid) ||
+                        (isSchool() && request.resource.data.schoolId == request.auth.uid) ||
+                        isAdmin()
+                      );
       
-      // Instructor kendi kursunu güncelleyebilir, öğrenci sadece istatistikleri güncelleyebilir
+      // Eğitmen/Okul kendi kursunu güncelleyebilir, admin hepsini
       allow update: if isAuthenticated() && 
                       (
                         (isInstructor() && resource.data.instructorId == request.auth.uid) ||
+                        (isSchool() && resource.data.schoolId == request.auth.uid) ||
+                        isAdmin() ||
                         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantStats', 'updatedAt', 'currentParticipants']))
                       );
 
-      // Instructor sadece kendi kursunu silebilir
+      // Eğitmen/Okul kendi kursunu silebilir, admin hepsini
       allow delete: if isAuthenticated() && 
-                      isInstructor() && 
-                      resource.data.instructorId == request.auth.uid;
+                      (
+                        (isInstructor() && resource.data.instructorId == request.auth.uid) ||
+                        (isSchool() && resource.data.schoolId == request.auth.uid) ||
+                        isAdmin()
+                      );
     }
     
     // ==========================================
