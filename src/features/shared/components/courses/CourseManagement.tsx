@@ -2180,19 +2180,28 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                 (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase()))
               ).map((course) => (
-                <tr key={course.id} className={`transition-colors ${isAdmin
-                  ? 'hover:bg-gray-50 dark:hover:bg-slate-800'
-                  : colorVariant === 'school'
-                    ? 'hover:bg-school/5 dark:hover:bg-school/10'
-                    : 'hover:bg-instructor/5 dark:hover:bg-instructor/10'
-                  }`}>
+                <tr
+                  key={course.id}
+                  onClick={() => navigate(`/courses/${course.id}`)}
+                  className={`transition-colors cursor-pointer ${isAdmin
+                    ? 'hover:bg-gray-50 dark:hover:bg-slate-800'
+                    : colorVariant === 'school'
+                      ? 'hover:bg-school/5 dark:hover:bg-school/10'
+                      : 'hover:bg-instructor/5 dark:hover:bg-instructor/10'
+                    }`}>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
+                    <Link
+                      to={`/courses/${course.id}`}
+                      className="flex items-center group cursor-pointer"
+                    >
                       <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">{course.name}</div>
+                        <div className={`text-sm font-medium transition-colors ${colorVariant === 'school' ? 'group-hover:text-school' : 'group-hover:text-instructor'
+                          } text-gray-900 dark:text-white`}>
+                          {course.name}
+                        </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">{course.danceStyle}</div>
                       </div>
-                    </div>
+                    </Link>
                   </td>
                   <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
@@ -2212,7 +2221,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                   <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setSelectedCourseForStudents(course)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCourseForStudents(course);
+                        }}
                         title="Öğrenci Listesi"
                         className={`p-1.5 rounded-lg border transition-all ${colorVariant === 'school' ? 'bg-school/5 border-school/20 text-school hover:bg-school/10' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
                       >
@@ -2221,7 +2233,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                         </svg>
                       </button>
                       <button
-                        onClick={() => setSelectedCourseForInstructors(course)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCourseForInstructors(course);
+                        }}
                         title="Eğitmen Atama/Listesi"
                         className={`p-1.5 rounded-lg border transition-all ${colorVariant === 'school' ? 'bg-school/5 border-school/20 text-school hover:bg-school/10' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
                       >
@@ -2265,7 +2280,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                   <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => editCourse(course)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          editCourse(course);
+                        }}
                         className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm active:scale-95 ${isAdmin
                           ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
                           : colorVariant === 'school'
@@ -2276,7 +2294,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                         Düzenle
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (window.confirm('Bu kursu silmek istediğinizden emin misiniz?')) {
                             deleteCourse(course.id);
                           }

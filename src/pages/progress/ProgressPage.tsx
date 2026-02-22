@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  Grid, 
-  CircularProgress, 
+import { Link } from 'react-router-dom';
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  CircularProgress,
   LinearProgress,
-  Container, 
-  Card, 
-  CardContent, 
-  Avatar, 
+  Container,
+  Card,
+  CardContent,
+  Avatar,
   Chip,
   List,
   ListItem,
@@ -21,7 +22,7 @@ import {
   useMediaQuery,
   Alert
 } from '@mui/material';
-import { 
+import {
   EmojiEvents as TrophyIcon,
   School as CourseIcon,
   Timer as TimeIcon,
@@ -52,18 +53,18 @@ const ProgressPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   // common/hooks/useAuth user döndürüyor, currentUser değil
   const { user, loading: authLoading } = useAuth();
-  
+
   console.log("ProgressPage: Auth durumu", { user, authLoading });
-  
+
   // State for progress and badges
   const [progressSummary, setProgressSummary] = useState<UserProgressSummary | null>(null);
   const [allBadges, setAllBadges] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Sayfa yüklendiğinde loglama
   useEffect(() => {
     console.log('📄 ProgressPage yükleniyor:', {
@@ -85,7 +86,7 @@ const ProgressPage: React.FC = () => {
       }
     });
   }, [user, authLoading, loading, error, progressSummary, allBadges]);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       console.log("fetchData başlıyor, auth durumu:", { authLoading, userExists: !!user });
@@ -93,30 +94,30 @@ const ProgressPage: React.FC = () => {
         console.log("Auth yükleniyor, veri çekme işlemi erteleniyor");
         return;
       }
-      
+
       if (!user) {
         console.log("Kullanıcı oturum açmamış, hata gösteriliyor");
         setError('Bu sayfayı görüntülemek için giriş yapmalısınız.');
         setLoading(false);
         return;
       }
-      
+
       console.log("Kullanıcı bilgileri:", { userId: user.id, email: user.email });
-      
+
       setLoading(true);
       setError(null);
-      
+
       try {
         console.log("Rozetleri getirme işlemi başlıyor");
         // Tüm başarı rozetlerini getir
         const badges = await getAchievements();
         console.log("Getirilen rozet sayısı:", badges.length);
         setAllBadges(badges);
-        
+
         console.log("Kullanıcı ilerleme özeti getirme işlemi başlıyor, userId:", user.id);
         // Kullanıcının ilerleme özetini getir
         const summary = await getUserProgressSummary(user.id);
-        console.log("Kullanıcı ilerleme özeti:", { 
+        console.log("Kullanıcı ilerleme özeti:", {
           completedCourses: summary.completedCourses,
           earnedAchievements: summary.earnedAchievements.length,
           courseProgress: summary.courseProgress.length
@@ -129,7 +130,7 @@ const ProgressPage: React.FC = () => {
           message: err.message,
           stack: err.stack
         });
-        
+
         // Hata mesajını daha detaylı hale getir
         if (err.code === 'permission-denied') {
           setError('Bu verilere erişim izniniz bulunmuyor. Yönetici ile iletişime geçin.');
@@ -147,7 +148,7 @@ const ProgressPage: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [user, authLoading]);
 
@@ -164,7 +165,7 @@ const ProgressPage: React.FC = () => {
         points: badge.seviye * 10,
         level: badge.seviye.toString()
       })) as Achievement[];
-      
+
       setAllBadges(sampleBadges);
     }
   }, [loading, allBadges, error]);
@@ -191,10 +192,10 @@ const ProgressPage: React.FC = () => {
 
   // Badge card component
   const BadgeCard: React.FC<BadgeCardProps> = ({ badge, earned = false }) => (
-    <Card 
-      variant="outlined" 
-      sx={{ 
-        borderRadius: 2, 
+    <Card
+      variant="outlined"
+      sx={{
+        borderRadius: 2,
         transition: '0.3s',
         position: 'relative',
         '&:hover': {
@@ -207,41 +208,41 @@ const ProgressPage: React.FC = () => {
     >
       <CardContent sx={{ textAlign: 'center', p: 3 }}>
         {earned && (
-          <Chip 
-            label="Kazanıldı" 
-            color="success" 
-            size="small" 
-            sx={{ 
-              position: 'absolute', 
-              top: 10, 
+          <Chip
+            label="Kazanıldı"
+            color="success"
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 10,
               right: 10,
-              fontWeight: 'bold' 
-            }} 
+              fontWeight: 'bold'
+            }}
           />
         )}
-        
-        <Avatar 
-          src={badge.iconUrl} 
-          alt={badge.name} 
-          sx={{ 
-            width: 80, 
-            height: 80, 
+
+        <Avatar
+          src={badge.iconUrl}
+          alt={badge.name}
+          sx={{
+            width: 80,
+            height: 80,
             margin: '0 auto 16px auto',
             border: earned ? '3px solid #4caf50' : '3px solid #e0e0e0'
-          }} 
+          }}
         />
-        
+
         <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
           {badge.name}
         </Typography>
-        
+
         <Typography variant="body2" color="text.secondary">
           {badge.description}
         </Typography>
-        
-        <Chip 
+
+        <Chip
           label={`Seviye ${badge.level || '1'}`}
-          color="primary" 
+          color="primary"
           variant="outlined"
           size="small"
           sx={{ mt: 2 }}
@@ -287,10 +288,10 @@ const ProgressPage: React.FC = () => {
         <Alert severity="error" sx={{ mb: 4 }}>
           {error}
         </Alert>
-        
-        <Button 
-          variant="contained" 
-          color="primary" 
+
+        <Button
+          variant="contained"
+          color="primary"
           onClick={() => window.location.reload()}
         >
           Yeniden Dene
@@ -305,10 +306,10 @@ const ProgressPage: React.FC = () => {
         <Alert severity="info" sx={{ mb: 4 }}>
           İlerleme durumunuzu görmek için lütfen giriş yapın.
         </Alert>
-        
-        <Button 
-          variant="contained" 
-          color="primary" 
+
+        <Button
+          variant="contained"
+          color="primary"
           href="/signin"
         >
           Giriş Yap
@@ -318,33 +319,33 @@ const ProgressPage: React.FC = () => {
   }
 
   // Veri yoksa veya yeni kullanıcı ise gösterilecek içerik
-  if (!progressSummary || 
-      (!progressSummary.completedLessons && 
-       !progressSummary.earnedAchievements?.length)) {
+  if (!progressSummary ||
+    (!progressSummary.completedLessons &&
+      !progressSummary.earnedAchievements?.length)) {
     return (
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 } }}>
-        <motion.div 
-          variants={container} 
-          initial="hidden" 
+        <motion.div
+          variants={container}
+          initial="hidden"
           animate="show"
         >
           <motion.div variants={item}>
-            <Typography 
-              variant="h3" 
-              component="h1" 
-              fontWeight="bold" 
-              align="center" 
+            <Typography
+              variant="h3"
+              component="h1"
+              fontWeight="bold"
+              align="center"
               gutterBottom
               color="primary"
             >
               Dans İlerleme & Rozetler
             </Typography>
-            
-            <Typography 
-              variant="subtitle1" 
-              align="center" 
-              color="text.secondary" 
-              paragraph 
+
+            <Typography
+              variant="subtitle1"
+              align="center"
+              color="text.secondary"
+              paragraph
               sx={{ mb: 6, maxWidth: 700, mx: 'auto' }}
             >
               Dans yolculuğunuzdaki ilerlemelerinizi takip edin, yeni rozetler kazanın ve dans becerilerinizi geliştirin.
@@ -364,19 +365,19 @@ const ProgressPage: React.FC = () => {
               }}
             >
               <InfoIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-              
+
               <Typography variant="h5" gutterBottom fontWeight="bold">
                 Henüz ilerleme kaydı bulunamadı
               </Typography>
-              
+
               <Typography variant="body1" paragraph>
                 Dans kurslarına katılarak ve dersleri tamamlayarak ilerleme kaydetmeye başlayabilirsiniz.
                 Rozetler kazanarak seviyenizi yükseltebilirsiniz.
               </Typography>
-              
-              <Button 
-                variant="contained" 
-                color="primary" 
+
+              <Button
+                variant="contained"
+                color="primary"
                 href="/courses"
                 sx={{ mt: 2 }}
               >
@@ -384,13 +385,13 @@ const ProgressPage: React.FC = () => {
               </Button>
             </Paper>
           </motion.div>
-          
+
           {/* Mevcut tüm başarı rozetleri */}
           <motion.div variants={item}>
             <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mt: 6, mb: 3 }}>
               Kazanabileceğin Rozetler
             </Typography>
-            
+
             <Grid container spacing={3}>
               {allBadges.map((badge) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={badge.id}>
@@ -415,31 +416,31 @@ const ProgressPage: React.FC = () => {
       'Özel grup etkinliklerine katılım hakkı'
     ]
   };
-  
+
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 } }}>
-      <motion.div 
-        variants={container} 
-        initial="hidden" 
+      <motion.div
+        variants={container}
+        initial="hidden"
         animate="show"
       >
         <motion.div variants={item}>
-          <Typography 
-            variant="h3" 
-            component="h1" 
-            fontWeight="bold" 
-            align="center" 
+          <Typography
+            variant="h3"
+            component="h1"
+            fontWeight="bold"
+            align="center"
             gutterBottom
             color="primary"
           >
             Dans İlerleme & Rozetler
           </Typography>
-          
-          <Typography 
-            variant="subtitle1" 
-            align="center" 
-            color="text.secondary" 
-            paragraph 
+
+          <Typography
+            variant="subtitle1"
+            align="center"
+            color="text.secondary"
+            paragraph
             sx={{ mb: 6, maxWidth: 700, mx: 'auto' }}
           >
             Dans yolculuğunuzdaki ilerlemelerinizi takip edin, yeni rozetler kazanın ve dans becerilerinizi geliştirin.
@@ -461,39 +462,39 @@ const ProgressPage: React.FC = () => {
             }}
           >
             {/* Background decoration */}
-            <Box 
-              sx={{ 
-                position: 'absolute', 
-                top: -25, 
-                right: -25, 
-                width: 150, 
-                height: 150, 
-                borderRadius: '50%', 
-                background: 'rgba(255,255,255,0.1)' 
-              }} 
+            <Box
+              sx={{
+                position: 'absolute',
+                top: -25,
+                right: -25,
+                width: 150,
+                height: 150,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.1)'
+              }}
             />
-            <Box 
-              sx={{ 
-                position: 'absolute', 
-                bottom: -50, 
-                left: -50, 
-                width: 200, 
-                height: 200, 
-                borderRadius: '50%', 
-                background: 'rgba(255,255,255,0.05)' 
-              }} 
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: -50,
+                left: -50,
+                width: 200,
+                height: 200,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.05)'
+              }}
             />
-            
+
             <Grid container spacing={4}>
               <Grid item xs={12} md={7}>
                 <Typography variant="h4" fontWeight="bold" gutterBottom>
                   Dans Seviyeniz: {progressSummary.level}
                 </Typography>
-                
+
                 <Typography variant="subtitle1" sx={{ mb: 3, opacity: 0.9 }}>
                   Bir sonraki seviyeye {nextLevelDetails.pointsRemaining} puan kaldı!
                 </Typography>
-                
+
                 <Box sx={{ mb: 4 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -503,20 +504,20 @@ const ProgressPage: React.FC = () => {
                       {progressSummary.progressPercentage}%
                     </Typography>
                   </Box>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={progressSummary.progressPercentage} 
-                    sx={{ 
-                      height: 10, 
+                  <LinearProgress
+                    variant="determinate"
+                    value={progressSummary.progressPercentage}
+                    sx={{
+                      height: 10,
                       borderRadius: 5,
                       backgroundColor: 'rgba(255,255,255,0.3)',
                       '& .MuiLinearProgress-bar': {
                         backgroundColor: 'white'
                       }
-                    }} 
+                    }}
                   />
                 </Box>
-                
+
                 <Grid container spacing={3}>
                   <Grid item xs={6} sm={3}>
                     <Typography variant="h4" fontWeight="bold">{progressSummary.completedCourses}</Typography>
@@ -536,9 +537,9 @@ const ProgressPage: React.FC = () => {
                   </Grid>
                 </Grid>
               </Grid>
-              
+
               <Grid item xs={12} md={5}>
-                <Box sx={{ 
+                <Box sx={{
                   display: 'flex',
                   flexDirection: 'column',
                   height: '100%',
@@ -550,7 +551,7 @@ const ProgressPage: React.FC = () => {
                   <Typography variant="h5" fontWeight="bold" gutterBottom>
                     Seviye {nextLevelDetails.level} Avantajları:
                   </Typography>
-                  
+
                   <List sx={{ opacity: 0.9 }}>
                     {nextLevelDetails.benefits.map((benefit, index) => (
                       <ListItem key={index} sx={{ p: 0, mb: 1 }}>
@@ -561,12 +562,12 @@ const ProgressPage: React.FC = () => {
                       </ListItem>
                     ))}
                   </List>
-                  
-                  <Button 
-                    variant="outlined" 
-                    color="inherit" 
+
+                  <Button
+                    variant="outlined"
+                    color="inherit"
                     startIcon={<LevelUpIcon />}
-                    sx={{ 
+                    sx={{
                       mt: 2,
                       borderColor: 'rgba(255,255,255,0.5)',
                       '&:hover': {
@@ -590,20 +591,31 @@ const ProgressPage: React.FC = () => {
               <CourseIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
               Kurs İlerlemeleri
             </Typography>
-            
+
             {progressSummary.courseProgress.length > 0 ? (
               <Box sx={{ mt: 3 }}>
                 {progressSummary.courseProgress.map((course, index) => (
                   <Box key={index} sx={{ mb: 4 }}>
-                    <Typography variant="subtitle1" fontWeight="bold">
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight="bold"
+                      component={Link}
+                      to={`/courses/${course.courseId}`}
+                      sx={{
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        transition: 'color 0.2s',
+                        '&:hover': { color: 'primary.main' }
+                      }}
+                    >
                       {course.courseName}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       {course.completedLessons} / {course.totalLessons} ders tamamlandı
                     </Typography>
-                    <ProgressBar 
-                      value={course.progress} 
-                      label={`${Math.round(course.progress)}% tamamlandı`} 
+                    <ProgressBar
+                      value={course.progress}
+                      label={`${Math.round(course.progress)}% tamamlandı`}
                     />
                   </Box>
                 ))}
@@ -613,9 +625,9 @@ const ProgressPage: React.FC = () => {
                 <Typography variant="body1" color="text.secondary">
                   Henüz hiçbir kursa kaydolmadınız veya ders tamamlamadınız.
                 </Typography>
-                <Button 
-                  variant="contained" 
-                  color="primary" 
+                <Button
+                  variant="contained"
+                  color="primary"
                   href="/courses"
                   sx={{ mt: 2 }}
                 >
@@ -625,7 +637,7 @@ const ProgressPage: React.FC = () => {
             )}
           </Paper>
         </motion.div>
-        
+
         {/* Recent Activity */}
         <motion.div variants={item}>
           <Paper elevation={0} sx={{ p: 4, mb: 6, borderRadius: 4 }}>
@@ -633,31 +645,46 @@ const ProgressPage: React.FC = () => {
               <ActivityIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
               Son Aktiviteler
             </Typography>
-            
+
             {progressSummary.recentAttendance && progressSummary.recentAttendance.length > 0 ? (
               <List sx={{ mt: 2 }}>
                 {progressSummary.recentAttendance.map((attendance, index) => (
                   <ListItem key={index} sx={{ px: 0, py: 1.5, borderBottom: '1px solid #f0f0f0' }}>
                     <ListItemIcon>
-                      <Avatar 
-                        sx={{ 
-                          bgcolor: attendance.status === 'attended' ? 'success.light' : 
-                                  attendance.status === 'late' ? 'warning.light' : 'error.light' 
+                      <Avatar
+                        sx={{
+                          bgcolor: attendance.status === 'attended' ? 'success.light' :
+                            attendance.status === 'late' ? 'warning.light' : 'error.light'
                         }}
                       >
-                        {attendance.status === 'attended' ? 
-                          <CheckIcon /> : 
+                        {attendance.status === 'attended' ?
+                          <CheckIcon /> :
                           <TimeIcon />}
                       </Avatar>
                     </ListItemIcon>
-                    <ListItemText 
-                      primary={attendance.courseName}
-                      secondary={`${new Date(attendance.date).toLocaleDateString('tr-TR', { 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}, ${attendance.status === 'attended' ? 'Katıldı' : 
-                              attendance.status === 'late' ? 'Geç Kaldı' : 'Katılmadı'}`}
+                    <ListItemText
+                      primary={
+                        <Typography
+                          variant="body1"
+                          fontWeight="medium"
+                          component={Link}
+                          to={`/courses/${attendance.courseId}`}
+                          sx={{
+                            textDecoration: 'none',
+                            color: 'inherit',
+                            transition: 'color 0.2s',
+                            '&:hover': { color: 'primary.main' }
+                          }}
+                        >
+                          {attendance.courseName}
+                        </Typography>
+                      }
+                      secondary={`${new Date(attendance.date).toLocaleDateString('tr-TR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}, ${attendance.status === 'attended' ? 'Katıldı' :
+                        attendance.status === 'late' ? 'Geç Kaldı' : 'Katılmadı'}`}
                     />
                   </ListItem>
                 ))}
@@ -679,7 +706,7 @@ const ProgressPage: React.FC = () => {
               <TrophyIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
               Kazanılan Rozetler
             </Typography>
-            
+
             {progressSummary.earnedAchievements && progressSummary.earnedAchievements.length > 0 ? (
               <Grid container spacing={3} sx={{ mt: 1 }}>
                 {progressSummary.earnedAchievements.map((badge) => (
@@ -695,12 +722,12 @@ const ProgressPage: React.FC = () => {
                 </Typography>
               </Box>
             )}
-            
+
             {/* Upcoming Badges */}
             <Typography variant="h6" fontWeight="bold" sx={{ mt: 6, mb: 3 }}>
               Kazanabileceğin Diğer Rozetler
             </Typography>
-            
+
             <Grid container spacing={3}>
               {allBadges
                 .filter(badge => !isBadgeEarned(badge))
@@ -711,7 +738,7 @@ const ProgressPage: React.FC = () => {
                   </Grid>
                 ))}
             </Grid>
-            
+
             {allBadges.filter(badge => !isBadgeEarned(badge)).length > 4 && (
               <Box sx={{ textAlign: 'center', mt: 3 }}>
                 <Button variant="outlined" color="primary">
@@ -721,12 +748,12 @@ const ProgressPage: React.FC = () => {
             )}
           </Paper>
         </motion.div>
-        
+
         {/* Tip Section */}
         <motion.div variants={item}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
+          <Paper
+            elevation={0}
+            sx={{
               p: 4,
               borderRadius: 4,
               backgroundColor: 'rgba(106, 17, 203, 0.05)',
@@ -742,8 +769,8 @@ const ProgressPage: React.FC = () => {
                   Dans İpucu
                 </Typography>
                 <Typography variant="body1">
-                  Dansınızı geliştirmek için sadece kurslara katılmak yeterli değildir. Derslerin dışında da 
-                  düzenli olarak pratik yapın. Her gün 15-20 dakika ayırarak dans hareketlerini tekrar etmek, 
+                  Dansınızı geliştirmek için sadece kurslara katılmak yeterli değildir. Derslerin dışında da
+                  düzenli olarak pratik yapın. Her gün 15-20 dakika ayırarak dans hareketlerini tekrar etmek,
                   hızlı ilerlemenize yardımcı olacaktır.
                 </Typography>
               </Grid>

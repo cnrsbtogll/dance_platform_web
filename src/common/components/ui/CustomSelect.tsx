@@ -1,6 +1,7 @@
-import React from 'react';
-import { FormControl, InputLabel, Select, MenuItem, FormHelperText } from '@mui/material';
+import React, { useState } from 'react';
+import { FormControl, InputLabel, Select, MenuItem, FormHelperText, Checkbox, ListItemText, Box } from '@mui/material';
 import { useTheme } from '../../../contexts/ThemeContext';
+import Button from './Button';
 
 interface Option {
   value: string;
@@ -37,6 +38,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   colorVariant = 'default',
 }) => {
   const { isDark } = useTheme();
+  const [open, setOpen] = useState(false);
 
   const isSchool = colorVariant === 'school';
   const bg = isDark ? (isSchool ? '#231810' : '#1e293b') : '#ffffff';
@@ -54,6 +56,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     const selectedValue = event.target.value;
     onChange(selectedValue);
   };
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
 
   return (
     <FormControl
@@ -96,6 +101,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         label={label}
         onChange={handleChange}
         multiple={multiple}
+        open={open}
+        onOpen={handleOpen}
+        onClose={handleClose}
         displayEmpty={true}
         MenuProps={{
           PaperProps: {
@@ -142,17 +150,85 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             borderColor: borderFocus,
           },
         }}
+        renderValue={(selected: any) => {
+          if (multiple) {
+            if (!selected || selected.length === 0) {
+              return <span style={{ color: placeholderColor }}>{placeholder || 'Seçiniz'}</span>;
+            }
+            if (Array.isArray(selected)) {
+              return options
+                .filter(opt => selected.includes(opt.value))
+                .map(opt => opt.label)
+                .join(', ');
+            }
+          }
+          if (!selected) {
+            return <span style={{ color: placeholderColor }}>{placeholder || 'Seçiniz'}</span>;
+          }
+          const option = options.find(opt => opt.value === selected);
+          return option ? option.label : selected;
+        }}
       >
-        {allowEmpty && (
+        {!multiple && allowEmpty && (
           <MenuItem value="">
             <span style={{ color: placeholderColor }}>{placeholder || 'Seçiniz'}</span>
           </MenuItem>
         )}
         {options.map((option) => (
           <MenuItem key={option.value} value={option.value}>
-            {option.label}
+            {multiple && (
+              <Checkbox
+                checked={Array.isArray(value) && value.indexOf(option.value) > -1}
+                size="small"
+                sx={{
+                  padding: '0 8px 0 0',
+                  color: labelColor,
+                  '&.Mui-checked': {
+                    color: borderFocus,
+                  },
+                }}
+              />
+            )}
+            <ListItemText primary={option.label} />
           </MenuItem>
         ))}
+        {multiple && (
+          <Box
+            sx={{
+              p: 1.5,
+              borderTop: `1px solid ${borderColor}`,
+              backgroundColor: bg,
+              position: 'sticky',
+              bottom: 0,
+              zIndex: 10,
+              display: 'flex',
+              justifyContent: 'center',
+              pointerEvents: 'auto'
+            }}
+            onMouseDown={(e) => {
+              // Prevent losing focus from the select
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <Button
+              variant={isSchool ? 'school' : colorVariant === 'instructor' ? 'instructor' : 'primary'}
+              fullWidth
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleClose();
+              }}
+              className="py-1.5 text-sm"
+            >
+              Tamam
+            </Button>
+          </Box>
+        )}
       </Select>
       {error && <FormHelperText sx={{ color: '#f87171' }}>{error}</FormHelperText>}
     </FormControl>
