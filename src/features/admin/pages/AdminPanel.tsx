@@ -420,8 +420,8 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
               {activeTab === 'kullanicilar' && <UserManagement />}
               {activeTab === 'kurslar' && <CourseManagement isAdmin={true} />}
               {activeTab === 'talepler' && (
-                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-                  <div className="mb-6 max-w-sm">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-6">
+                  <div className="mb-6 w-full sm:max-w-sm">
                     <CustomSelect
                       label="Talep Türü"
                       name="requestType"
