@@ -226,32 +226,39 @@ const SchoolAdmin: React.FC = () => {
         // For efficiency, since schoolId is already a strong filter, we'll fetch then filter or use logic that supports existing data.
 
         // Revised approach: Fetch all school users once to avoid multiple narrow queries
-        const schoolUsersQuery = query(
-          usersRef,
-          where('schoolId', '==', schoolInfo.id)
-        );
-        const schoolUsersSnapshot = await getDocs(schoolUsersQuery);
+        // Fetch all potential users (Students and Instructors)
+        // We use two queries to be sure we get both legacy and new array-based school associations
+        const q1 = query(usersRef, where('schoolId', '==', schoolInfo.id));
+        const q2 = query(usersRef, where('schoolIds', 'array-contains', schoolInfo.id));
+
+        const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+
+        // Merge unique docs
+        const uniqueDocs = new Map();
+        snap1.forEach(doc => uniqueDocs.set(doc.id, doc.data()));
+        snap2.forEach(doc => uniqueDocs.set(doc.id, doc.data()));
 
         let sCount = 0;
         let iCount = 0;
         const schoolUsersData: any[] = [];
 
-        console.log('[DEBUG-DASHBOARD] Fetched total user docs for schoolId:', schoolUsersSnapshot.docs.length);
+        console.log('[DEBUG-DASHBOARD] Fetched unique docs:', uniqueDocs.size);
 
-        schoolUsersSnapshot.forEach(doc => {
-          const data = doc.data();
+        uniqueDocs.forEach((data, id) => {
           const roles = Array.isArray(data.role) ? data.role : [data.role];
+          const isStudent = roles.includes('student');
+          const isInstructor = roles.includes('instructor') || roles.includes('draft-instructor');
 
-          if (roles.includes('student')) sCount++;
-          if (roles.includes('instructor')) {
+          if (isStudent) sCount++;
+          if (isInstructor) {
             iCount++;
             console.log(`[DEBUG-DASHBOARD] Counted as Instructor:`, data.displayName, data.email, roles);
           }
 
-          schoolUsersData.push({ id: doc.id, ...data, roles });
+          schoolUsersData.push({ id, ...data, roles });
         });
 
-        console.log('[DEBUG-DASHBOARD] Final Instructor Count:', iCount);
+        console.log('[DEBUG-DASHBOARD] Final Totals -> Students:', sCount, 'Instructors:', iCount);
 
         setStudentCount(sCount);
         setInstructorCount(iCount);

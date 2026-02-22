@@ -324,6 +324,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const [showQuickAddInstructor, setShowQuickAddInstructor] = useState<boolean>(false);
   const [quickAddInstructorData, setQuickAddInstructorData] = useState({ displayName: '', email: '', password: '', phoneNumber: '' });
   const [isQuickAddingInstructor, setIsQuickAddingInstructor] = useState(false);
+  const [instructorToRemove, setInstructorToRemove] = useState<{ id: string, name: string, courseId: string } | null>(null);
 
   const sectionBorderColor = isAdmin ? 'border-indigo-600' : colorVariant === 'school' ? 'border-school' : 'border-instructor';
   const inputFocusRing = colorVariant === 'school' ? 'focus:ring-school focus:border-school' : 'focus:ring-instructor focus:border-instructor';
@@ -900,7 +901,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         displayName: quickAddInstructorData.displayName,
         email: quickAddInstructorData.email,
         phoneNumber: quickAddInstructorData.phoneNumber || '',
-        role: ['draft-instructor'],
+        role: isSchoolUser ? ['instructor'] : ['draft-instructor'],
         isInstructor: true,
         status: 'active',
         schoolId: effectiveSchoolId,
@@ -929,7 +930,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         okul_id: effectiveSchoolId,
         schoolId: effectiveSchoolId,
         schoolName: schoolNameData,
-        status: 'pending', // Onay bekliyor olarak işaretle
+        status: isSchoolUser ? 'active' : 'pending', // Okul eklerse aktif, admin eklerse onay bekliyor
         role: ['instructor'],
         uzmanlık: [],
         tecrube: 0,
@@ -1065,6 +1066,13 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           } : null);
         }
 
+        // Global eğitmen listesini de güncelle ki UI anında tepki versin
+        setInstructors(prev => prev.map(inst =>
+          inst.value === instructorId
+            ? { ...inst, courseIds: [...(inst.courseIds || []), courseId] }
+            : inst
+        ));
+
         setSuccess('Eğitmen hesaba atandı.');
         setInstructorSearchInModal('');
       } else {
@@ -1079,8 +1087,14 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   };
 
   // Eğitmeni kurstan çıkar
-  const handleRemoveInstructorFromCourse = async (instructorId: string, instructorName: string, courseId: string) => {
-    if (!window.confirm('Bu eğitmeni kurstan çıkarmak istediğinizden emin misiniz?')) return;
+  const handleRemoveInstructorFromCourse = async (id?: string, name?: string, cId?: string) => {
+    const instructorId = id || instructorToRemove?.id;
+    const instructorName = name || instructorToRemove?.name;
+    const courseId = cId || instructorToRemove?.courseId;
+
+    if (!instructorId || !courseId) return;
+
+    setInstructorToRemove(null);
     try {
       setLoading(true);
       setError(null);
@@ -1125,6 +1139,13 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           instructorNames: newInstructorNames
         } : null);
       }
+
+      // Global eğitmen listesini de güncelle ki UI anında tepki versin
+      setInstructors(prev => prev.map(inst =>
+        inst.value === instructorId
+          ? { ...inst, courseIds: (inst.courseIds || []).filter(id => id !== courseId) }
+          : inst
+      ));
 
       setSuccess('Eğitmen kurstan başarıyla çıkarıldı.');
     } catch (err) {
@@ -2643,7 +2664,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                     </div>
                   </div>
                   <button
-                    onClick={() => handleRemoveInstructorFromCourse(id, name, selectedCourseForInstructors!.id)}
+                    onClick={() => setInstructorToRemove({ id, name, courseId: selectedCourseForInstructors!.id })}
                     className="p-1.5 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                     title="Kurstan Çıkar"
                   >
@@ -2655,6 +2676,39 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               );
             })}
           </div>
+        </div>
+      </SimpleModal>
+
+      {/* Instructor Remove Confirmation Modal */}
+      <SimpleModal
+        open={!!instructorToRemove}
+        onClose={() => setInstructorToRemove(null)}
+        title="Eğitmeni Kurstan Çıkar"
+        colorVariant={colorVariant}
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => setInstructorToRemove(null)}>Vazgeç</Button>
+            <Button variant="danger" onClick={() => handleRemoveInstructorFromCourse()}>Çıkar</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-100 dark:border-red-900/30 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0 text-red-600 dark:text-red-400">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-gray-900 dark:text-white font-medium">Bu işlem geri alınamaz.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <strong>{instructorToRemove?.name}</strong> isimli eğitmeni bu kurstan çıkarmak istediğinizden emin misiniz?
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Eğitmen bu kurstan çıkarıldığında artık derslere katılamayacak ve kurs listesinde görünmeyecektir.
+          </p>
         </div>
       </SimpleModal>
     </div>

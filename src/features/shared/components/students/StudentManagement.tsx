@@ -12,7 +12,8 @@ import {
   serverTimestamp,
   where,
   Timestamp,
-  arrayUnion
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import {
   createUserWithEmailAndPassword,
@@ -376,6 +377,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   // Existing user warning state
   const [existingUserModalOpen, setExistingUserModalOpen] = useState(false);
   const [existingUserToLink, setExistingUserToLink] = useState<any>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [studentToDeleteId, setStudentToDeleteId] = useState<string | null>(null);
   // ------------------------------
 
   // Check if current user is super admin
@@ -968,29 +971,41 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
 
   // Delete student
   const deleteStudentHandler = async (studentId: string): Promise<void> => {
-    if (!window.confirm('Bu öğrenciyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
-      return;
-    }
-
     setLoading(true);
     setError(null);
+    setDeleteConfirmOpen(false);
 
     try {
-      // Delete from Firestore
-      await deleteDoc(doc(db, 'users', studentId));
+      // Get current user's school context
+      const userRef = doc(db, 'users', currentUser?.uid || '');
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      const effectiveSchoolId = schoolId || userData?.schoolId || currentUser?.uid;
+
+      if (!effectiveSchoolId) {
+        throw new Error('Okul bilgisi bulunamadı.');
+      }
+
+      // Unlink from school instead of deleting doc
+      const studentRef = doc(db, 'users', studentId);
+
+      // Update the student document to remove this school
+      await updateDoc(studentRef, {
+        schoolId: null, // Legacy
+        schoolIds: arrayRemove(effectiveSchoolId), // M:N
+        updatedAt: serverTimestamp()
+      });
 
       // Remove from state
       const updatedStudents = students.filter(student => student.id !== studentId);
       setStudents(updatedStudents);
-      setSuccess('Öğrenci başarıyla silindi.');
-
-      // Note: Deleting the auth user would require admin SDK or reauthentication,
-      // so we're only deleting the Firestore document here.
+      setSuccess('Öğrenci başarıyla okuldan ayrıldı.');
     } catch (err) {
-      console.error('Öğrenci silinirken hata oluştu:', err);
-      setError('Öğrenci silinirken bir hata oluştu. Lütfen tekrar deneyin.');
+      console.error('Öğrenci ayrılırken hata oluştu:', err);
+      setError('Öğrenci ayrılırken bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
+      setStudentToDeleteId(null);
     }
   };
 
@@ -1143,7 +1158,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               Düzenle
             </button>
             <button
-              onClick={() => deleteStudentHandler(student.id)}
+              onClick={() => {
+                setStudentToDeleteId(student.id);
+                setDeleteConfirmOpen(true);
+              }}
               className="text-red-600 hover:text-red-900"
             >
               Sil
@@ -1565,6 +1583,31 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             </Button>
           </div>
         </div>
+      </SimpleModal>
+
+      {/* Existing User Warning Modal */}
+      <SimpleModal
+        open={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setStudentToDeleteId(null);
+        }}
+        title="Öğrenciyi Kaldır"
+        colorVariant={colorVariant as 'school' | 'instructor'}
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => {
+              setDeleteConfirmOpen(false);
+              setStudentToDeleteId(null);
+            }}>İptal</Button>
+            <Button variant="danger" onClick={() => studentToDeleteId && deleteStudentHandler(studentToDeleteId)}>Kaldır</Button>
+          </>
+        }
+      >
+        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+          Bu öğrenciyi okulunuzun listesinden kaldırmak istediğinize emin misiniz?
+          Bu işlem öğrencinin hesabını tamamen silmez, yalnızca okulunuzla bağlantısını kaldırır. Kayıtlı olduğu kurslardaki geçmiş verileri korunacaktır.
+        </p>
       </SimpleModal>
 
       {/* Existing User Warning Modal */}

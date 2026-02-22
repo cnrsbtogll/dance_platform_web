@@ -11,7 +11,8 @@ import {
   serverTimestamp,
   Timestamp,
   orderBy,
-  arrayUnion
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { db, secondaryAuth } from '../../../../api/firebase/firebase';
@@ -251,7 +252,8 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
         // 2. Check if user is an instructor
         const isInstructor =
           data.role === 'instructor' ||
-          (Array.isArray(data.role) && data.role.includes('instructor'));
+          data.role === 'draft-instructor' ||
+          (Array.isArray(data.role) && (data.role.includes('instructor') || data.role.includes('draft-instructor')));
 
         if (isInstructor) {
           console.log(`[DEBUG-INSTRUCTOR-PAGE] Found match for school:`, data.displayName, data.email, data.schoolId, data.schoolIds);
@@ -452,9 +454,45 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
     try {
       setLoading(true);
       const instructorRef = doc(db, 'users', selectedInstructorId);
-      await updateDoc(instructorRef, { schoolId: null, schoolName: null, updatedAt: serverTimestamp() });
+      const instructorSnap = await getDoc(instructorRef);
+
+      if (instructorSnap.exists()) {
+        const instData = instructorSnap.data();
+        const courseIds = instData.courseIds || [];
+        const displayName = instData.displayName || '';
+
+        // Eğer eğitmenin kayıtlı olduğu kurslar varsa, o kurslardan da temizle
+        if (courseIds.length > 0) {
+          const updatePromises = courseIds.map(async (courseId: string) => {
+            const courseRef = doc(db, 'courses', courseId);
+            const courseSnap = await getDoc(courseRef);
+            if (courseSnap.exists()) {
+              const courseData = courseSnap.data();
+              // Sadece bu okula ait kursları temizle (isteğe bağlı ama daha güvenli)
+              if (courseData.schoolId === schoolInfo.id) {
+                await updateDoc(courseRef, {
+                  instructorIds: arrayRemove(selectedInstructorId),
+                  instructorNames: arrayRemove(displayName),
+                  updatedAt: serverTimestamp()
+                });
+              }
+            }
+          });
+          await Promise.all(updatePromises);
+        }
+      }
+
+      // Hem schoolId (legacy) hem de schoolIds (array) alanlarından temizle, courseIds'i de sıfırla
+      await updateDoc(instructorRef, {
+        schoolId: null,
+        schoolName: null,
+        schoolIds: arrayRemove(schoolInfo.id),
+        courseIds: [], // Okuldan ayrıldığı için kurs bağlarını da koparalım
+        updatedAt: serverTimestamp()
+      });
+
       setInstructors(instructors.filter(instructor => instructor.id !== selectedInstructorId));
-      setSuccessMessage('Eğitmen okul listenizden kaldırıldı.');
+      setSuccessMessage('Eğitmen okul listenizden kaldırıldı ve tüm kurs kayıtları temizlendi.');
       setLoading(false);
       setDeleteConfirmOpen(false);
       setSelectedInstructorId(null);
