@@ -8,6 +8,8 @@ import { toast } from 'react-hot-toast';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../api/firebase/firebase';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
+
 
 interface TicketFormData {
   festivalName: string;
@@ -49,6 +51,8 @@ export const TicketSaleForm: React.FC = () => {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+
 
   const calculateDiscount = () => {
     if (formData.originalPrice && formData.discountedPrice) {
@@ -124,8 +128,10 @@ export const TicketSaleForm: React.FC = () => {
           instagram: formData.instagramHandle ? `@${formData.instagramHandle.replace('@', '')}` : 'Belirtilmedi'
         },
         olusturulmaTarihi: serverTimestamp(),
-        durum: 'aktif'
+        durum: 'aktif',
+        sellerId: currentUser?.uid || 'unknown'
       };
+
 
       // Firebase'e kaydet
       await addDoc(collection(db, 'tickets'), ticketData);

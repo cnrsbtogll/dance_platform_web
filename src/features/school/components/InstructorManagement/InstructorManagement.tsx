@@ -178,7 +178,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
       const q = query(
         instructorsRef,
         where('role', '==', 'instructor'),
-        where('schoolId', '==', currentUser.uid),
+        where('schoolId', '==', schoolInfo.id),
         orderBy('createdAt', 'desc')
       );
       const querySnapshot = await getDocs(q);
@@ -240,7 +240,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
   const handleSubmit = async () => {
     if (!currentUser?.uid) { setError('Oturum bilgisi bulunamadı.'); return; }
-    const currentUserId = currentUser.uid;
+    const managedSchoolId = schoolInfo.id;
     try {
       setLoading(true);
       if (isEdit) {
@@ -267,16 +267,16 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           const existingUserId = existingUser.id;
           const userData = existingUser.data();
           if (userData.role === 'instructor' || (Array.isArray(userData.role) && userData.role.includes('instructor'))) {
-            await updateDoc(doc(db, 'users', existingUserId), { schoolId: currentUserId, schoolName: schoolInfo.displayName, updatedAt: serverTimestamp() });
-            setInstructors([{ ...userData as Instructor, id: existingUserId, schoolId: currentUserId, schoolName: schoolInfo.displayName } as any, ...instructors]);
+            await updateDoc(doc(db, 'users', existingUserId), { schoolId: managedSchoolId, schoolName: schoolInfo.displayName, updatedAt: serverTimestamp() });
+            setInstructors([{ ...userData as Instructor, id: existingUserId, schoolId: managedSchoolId, schoolName: schoolInfo.displayName } as any, ...instructors]);
             setSuccessMessage('Mevcut eğitmen okulunuza bağlandı.');
           } else {
             const currentRole = userData.role;
             let newRole = Array.isArray(currentRole)
               ? (!currentRole.includes('instructor') ? [...currentRole, 'instructor'] : currentRole)
               : (typeof currentRole === 'string' ? (currentRole === 'instructor' ? currentRole : ['instructor', currentRole]) : 'instructor');
-            await updateDoc(doc(db, 'users', existingUserId), { role: newRole, schoolId: currentUserId, schoolName: schoolInfo.displayName, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience, updatedAt: serverTimestamp() });
-            setInstructors([{ ...userData as Instructor, id: existingUserId, role: newRole, schoolId: currentUserId, schoolName: schoolInfo.displayName, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience } as any, ...instructors]);
+            await updateDoc(doc(db, 'users', existingUserId), { role: newRole, schoolId: managedSchoolId, schoolName: schoolInfo.displayName, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience, updatedAt: serverTimestamp() });
+            setInstructors([{ ...userData as Instructor, id: existingUserId, role: newRole, schoolId: managedSchoolId, schoolName: schoolInfo.displayName, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience } as any, ...instructors]);
             setSuccessMessage('Kullanıcı eğitmen rolüne yükseltildi ve okulunuza bağlandı.');
           }
         } else {
@@ -290,7 +290,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
             danceStyles: formData.danceStyles,
             biography: formData.biography,
             experience: formData.experience,
-            schoolId: currentUserId,
+            schoolId: managedSchoolId,
             schoolName: schoolInfo.displayName,
             photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
             createdAt: serverTimestamp(),

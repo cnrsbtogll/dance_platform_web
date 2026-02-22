@@ -323,6 +323,7 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
 
 interface StudentManagementProps {
   isAdmin?: boolean;
+  schoolId?: string;
   colorVariant?: 'instructor' | 'school';
 }
 
@@ -334,7 +335,7 @@ interface Course {
   instructorId: string;
 }
 
-export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = false, colorVariant = 'instructor' }) => {
+export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = false, schoolId, colorVariant = 'instructor' }) => {
   const { currentUser } = useAuth();
   const [students, setStudents] = useState<FirebaseUser[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<FirebaseUser[]>([]);
@@ -420,10 +421,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           orderBy('createdAt', 'desc')
         );
       } else if (userRole === 'school') {
-        console.log('School mode: fetching students for school', currentUser?.uid);
+        const effectiveSchoolId = schoolId || userData?.schoolId || currentUser?.uid;
+        console.log('School mode: fetching students for school', effectiveSchoolId);
         studentsQuery = query(
           usersRef,
-          where('schoolId', '==', currentUser?.uid),
+          where('schoolId', '==', effectiveSchoolId),
           where('role', '==', 'student')
         );
       } else if (userRole === 'instructor') {
@@ -523,6 +525,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   // Add new student
   const addNewStudent = (): void => {
     setSelectedStudent(null);
+    const effectiveSchoolId = schoolId || (userRole === 'school' ? (currentUser as any)?.schoolId : '');
+
     setFormData({
       displayName: '',
       email: '',
@@ -531,7 +535,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       level: 'beginner',
       photoURL: generateInitialsAvatar('?', 'student'),
       instructorId: isAdmin ? '' : currentUser?.uid || '',
-      schoolId: '',
+      schoolId: effectiveSchoolId || '',
       courseIds: []
     });
     setEditMode(true);
@@ -773,9 +777,17 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     setSuccess(null);
 
     try {
-      console.log('Form submission - Current user role:', userRole);
-      console.log('Form data:', formData);
-      console.log('Selected courses:', courses.filter(c => formData.courseIds.includes(c.id)));
+      // Define effectiveSchoolId here to be used throughout the function
+      // Custom destructuring to avoid shadowing the prop schoolId
+      const managedSchoolId = schoolId || (userRole.includes('school') ? (currentUser as any)?.schoolId : formData.schoolId);
+      console.log('Form submission - Using managedSchoolId:', managedSchoolId);
+
+      // Get school name for both update and create
+      let schoolNameText = '';
+      if (managedSchoolId) {
+        const selectedSchool = schools.find(s => s.id === managedSchoolId);
+        schoolNameText = selectedSchool?.displayName || '';
+      }
 
       if (selectedStudent) {
         // Update existing student
@@ -788,25 +800,14 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           instructorName = selectedInstructor?.displayName || '';
         }
 
-        // Use current user's ID as schoolId for school users
-        const schoolId = userRole.includes('school') ? currentUser?.uid : formData.schoolId;
-        console.log('Using schoolId:', schoolId);
-
-        // Get school name
-        let schoolName = '';
-        if (schoolId) {
-          const selectedSchool = schools.find(s => s.id === schoolId);
-          schoolName = selectedSchool?.displayName || '';
-        }
-
         const updateData = {
           displayName: formData.displayName,
           phone: formData.phone,
           level: formData.level,
           instructorId: formData.instructorId || null,
           instructorName: instructorName || null,
-          schoolId: schoolId || null,
-          schoolName: schoolName || null,
+          schoolId: managedSchoolId || null,
+          schoolName: schoolNameText || null,
           photoURL: formData.photoURL || DEFAULT_STUDENT_IMAGE,
           courseIds: formData.courseIds || [],
           updatedAt: serverTimestamp()
@@ -826,8 +827,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               level: formData.level,
               instructorId: formData.instructorId || null,
               instructorName: instructorName || null,
-              schoolId: formData.schoolId || null,
-              schoolName: schoolName || null,
+              schoolId: managedSchoolId || null,
+              schoolName: schoolNameText || null,
               photoURL: formData.photoURL || DEFAULT_STUDENT_IMAGE,
               courseIds: formData.courseIds || [],
               updatedAt: serverTimestamp() as Timestamp
@@ -861,13 +862,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           instructorName = selectedInstructor?.displayName || '';
         }
 
-        // Get school name if a school is selected
-        let schoolName = '';
-        if (formData.schoolId) {
-          const selectedSchool = schools.find(s => s.id === formData.schoolId);
-          schoolName = selectedSchool?.displayName || '';
-        }
-
         // Davet gönder
         await sendInvitationEmail(formData.email, {
           displayName: formData.displayName,
@@ -875,8 +869,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           phoneNumber: formData.phone,
           instructorId: formData.instructorId,
           instructorName: instructorName,
-          schoolId: userRole.includes('school') ? currentUser?.uid : formData.schoolId,
-          schoolName: schoolName,
+          schoolId: managedSchoolId,
+          schoolName: schoolNameText,
           photoURL: formData.photoURL,
           courseIds: formData.courseIds,
           password: formData.password // Pass the password from form
@@ -1069,10 +1063,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           orderBy('displayName', 'asc')
         );
       } else if (currentUserRole === 'school') {
-        console.log('School: fetching instructors for school', currentUser?.uid);
+        const effectiveSchoolId = schoolId || userData?.schoolId || currentUser?.uid;
+        console.log('School: fetching instructors for school', effectiveSchoolId);
         q = query(
           instructorsRef,
-          where('schoolId', '==', currentUser?.uid),
+          where('schoolId', '==', effectiveSchoolId),
           where('status', '==', 'active'),
           orderBy('displayName', 'asc')
         );

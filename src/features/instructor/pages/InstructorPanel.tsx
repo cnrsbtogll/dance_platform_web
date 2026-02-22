@@ -14,6 +14,9 @@ import AttendanceManagement from '../../../features/shared/components/attendance
 import ProgressTracking from '../../../features/shared/components/progress/ProgressTracking';
 import BadgeSystem from '../../../features/shared/components/badges/BadgeSystem';
 import CustomSelect from '../../../common/components/ui/CustomSelect';
+import EarningsManagement from '../../../features/shared/components/earnings/EarningsManagement';
+import { Payments as PaymentsIcon } from '@mui/icons-material';
+
 
 interface InstructorPanelProps {
   user: any; // TODO: Add proper type
@@ -31,7 +34,8 @@ interface Course {
 function InstructorPanel({ user }: InstructorPanelProps) {
   const { isDark } = useTheme();
   const instructorTheme = createInstructorTheme(isDark ? 'dark' : 'light');
-  const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'students' | 'schedule' | 'attendance' | 'progress' | 'badges'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'students' | 'schedule' | 'attendance' | 'progress' | 'badges' | 'earnings'>('profile');
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -183,7 +187,20 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 </svg>
                 Rozetler
               </button>
+              <button
+                onClick={() => setActiveTab('earnings')}
+                className={`py-3 px-4 text-center font-medium text-sm border-b-2 flex items-center ${activeTab === 'earnings'
+                  ? 'border-instructor text-instructor'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
+                  }`}
+              >
+                <div className="flex items-center">
+                  <PaymentsIcon className="w-5 h-5 mr-1" />
+                  Kazançlar
+                </div>
+              </button>
             </div>
+
           </div>
 
           {/* Tab Navigation - Desktop */}
@@ -252,7 +269,17 @@ function InstructorPanel({ user }: InstructorPanelProps) {
               >
                 Rozetler
               </button>
+              <button
+                onClick={() => setActiveTab('earnings')}
+                className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'earnings'
+                  ? 'border-instructor text-instructor'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
+                  }`}
+              >
+                Kazançlarım
+              </button>
             </nav>
+
           </div>
 
           <div className="p-4 sm:p-6">
@@ -296,6 +323,15 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                 isAdmin={false}
               />
             )}
+
+            {activeTab === 'earnings' && (
+              <EarningsManagement
+                userId={user.id}
+                role="instructor"
+                colorVariant="instructor"
+              />
+            )}
+
           </div>
         </div>
 

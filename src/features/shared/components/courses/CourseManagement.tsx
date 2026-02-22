@@ -426,18 +426,22 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         let q = query(coursesRef, orderBy('createdAt', 'desc')); // Default query for admin
 
         if (!isAdmin) {
-          if (userRole === 'school') {
-            console.log('School: Okula ait kurslar getiriliyor -', currentUser.uid);
+          // If a schoolId prop is provided, prioritize it. Otherwise use the specific target (instructorId or schoolId)
+          const targetSchoolId = schoolId || (userRole === 'school' ? currentUser.uid : null);
+          const targetInstructorId = instructorId || (userRole === 'instructor' ? currentUser.uid : null);
+
+          if (targetSchoolId) {
+            console.log('School: Okula ait kurslar getiriliyor -', targetSchoolId);
             q = query(
               coursesRef,
-              where('schoolId', '==', currentUser.uid),
+              where('schoolId', '==', targetSchoolId),
               orderBy('createdAt', 'desc')
             );
-          } else if (userRole === 'instructor') {
-            console.log('Instructor: Eğitmene ait kurslar getiriliyor -', currentUser.uid);
+          } else if (targetInstructorId) {
+            console.log('Instructor: Eğitmene ait kurslar getiriliyor -', targetInstructorId);
             q = query(
               coursesRef,
-              where('instructorId', '==', currentUser.uid),
+              where('instructorId', '==', targetInstructorId),
               orderBy('createdAt', 'desc')
             );
           }
@@ -539,12 +543,14 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       const instructorsRef = collection(db, 'instructors');
 
       let q;
-      // Okul yöneticisi için kendi ID'sine bağlı eğitmenleri getir
+      // Okul yöneticisi için kendi ID'sine bağlı veya prop ile gelen schoolId'ye bağlı eğitmenleri getir
+      const targetSchoolId = schoolId || auth.currentUser.uid;
+
       if (!isAdmin) {
-        console.log('Okul yöneticisi için eğitmen sorgusu oluşturuluyor:', auth.currentUser.uid);
+        console.log('Okul yöneticisi için eğitmen sorgusu oluşturuluyor. Okul ID:', targetSchoolId);
         q = query(
           instructorsRef,
-          where('schoolId', '==', auth.currentUser.uid),
+          where('schoolId', '==', targetSchoolId),
           where('status', '==', 'active')
         );
       } else {
@@ -715,10 +721,13 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         }));
       } else if (role === 'school') {
         // Okul: Sadece eğitmen seçebilir, okul kendisidir
+        const effectiveSchoolId = userData?.schoolId || currentUser.uid;
+        console.log('Role school detected, setting effective schoolId:', effectiveSchoolId);
+
         fetchInstructors();
         setFormData(prev => ({
           ...prev,
-          schoolId: currentUser.uid,
+          schoolId: effectiveSchoolId,
           schoolName: userData?.displayName || 'Bilinmeyen Okul'
         }));
       }
@@ -1255,8 +1264,16 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       // Inherit school location
       let finalLocation = formData.location;
       if (formData.schoolId) {
-        const schoolRef = doc(db, 'users', formData.schoolId);
-        const schoolSnap = await getDoc(schoolRef);
+        // Try schools collection first as it's the standard for schoolId
+        const schoolRef = doc(db, 'schools', formData.schoolId);
+        let schoolSnap = await getDoc(schoolRef);
+
+        // Fallback to users if not found in schools (legacy or specific setup)
+        if (!schoolSnap.exists()) {
+          const userRef = doc(db, 'users', formData.schoolId);
+          schoolSnap = await getDoc(userRef);
+        }
+
         if (schoolSnap.exists()) {
           const schoolData = schoolSnap.data();
           if (schoolData.location) {

@@ -45,6 +45,8 @@ import BadgeSystem from '../../../features/shared/components/badges/BadgeSystem'
 import ScheduleManagement from '../../../features/shared/components/schedule/ScheduleManagement';
 import InstructorManagement from '../components/InstructorManagement/InstructorManagement';
 import { SchoolProfile } from '../components/SchoolProfile/SchoolProfile';
+import EarningsManagement from '../../../features/shared/components/earnings/EarningsManagement';
+
 
 interface Course {
   id: string;
@@ -69,7 +71,8 @@ interface SchoolInfo {
   [key: string]: any;
 }
 
-type TabType = 'dashboard' | 'profile' | 'instructors' | 'courses' | 'students' | 'schedule' | 'attendance' | 'progress' | 'badges';
+type TabType = 'dashboard' | 'profile' | 'instructors' | 'courses' | 'students' | 'schedule' | 'attendance' | 'progress' | 'badges' | 'earnings';
+
 
 const SchoolAdmin: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -84,6 +87,13 @@ const SchoolAdmin: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
+  const [earningsSummary, setEarningsSummary] = useState<{ totalGross: number, monthlyGross: number, pendingAmount: number } | null>(null);
+  const [studentCount, setStudentCount] = useState<number>(0);
+  const [instructorCount, setInstructorCount] = useState<number>(0);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+
+
+
 
   useEffect(() => {
     if (schoolInfo && activeTab === 'students') {
@@ -189,6 +199,130 @@ const SchoolAdmin: React.FC = () => {
     }
   }, [activeTab, schoolInfo?.id]);
 
+  useEffect(() => {
+    const fetchEarnings = async () => {
+      if (!schoolInfo?.id) return;
+      try {
+        const { summary } = await import('../../../api/services/earningsService').then(m => m.getSchoolEarnings(schoolInfo.id));
+        setEarningsSummary(summary);
+      } catch (err) {
+        console.error('Error fetching earnings summary:', err);
+      }
+    };
+
+    if (activeTab === 'dashboard') {
+      fetchEarnings();
+    }
+  }, [activeTab, schoolInfo?.id]);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (!schoolInfo?.id) return;
+      try {
+        const usersRef = collection(db, 'users');
+
+        // Note: Firestore doesn't support mixing array-contains and string equality in a simple way for the same field.
+        // We will fetch based on schoolId and filter in memory if necessary, or use multiple queries.
+        // For efficiency, since schoolId is already a strong filter, we'll fetch then filter or use logic that supports existing data.
+
+        // Revised approach: Fetch all school users once to avoid multiple narrow queries
+        const schoolUsersQuery = query(
+          usersRef,
+          where('schoolId', '==', schoolInfo.id)
+        );
+        const schoolUsersSnapshot = await getDocs(schoolUsersQuery);
+
+        let sCount = 0;
+        let iCount = 0;
+        const schoolUsersData: any[] = [];
+
+        schoolUsersSnapshot.forEach(doc => {
+          const data = doc.data();
+          const roles = Array.isArray(data.role) ? data.role : [data.role];
+
+          if (roles.includes('student')) sCount++;
+          if (roles.includes('instructor')) iCount++;
+
+          schoolUsersData.push({ id: doc.id, ...data, roles });
+        });
+
+        setStudentCount(sCount);
+        setInstructorCount(iCount);
+
+        // Fetch Recent Activities
+        const activities: any[] = [];
+
+        // Latest 3 Students (from the fetched data)
+        const latestStudents = schoolUsersData
+          .filter(u => u.roles.includes('student'))
+          .sort((a, b) => {
+            const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
+            const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
+            return dateB.getTime() - dateA.getTime();
+          })
+          .slice(0, 3);
+
+        latestStudents.forEach(data => {
+          activities.push({
+            id: data.id,
+            type: 'student',
+            icon: <GroupsRoundedIcon />,
+            color: "text-blue-600",
+            bg: "bg-blue-100 dark:bg-blue-900/30",
+            title: "Yeni Öğrenci Kaydı",
+            desc: `Öğrenci: ${data.displayName}`,
+            date: data.createdAt?.toDate?.() || new Date(data.createdAt) || new Date(),
+          });
+        });
+
+        // Latest 3 Transactions
+        try {
+          const earningsData = await import('../../../api/services/earningsService').then(m => m.getEarningsData(schoolInfo.id, 'school'));
+          earningsData.transactions.slice(0, 3).forEach(tx => {
+            activities.push({
+              id: tx.id,
+              type: 'payment',
+              icon: <PaymentsIcon />,
+              color: "text-green-600",
+              bg: "bg-green-100 dark:bg-green-900/30",
+              title: tx.status === 'confirmed' ? "Ödeme Onaylandı" : "Yeni İşlem",
+              desc: `${tx.studentName} - ${tx.itemName}`,
+              date: new Date(tx.date),
+            });
+          });
+        } catch (e) {
+          console.error('Activities fetch error (earnings):', e);
+        }
+
+        // Sort and Set
+        const sortedActivities = activities
+          .sort((a, b) => b.date.getTime() - a.date.getTime())
+          .slice(0, 5)
+          .map(act => {
+            const diff = Math.floor((new Date().getTime() - act.date.getTime()) / 60000);
+            let timeStr = 'Yeni';
+            if (diff > 0) {
+              if (diff < 60) timeStr = `${diff} dk önce`;
+              else if (diff < 1440) timeStr = `${Math.floor(diff / 60)} saat önce`;
+              else timeStr = `${Math.floor(diff / 1440)} gün önce`;
+            }
+            return { ...act, time: timeStr };
+          });
+
+        setRecentActivities(sortedActivities);
+      } catch (err) {
+        console.error('Error fetching dashboard counts:', err);
+      }
+    };
+
+    if (activeTab === 'dashboard') {
+      fetchCounts();
+    }
+  }, [activeTab, schoolInfo?.id]);
+
+
+
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -201,14 +335,17 @@ const SchoolAdmin: React.FC = () => {
   const navItems = [
     { id: 'dashboard', label: 'Özet', icon: <DashboardRoundedIcon fontSize="small" /> },
     { id: 'profile', label: 'Okul Profili', icon: <StorefrontRoundedIcon fontSize="small" /> },
+    { id: 'earnings', label: 'Kazançlar', icon: <PaymentsIcon fontSize="small" /> },
+    { id: 'courses', label: 'Kurslar', icon: <MenuBookRoundedIcon fontSize="small" /> },
     { id: 'students', label: 'Öğrenciler', icon: <GroupsRoundedIcon fontSize="small" /> },
     { id: 'instructors', label: 'Eğitmenler', icon: <PersonRoundedIcon fontSize="small" /> },
-    { id: 'courses', label: 'Kurslar', icon: <MenuBookRoundedIcon fontSize="small" /> },
     { id: 'schedule', label: 'Program', icon: <CalendarMonthRoundedIcon fontSize="small" /> },
     { id: 'attendance', label: 'Yoklama', icon: <FactCheckRoundedIcon fontSize="small" /> },
     { id: 'progress', label: 'İlerleme', icon: <TrendingUpRoundedIcon fontSize="small" /> },
     { id: 'badges', label: 'Rozetler', icon: <EmojiEventsRoundedIcon fontSize="small" /> },
   ];
+
+
 
   if (loading) {
     return (
@@ -237,7 +374,10 @@ const SchoolAdmin: React.FC = () => {
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all">
+        <div
+          className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all cursor-pointer"
+          onClick={() => setActiveTab('students')}
+        >
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
               <GroupsRoundedIcon />
@@ -248,11 +388,14 @@ const SchoolAdmin: React.FC = () => {
           </div>
           <div>
             <p className="text-slate-500 dark:text-[#cba990] text-sm font-medium mb-1">Toplam Öğrenci</p>
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">1,240</h3>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{studentCount.toLocaleString('tr-TR')}</h3>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all">
+        <div
+          className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all cursor-pointer"
+          onClick={() => setActiveTab('instructors')}
+        >
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-amber-600 dark:text-amber-400">
               <PersonRoundedIcon />
@@ -263,17 +406,20 @@ const SchoolAdmin: React.FC = () => {
           </div>
           <div>
             <p className="text-slate-500 dark:text-[#cba990] text-sm font-medium mb-1">Toplam Eğitmen</p>
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">58</h3>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{instructorCount.toLocaleString('tr-TR')}</h3>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all">
+        <div
+          className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all cursor-pointer"
+          onClick={() => setActiveTab('courses')}
+        >
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400">
               <MenuBookRoundedIcon />
             </div>
             <span className="inline-flex items-center text-xs font-medium text-slate-500 bg-slate-50 dark:bg-slate-800 dark:text-slate-400 px-2 py-1 rounded-full">
-              0.0%
+              {courses.length > 0 ? 'Aktif' : 'Yok'}
             </span>
           </div>
           <div>
@@ -282,7 +428,10 @@ const SchoolAdmin: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all">
+        <div
+          className="bg-white dark:bg-[#231810] rounded-xl p-5 border border-slate-200 dark:border-[#493322] shadow-sm flex flex-col justify-between h-full group hover:border-school/30 transition-all cursor-pointer"
+          onClick={() => setActiveTab('earnings')}
+        >
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
               <PaymentsIcon />
@@ -293,10 +442,13 @@ const SchoolAdmin: React.FC = () => {
           </div>
           <div>
             <p className="text-slate-500 dark:text-[#cba990] text-sm font-medium mb-1">Aylık Gelir</p>
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">₺45,200</h3>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">
+              ₺{earningsSummary ? earningsSummary.monthlyGross.toLocaleString('tr-TR') : '...'}
+            </h3>
           </div>
         </div>
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 flex flex-col gap-6">
@@ -328,27 +480,39 @@ const SchoolAdmin: React.FC = () => {
           <div className="bg-white dark:bg-[#231810] rounded-xl border border-slate-200 dark:border-[#493322] shadow-sm overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-[#493322]">
               <h3 className="text-lg font-bold text-slate-800 dark:text-white">Son Etkinlikler</h3>
-              <button className="text-sm font-medium text-school hover:text-school/80">Tümünü Gör</button>
+              <button
+                onClick={() => setActiveTab('students')}
+                className="text-sm font-medium text-school hover:text-school/80"
+              >
+                Tümünü Gör
+              </button>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-[#493322]">
-              {[
-                { icon: <PaymentsIcon />, color: "text-green-600", bg: "bg-green-100 dark:bg-green-900/30", title: "Ödeme Alındı", desc: "Öğrenci: Alex Johnson", time: "2 dk önce" },
-                { icon: <GroupsRoundedIcon />, color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30", title: "Yeni Öğrenci Kaydı", desc: "Öğrenci: Sarah Connor", time: "1 saat önce" },
-                { icon: <MenuBookRoundedIcon />, color: "text-amber-600", bg: "bg-amber-100 dark:bg-amber-900/30", title: "Kurs Programı Güncellendi", desc: "Eğitmen: Mr. Anderson", time: "3 saat önce" }
-              ].map((act, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-[#493322]/30 transition-colors cursor-pointer">
-                  <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${act.bg} ${act.color}`}>
-                    {act.icon}
+              {recentActivities.length > 0 ? (
+                recentActivities.map((act) => (
+                  <div
+                    key={act.id}
+                    className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-[#493322]/30 transition-colors cursor-pointer"
+                    onClick={() => act.type === 'student' ? setActiveTab('students') : setActiveTab('earnings')}
+                  >
+                    <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${act.bg} ${act.color}`}>
+                      {act.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 dark:text-white truncate">{act.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-[#cba990]">{act.desc}</p>
+                    </div>
+                    <span className="text-xs text-slate-400 font-medium whitespace-nowrap">{act.time}</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800 dark:text-white truncate">{act.title}</p>
-                    <p className="text-xs text-slate-500 dark:text-[#cba990]">{act.desc}</p>
-                  </div>
-                  <span className="text-xs text-slate-400 font-medium whitespace-nowrap">{act.time}</span>
+                ))
+              ) : (
+                <div className="p-8 text-center text-slate-500 text-sm">
+                  Henüz bir etkinlik bulunmuyor.
                 </div>
-              ))}
+              )}
             </div>
           </div>
+
         </div>
 
         <div className="flex flex-col gap-6">
@@ -569,6 +733,7 @@ const SchoolAdmin: React.FC = () => {
               {activeTab === 'students' && schoolInfo && (
                 <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
                   <StudentManagement
+                    schoolId={schoolInfo.id}
                     isAdmin={false}
                     colorVariant="school"
                   />
@@ -615,6 +780,18 @@ const SchoolAdmin: React.FC = () => {
                   />
                 </div>
               )}
+
+              {activeTab === 'earnings' && schoolInfo && (
+                <div className="bg-white dark:bg-[#231810] shadow-sm border border-slate-200 dark:border-[#493322] rounded-xl p-6">
+                  <EarningsManagement
+                    userId={schoolInfo.id}
+                    role="school"
+                    colorVariant="school"
+                  />
+                </div>
+              )}
+
+
             </motion.div>
           </div>
         </main>
