@@ -87,6 +87,7 @@ interface FirebaseUser {
   courseIds?: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  rating?: number;
 }
 
 // Instructor type
@@ -143,6 +144,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, photoURL, stud
     </div>
   );
 };
+
+const StarIcon = ({ filled = true }: { filled?: boolean }) => (
+  <svg className={`w-4 h-4 ${filled ? 'text-school-yellow fill-school-yellow' : 'text-gray-300 fill-gray-300'}`} viewBox="0 0 20 20">
+    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+  </svg>
+);
 
 // Student Photo Uploader Component
 interface StudentPhotoUploaderProps {
@@ -1061,9 +1068,14 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className={`hover:bg-gray-50 ${colorVariant === 'school' ? 'dark:hover:bg-[#493322]/30' : 'dark:hover:bg-slate-800'}`}
+        className={`transition-colors ${isAdmin
+          ? 'hover:bg-gray-50 dark:hover:bg-slate-800'
+          : colorVariant === 'school'
+            ? 'hover:bg-school/5 dark:hover:bg-school/10'
+            : 'hover:bg-instructor/5 dark:hover:bg-instructor/10'
+          }`}
       >
-        <td className="px-6 py-4 whitespace-nowrap">
+        <td className="px-4 py-4 whitespace-nowrap">
           <div className="flex items-center">
             <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
               {student.photoURL ? (
@@ -1093,12 +1105,12 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             </div>
           </div>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap">
+        <td className="px-4 py-4 whitespace-nowrap">
           <div className="text-sm text-gray-900 dark:text-white max-w-[200px] truncate" title={student.email}>
             {student.email}
           </div>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap">
+        <td className="px-4 py-4 whitespace-nowrap">
           <div className="text-sm text-gray-900 dark:text-white">
             {student.level === 'beginner' && 'Başlangıç'}
             {student.level === 'intermediate' && 'Orta'}
@@ -1107,15 +1119,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             {!student.level && '-'}
           </div>
         </td>
-        {userRole !== 'instructor' && (
-          <td className="px-6 py-4 whitespace-nowrap">
-            <div className="text-sm text-gray-900 dark:text-white">
-              {student.instructorName || '-'}
-            </div>
-          </td>
-        )}
         {userRole !== 'school' && (
-          <td className="px-6 py-4 whitespace-nowrap">
+          <td className="px-4 py-4 whitespace-nowrap">
             <SchoolProfile
               school={{
                 id: student.schoolId || '',
@@ -1125,7 +1130,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             />
           </td>
         )}
-        <td className="px-6 py-4 whitespace-nowrap">
+        <td className="px-4 py-4 whitespace-nowrap">
+          <div className="flex items-center gap-1">
+            <StarIcon filled={true} />
+            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+              {student.rating ? student.rating.toFixed(1) : '0.0'}
+            </span>
+          </div>
+        </td>
+        <td className="px-4 py-4 whitespace-nowrap">
           <div className="text-sm text-gray-900 dark:text-white">
             {student.courseIds && student.courseIds.length > 0 ? (
               <div className="flex flex-wrap gap-1">
@@ -1143,17 +1156,22 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             )}
           </div>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium min-w-[140px]">
-          <div className="flex justify-end space-x-2">
+        <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <div className="flex justify-end gap-2">
             <button
               onClick={() => handleOpenQuickAssign(student)}
-              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+              className="inline-flex items-center px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 rounded-md text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all shadow-sm active:scale-95"
             >
               Kursa Ata
             </button>
             <button
               onClick={() => editStudent(student)}
-              className={colorVariant === 'school' ? 'text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter' : 'text-instructor hover:text-instructor-dark dark:text-instructor-light dark:hover:text-instructor-lighter'}
+              className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm active:scale-95 ${isAdmin
+                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                : colorVariant === 'school'
+                  ? 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30 hover:bg-school/20 dark:hover:bg-school/30'
+                  : 'bg-instructor/10 dark:bg-instructor/20 text-instructor dark:text-instructor-light border border-instructor/20 dark:border-instructor/30 hover:bg-instructor/20 dark:hover:bg-instructor/30'
+                }`}
             >
               Düzenle
             </button>
@@ -1162,7 +1180,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 setStudentToDeleteId(student.id);
                 setDeleteConfirmOpen(true);
               }}
-              className="text-red-600 hover:text-red-900"
+              className="inline-flex items-center px-3 py-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-md text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/20 transition-all shadow-sm active:scale-95"
             >
               Sil
             </button>
@@ -1664,49 +1682,64 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         )}
 
         {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className={`min-w-full divide-y ${colorVariant === 'school' ? 'divide-gray-200 dark:divide-[#493322]' : 'divide-gray-200 dark:divide-gray-700'}`}>
-            <thead className={colorVariant === 'school' ? 'bg-gray-50 dark:bg-[#231810]' : 'bg-gray-50 dark:bg-slate-900'}>
-              <tr>
-                <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                  Öğrenci
-                </th>
-                <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                  E-posta
-                </th>
-                <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                  Dans Seviyesi
-                </th>
-                {userRole !== 'instructor' && (
-                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                    Eğitmen
-                  </th>
-                )}
-                {userRole !== 'school' && (
-                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                    Okul
-                  </th>
-                )}
-                <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                  Kurslar
-                </th>
-                <th scope="col" className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                  İşlemler
-                </th>
-              </tr>
-            </thead>
-            <tbody className={`divide-y ${colorVariant === 'school' ? 'bg-white dark:bg-[#1a120b] divide-gray-200 dark:divide-[#493322]' : 'bg-white dark:bg-slate-800 divide-gray-200 dark:divide-slate-700'}`}>
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student) => renderStudent(student))
-              ) : (
+        <div className={`rounded-lg shadow overflow-hidden border ${isAdmin
+          ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+          : colorVariant === 'school'
+            ? 'bg-school-bg border-school/40 dark:border-school/30 dark:bg-[#1a120b]'
+            : 'bg-instructor-bg/50 dark:bg-[#0f172a] border-instructor/30 dark:border-instructor/20'
+          }`}>
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className={isAdmin
+                ? 'bg-gray-50 dark:bg-slate-900'
+                : colorVariant === 'school'
+                  ? 'bg-school-bg dark:bg-school/20'
+                  : 'bg-instructor-bg/80 dark:bg-instructor/10'
+              }>
                 <tr>
-                  <td colSpan={6} className={`px-6 py-4 text-center text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-                    {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
-                  </td>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Öğrenci
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    E-posta
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Dans Seviyesi
+                  </th>
+                  {userRole !== 'school' && (
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Okul
+                    </th>
+                  )}
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Değerlendirme
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Kurslar
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    İşlemler
+                  </th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className={`divide-y ${isAdmin
+                ? 'bg-white dark:bg-slate-800 divide-gray-200 dark:divide-slate-700'
+                : colorVariant === 'school'
+                  ? 'bg-school-bg dark:bg-[#1a120b] divide-school/20 dark:divide-[#493322]'
+                  : 'bg-instructor-bg/30 dark:bg-slate-900/40 divide-instructor/20 dark:divide-slate-800'
+                }`}>
+                {filteredStudents.length > 0 ? (
+                  filteredStudents.map((student) => renderStudent(student))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Mobile Card View */}
@@ -1736,23 +1769,29 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   <div className="flex space-x-2 flex-shrink-0">
                     <button
                       onClick={() => handleOpenQuickAssign(student)}
-                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                      className="inline-flex items-center px-2 py-1 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 rounded-md text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all active:scale-95"
                     >
                       Kursa Ata
                     </button>
                     <button
                       onClick={() => editStudent(student)}
-                      className={colorVariant === 'school' ? 'text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter' : 'text-instructor hover:text-instructor-dark dark:text-instructor-light dark:hover:text-instructor-lighter'}
+                      className={`inline-flex items-center p-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${colorVariant === 'school'
+                        ? 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30'
+                        : 'bg-instructor/10 dark:bg-instructor/20 text-instructor dark:text-instructor-light border border-instructor/20 dark:border-instructor/30'
+                        }`}
                     >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </button>
                     <button
-                      onClick={() => deleteStudentHandler(student.id)}
-                      className="text-red-600 hover:text-red-900"
+                      onClick={() => {
+                        setStudentToDeleteId(student.id);
+                        setDeleteConfirmOpen(true);
+                      }}
+                      className="inline-flex items-center p-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-md text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/20 transition-all active:scale-95"
                     >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
@@ -1769,16 +1808,17 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                       {!student.level && '-'}
                     </p>
                   </div>
+                  <div>
+                    <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Değerlendirme:</span>
+                    <div className="flex items-center gap-1 font-medium mt-0.5">
+                      <StarIcon filled={true} />
+                      <span>{student.rating ? student.rating.toFixed(1) : '0.0'}</span>
+                    </div>
+                  </div>
                   {student.phoneNumber && (
                     <div>
                       <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Telefon:</span>
                       <p className="font-medium">{student.phoneNumber}</p>
-                    </div>
-                  )}
-                  {userRole !== 'instructor' && (
-                    <div>
-                      <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Eğitmen:</span>
-                      <p className="font-medium">{student.instructorName || '-'}</p>
                     </div>
                   )}
                   {userRole !== 'school' && (

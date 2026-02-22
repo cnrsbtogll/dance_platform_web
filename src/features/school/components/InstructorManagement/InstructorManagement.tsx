@@ -645,108 +645,122 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
       ) : filteredInstructors.length > 0 ? (
         <>
           {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-[#493322]">
-              <thead className="bg-gray-50 dark:bg-[#231810]">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
-                    Eğitmen
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
-                    E-posta
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
-                    Kurslar
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
-                    Değerlendirme
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#cba990]">
-                    İşlemler
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-[#1a120b] divide-y divide-gray-200 dark:divide-[#493322]">
-                {filteredInstructors.map((instructor) => (
-                  <tr key={instructor.id} className="hover:bg-gray-50 dark:hover:bg-[#231810] transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <Avatar
-                            src={instructor.photoURL}
-                            alt={instructor.displayName}
-                            className="h-10 w-10 ring-1 ring-school/20"
-                            userType="instructor"
-                          />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-school transition-colors">
-                            {instructor.displayName}
+          <div className={`rounded-lg shadow overflow-hidden border ${isAdmin
+            ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+            : 'bg-school-bg border-school/40 dark:border-school/30 dark:bg-[#1a120b]'
+            }`}>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className={isAdmin
+                  ? 'bg-gray-50 dark:bg-slate-900'
+                  : 'bg-school-bg dark:bg-school/20'
+                }>
+                  <tr>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Eğitmen
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      E-posta
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Kurslar
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Değerlendirme
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      İşlemler
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${isAdmin
+                  ? 'bg-white dark:bg-slate-800 divide-gray-200 dark:divide-slate-700'
+                  : 'bg-school-bg dark:bg-[#1a120b] divide-school/20 dark:divide-[#493322]'
+                  }`}>
+                  {filteredInstructors.map((instructor) => (
+                    <tr key={instructor.id} className={`transition-colors ${isAdmin
+                      ? 'hover:bg-gray-50 dark:hover:bg-slate-800'
+                      : 'hover:bg-school/5 dark:hover:bg-school/10'
+                      }`}>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <Avatar
+                              src={instructor.photoURL}
+                              alt={instructor.displayName}
+                              className="h-10 w-10 ring-1 ring-school/20"
+                              userType="instructor"
+                            />
                           </div>
-                          {instructor.phoneNumber && (
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {instructor.phoneNumber}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-school transition-colors">
+                              {instructor.displayName}
                             </div>
+                            {instructor.phoneNumber && (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {instructor.phoneNumber}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-gray-300">{instructor.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <div className="flex flex-wrap gap-1 max-w-[200px]">
+                          {instructor.courseIds && instructor.courseIds.length > 0 ? (
+                            instructor.courseIds.map(courseId => {
+                              const course = courses.find(c => c.id === courseId);
+                              return course ? (
+                                <span key={courseId} className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                                  {course.name}
+                                </span>
+                              ) : null;
+                            })
+                          ) : (
+                            <span className="text-gray-400">-</span>
                           )}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-gray-300">{instructor.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      <div className="flex flex-wrap gap-1 max-w-[200px]">
-                        {instructor.courseIds && instructor.courseIds.length > 0 ? (
-                          instructor.courseIds.map(courseId => {
-                            const course = courses.find(c => c.id === courseId);
-                            return course ? (
-                              <span key={courseId} className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                                {course.name}
-                              </span>
-                            ) : null;
-                          })
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1">
-                        <StarIcon filled={true} />
-                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
-                          {instructor.rating ? instructor.rating.toFixed(1) : '0.0'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleOpenQuickAssign(instructor)}
-                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
-                          title="Kursa Ata"
-                        >
-                          Kursa Ata
-                        </button>
-                        <button
-                          onClick={() => handleOpenDialog(true, instructor)}
-                          className="text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter transition-colors"
-                          title="Düzenle"
-                        >
-                          <PencilIcon />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteConfirmOpen(instructor.id)}
-                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                          title="Kaldır"
-                        >
-                          <TrashIcon />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <StarIcon filled={true} />
+                          <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                            {instructor.rating ? instructor.rating.toFixed(1) : '0.0'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleOpenQuickAssign(instructor)}
+                            className="inline-flex items-center px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 rounded-md text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all shadow-sm active:scale-95"
+                          >
+                            Kursa Ata
+                          </button>
+                          <button
+                            onClick={() => handleOpenDialog(true, instructor)}
+                            className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm active:scale-95 ${isAdmin
+                              ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                              : 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30 hover:bg-school/20 dark:hover:bg-school/30'
+                              }`}
+                          >
+                            Düzenle
+                          </button>
+                          <button
+                            onClick={() => handleDeleteConfirmOpen(instructor.id)}
+                            className="inline-flex items-center px-3 py-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-md text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/20 transition-all shadow-sm active:scale-95"
+                          >
+                            Kaldır
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Mobile Card View */}
@@ -778,20 +792,22 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                   <div className="flex space-x-2 flex-shrink-0">
                     <button
                       onClick={() => handleOpenQuickAssign(instructor)}
-                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 p-1"
-                      title="Kursa Ata"
+                      className="inline-flex items-center px-2 py-1 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 rounded-md text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all active:scale-95"
                     >
                       Kursa Ata
                     </button>
                     <button
                       onClick={() => handleOpenDialog(true, instructor)}
-                      className="text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter p-1"
+                      className={`inline-flex items-center p-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${isAdmin
+                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800'
+                        : 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30'
+                        }`}
                     >
                       <PencilIcon />
                     </button>
                     <button
                       onClick={() => handleDeleteConfirmOpen(instructor.id)}
-                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
+                      className="inline-flex items-center p-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-md text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/20 transition-all active:scale-95"
                     >
                       <TrashIcon />
                     </button>

@@ -127,6 +127,7 @@ interface Course {
   schoolAddress: string;
   createdAt?: any;
   updatedAt?: any;
+  rating?: number;
 }
 
 interface FormData {
@@ -236,6 +237,12 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, course }) 
     </div>
   );
 };
+
+const StarIcon = ({ filled = true }: { filled?: boolean }) => (
+  <svg className={`w-4 h-4 ${filled ? 'text-school-yellow fill-school-yellow' : 'text-gray-300 fill-gray-300'}`} viewBox="0 0 20 20">
+    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+  </svg>
+);
 
 // Timestamp'i tarihe çeviren yardımcı fonksiyon ekle
 const timestampToDate = (timestamp: any): string => {
@@ -1824,7 +1831,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       highlights: courseData.highlights || [],
       tags: courseData.tags || [],
       createdAt: courseData.createdAt,
-      updatedAt: courseData.updatedAt
+      updatedAt: courseData.updatedAt,
+      rating: courseData.rating
     };
   };
 
@@ -2156,6 +2164,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                 <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Program</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Yönetim</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kapasite</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durum</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
               </tr>
@@ -2232,6 +2241,14 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       </div>
                       <span className="text-gray-600 dark:text-gray-400">
                         {students.filter(s => s.courseIds?.includes(course.id)).length}/{course.maxParticipants}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1">
+                      <StarIcon filled={true} />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                        {course.rating ? course.rating.toFixed(1) : '0.0'}
                       </span>
                     </div>
                   </td>
