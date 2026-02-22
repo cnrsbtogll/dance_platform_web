@@ -106,8 +106,8 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
         </div>
 
         {/* Navigation Tabs */}
-        <div className={`border-b border-gray-200 dark:border-slate-700 ${isMobileMenuOpen ? 'block' : 'hidden'} md:block`}>
-          <nav className="flex flex-col md:flex-row -mb-px">
+        <div className={`border-b border-gray-200 dark:border-slate-700 ${isMobileMenuOpen ? 'block' : 'hidden'} md:block overflow-x-auto scrollbar-hide`}>
+          <nav className="flex flex-col md:flex-row -mb-px whitespace-nowrap">
             <button
               onClick={() => {
                 setActiveTab('kullanicilar');

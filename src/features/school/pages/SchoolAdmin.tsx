@@ -35,6 +35,8 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import PaymentsIcon from '@mui/icons-material/Payments';
+import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
+import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 
 // Components
 import { StudentManagement } from '../../../features/shared/components/students/StudentManagement';
@@ -82,6 +84,17 @@ const SchoolAdmin: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('school_sidebar_collapsed') === 'true'; } catch { return false; }
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem('school_sidebar_collapsed', String(next)); } catch { }
+      return next;
+    });
+  };
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -585,42 +598,98 @@ const SchoolAdmin: React.FC = () => {
       <div className="flex min-h-screen w-full bg-school-bg dark:bg-[#1a120b] overflow-hidden font-sans text-slate-900 dark:text-slate-100 antialiased">
 
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-72 h-screen z-20 bg-white dark:bg-[#231810] border-r border-slate-200 dark:border-[#493322] sticky top-0">
-          <div className="flex items-center gap-3 px-6 py-6 border-b border-slate-100 dark:border-[#493322]">
+        <aside
+          className={`hidden lg:flex flex-col h-screen z-20 bg-white dark:bg-[#231810] border-r border-slate-200 dark:border-[#493322] sticky top-0 transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${isSidebarCollapsed ? 'w-16' : 'w-72'
+            }`}
+        >
+          {/* Header */}
+          <div className={`flex items-center border-b border-slate-100 dark:border-[#493322] shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'px-3 py-6 justify-center' : 'px-6 py-6 gap-3'
+            }`}>
             <div
-              className="bg-center bg-no-repeat bg-cover rounded-full size-10 shrink-0 border border-slate-200 dark:border-slate-700"
+              className="bg-center bg-no-repeat bg-cover rounded-full size-10 shrink-0 border border-slate-200 dark:border-slate-700 cursor-pointer"
               style={{ backgroundImage: `url(${schoolInfo?.photoURL || 'https://ui-avatars.com/api/?name=S&background=b45309&color=fff'})` }}
+              onClick={toggleSidebar}
+              title={isSidebarCollapsed ? 'Genişlet' : schoolInfo?.displayName}
             />
-            <div className="flex flex-col">
-              <h1 className="text-slate-900 dark:text-white text-base font-bold leading-tight line-clamp-1">{schoolInfo?.displayName || 'Yükleniyor...'}</h1>
-              <p className="text-slate-500 dark:text-[#cba990] text-xs font-normal">Okul Yönetim Paneli</p>
-            </div>
+            {!isSidebarCollapsed && (
+              <div className="flex flex-col flex-1 min-w-0">
+                <h1 className="text-slate-900 dark:text-white text-base font-bold leading-tight line-clamp-1">{schoolInfo?.displayName || 'Yükleniyor...'}</h1>
+                <p className="text-slate-500 dark:text-[#cba990] text-xs font-normal">Okul Yönetim Paneli</p>
+              </div>
+            )}
+            <button
+              onClick={toggleSidebar}
+              className={`shrink-0 rounded-lg p-1 text-slate-400 hover:text-school hover:bg-slate-100 dark:hover:bg-[#493322] transition-colors ${isSidebarCollapsed ? 'hidden' : ''
+                }`}
+              title="Daralt"
+            >
+              <ChevronLeftRoundedIcon fontSize="small" />
+            </button>
           </div>
 
-          <nav className="flex flex-col flex-1 px-4 py-6 gap-2 overflow-y-auto">
-            {navItems.map((item) => (
+          {/* Nav */}
+          <nav className="flex flex-col flex-1 px-2 py-4 gap-1 overflow-y-auto overflow-x-hidden">
+            {/* Collapsed toggle at top */}
+            {isSidebarCollapsed && (
               <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id as TabType)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${activeTab === item.id
-                  ? 'bg-school/10 text-school dark:bg-[#493322] dark:text-white font-medium'
-                  : 'text-slate-600 dark:text-[#cba990] hover:bg-slate-50 dark:hover:bg-[#493322]/50 hover:text-school dark:hover:text-white'
-                  }`}
+                onClick={toggleSidebar}
+                className="flex items-center justify-center w-full p-2.5 rounded-lg text-slate-400 hover:text-school hover:bg-slate-100 dark:hover:bg-[#493322]/50 transition-colors mb-2"
+                title="Genişlet"
               >
-                {item.icon}
-                <span className="text-sm leading-normal">{item.label}</span>
+                <ChevronRightRoundedIcon fontSize="small" />
               </button>
+            )}
+
+            {navItems.map((item) => (
+              <div key={item.id} className="relative group">
+                <button
+                  onClick={() => setActiveTab(item.id as TabType)}
+                  className={`flex items-center w-full rounded-lg transition-colors text-left ${isSidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'
+                    } ${activeTab === item.id
+                      ? 'bg-school/10 text-school dark:bg-[#493322] dark:text-white font-medium'
+                      : 'text-slate-600 dark:text-[#cba990] hover:bg-slate-50 dark:hover:bg-[#493322]/50 hover:text-school dark:hover:text-white'
+                    }`}
+                >
+                  {item.icon}
+                  {!isSidebarCollapsed && <span className="text-sm leading-normal">{item.label}</span>}
+                </button>
+                {/* Tooltip when collapsed */}
+                {isSidebarCollapsed && (
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-slate-900 dark:bg-slate-700 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
+                    {item.label}
+                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900 dark:border-r-slate-700" />
+                  </div>
+                )}
+              </div>
             ))}
           </nav>
 
-          <div className="px-4 py-4 border-t border-slate-100 dark:border-[#493322]">
-            <button
-              onClick={handleLogout}
-              className="flex w-full items-center justify-center gap-2 rounded-lg h-10 bg-school hover:bg-school-light text-white text-sm font-bold shadow-sm transition-all"
-            >
-              <LogoutRoundedIcon fontSize="small" />
-              <span>Çıkış Yap</span>
-            </button>
+          {/* Logout */}
+          <div className={`py-4 border-t border-slate-100 dark:border-[#493322] shrink-0 ${isSidebarCollapsed ? 'px-2' : 'px-4'
+            }`}>
+            {isSidebarCollapsed ? (
+              <div className="relative group">
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center justify-center p-2.5 rounded-lg bg-school/10 hover:bg-school/20 text-school transition-all"
+                  title="Çıkış Yap"
+                >
+                  <LogoutRoundedIcon fontSize="small" />
+                </button>
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-slate-900 dark:bg-slate-700 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
+                  Çıkış Yap
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900 dark:border-r-slate-700" />
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="flex w-full items-center justify-center gap-2 rounded-lg h-10 bg-school hover:bg-school-light text-white text-sm font-bold shadow-sm transition-all"
+              >
+                <LogoutRoundedIcon fontSize="small" />
+                <span>Çıkış Yap</span>
+              </button>
+            )}
           </div>
         </aside>
 
@@ -686,6 +755,29 @@ const SchoolAdmin: React.FC = () => {
 
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+          {/* Mobile Header */}
+          <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-[#231810] border-b border-slate-200 dark:border-[#493322] shrink-0 sticky top-0 z-30">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="p-2 -ml-2 text-slate-600 dark:text-white hover:bg-slate-100 dark:hover:bg-[#493322]/50 rounded-lg transition-colors"
+                aria-label="Menüyü Aç"
+              >
+                <MenuRoundedIcon />
+              </button>
+              <div className="flex flex-col">
+                <h2 className="text-slate-900 dark:text-white text-sm font-bold leading-tight">
+                  {navItems.find(item => item.id === activeTab)?.label || 'Yönetim'}
+                </h2>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div
+                className="bg-center bg-no-repeat bg-cover rounded-full size-8 border border-slate-200 dark:border-slate-700"
+                style={{ backgroundImage: `url(${schoolInfo?.photoURL || 'https://ui-avatars.com/api/?name=S&background=b45309&color=fff'})` }}
+              />
+            </div>
+          </header>
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full">

@@ -204,8 +204,8 @@ function InstructorPanel({ user }: InstructorPanelProps) {
           </div>
 
           {/* Tab Navigation - Desktop */}
-          <div className="hidden md:block border-b">
-            <nav className="flex -mb-px">
+          <div className="hidden md:block border-b overflow-x-auto scrollbar-hide">
+            <nav className="flex -mb-px px-4 whitespace-nowrap">
               <button
                 onClick={() => setActiveTab('profile')}
                 className={`py-4 px-6 text-center font-medium text-sm md:text-base border-b-2 ${activeTab === 'profile'

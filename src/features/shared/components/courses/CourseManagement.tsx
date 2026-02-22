@@ -311,7 +311,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [instructors, setInstructors] = useState<Array<{ label: string; value: string; courseIds?: string[]; photoURL?: string }>>([]);
+  const [instructors, setInstructors] = useState<Array<{ label: string; value: string; courseIds?: string[]; photoURL?: string; addedBySchoolName?: string; isCertifiedConfirmed?: boolean }>>([]);
   const [schools, setSchools] = useState<Array<{ label: string; value: string }>>([]);
   const [loadingInstructors, setLoadingInstructors] = useState<boolean>(true);
   const [loadingSchools, setLoadingSchools] = useState<boolean>(true);
@@ -619,7 +619,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               label: data.displayName || data.email || 'İsimsiz Eğitmen',
               value: data.id,
               courseIds: data.courseIds || [],
-              photoURL: data.photoURL || ''
+              photoURL: data.photoURL || '',
+              addedBySchoolName: data.addedBySchoolName,
+              isCertifiedConfirmed: data.isCertifiedConfirmed
             };
           })
           .sort((a, b) => a.label.localeCompare(b.label));
@@ -2116,8 +2118,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       </SimpleModal>
 
       {/* Kurs Listesi Sekmeleri */}
-      <div className="flex justify-end mb-2">
-        <div className={`flex p-1 rounded-xl ${colorVariant === 'school' ? 'bg-school-bg/50 dark:bg-school/5' : 'bg-gray-100 dark:bg-slate-800/50'} border border-gray-200 dark:border-slate-700/50`}>
+      <div className="flex justify-start md:justify-end mb-4 overflow-x-auto scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0">
+        <div className={`flex w-full md:w-auto p-1 rounded-xl whitespace-nowrap ${colorVariant === 'school' ? 'bg-school-bg/50 dark:bg-school/5' : 'bg-gray-100 dark:bg-slate-800/50'} border border-gray-200 dark:border-slate-700/50`}>
           {([
             { value: 'all', label: 'Tümü' },
             { value: 'active', label: 'Aktif' },
@@ -2127,13 +2129,13 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
             <button
               key={value}
               onClick={() => setStatusFilter(value)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${statusFilter === value
+              className={`flex-1 md:flex-none justify-center px-2 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 ${statusFilter === value
                 ? `${isAdmin ? 'bg-indigo-600' : colorVariant === 'school' ? 'bg-school' : 'bg-instructor'} text-white shadow-sm`
                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-transparent'
                 }`}
             >
-              {label}
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusFilter === value
+              <span className="truncate">{label}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${statusFilter === value
                 ? 'bg-white/20 text-white'
                 : (colorVariant === 'school' ? 'bg-school/10 text-school' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400')
                 }`}>
@@ -2151,7 +2153,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           ? 'bg-school-bg border-school/40 dark:border-school/30 dark:bg-[#1a120b]'
           : 'bg-instructor-bg/50 dark:bg-[#0f172a] border-instructor/30 dark:border-instructor/20'
         }`}>
-        <div className="overflow-x-auto">
+        <div className="hidden lg:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className={isAdmin
               ? 'bg-gray-50 dark:bg-slate-900'
@@ -2164,8 +2166,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                 <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Program</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Yönetim</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kapasite</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durum</th>
+                <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
+                <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durum</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
               </tr>
             </thead>
@@ -2189,13 +2191,13 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       ? 'hover:bg-school/5 dark:hover:bg-school/10'
                       : 'hover:bg-instructor/5 dark:hover:bg-instructor/10'
                     }`}>
-                  <td className="px-4 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 max-w-[180px]">
                     <Link
                       to={`/courses/${course.id}`}
                       className="flex items-center group cursor-pointer"
                     >
-                      <div>
-                        <div className={`text-sm font-medium transition-colors ${colorVariant === 'school' ? 'group-hover:text-school' : 'group-hover:text-instructor'
+                      <div className="min-w-0">
+                        <div className={`text-sm font-medium truncate max-w-[140px] transition-colors ${colorVariant === 'school' ? 'group-hover:text-school' : 'group-hover:text-instructor'
                           } text-gray-900 dark:text-white`}>
                           {course.name}
                         </div>
@@ -2267,7 +2269,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
+                  <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${course.status === 'active'
                       ? 'bg-green-100 text-green-800'
                       : course.status === 'draft'
@@ -2311,6 +2313,134 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="lg:hidden space-y-3 mt-2">
+        {courses.filter(course =>
+          (statusFilter === 'all' || course.status === statusFilter) &&
+          (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase()))
+        ).length === 0 ? (
+          <div className={`text-center py-8 text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+            {searchTerm ? 'Aramanıza uygun kurs bulunamadı.' : 'Henüz hiç kurs eklenmemiş.'}
+          </div>
+        ) : courses.filter(course =>
+          (statusFilter === 'all' || course.status === statusFilter) &&
+          (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase()))
+        ).map((course) => (
+          <div
+            key={course.id}
+            className={`rounded-xl border shadow-sm overflow-hidden ${isAdmin
+              ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+              : colorVariant === 'school'
+                ? 'bg-white dark:bg-[#231810] border-school/20 dark:border-[#493322]'
+                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+              }`}
+          >
+            {/* Card Header */}
+            <div className="flex items-start justify-between p-4 gap-3">
+              <Link to={`/courses/${course.id}`} className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className={`text-sm font-semibold text-gray-900 dark:text-white leading-tight ${colorVariant === 'school' ? 'group-hover:text-school' : 'group-hover:text-instructor'
+                    }`}>{course.name}</h3>
+                  <span className={`px-2 py-0.5 inline-flex text-xs font-semibold rounded-full flex-shrink-0 ${course.status === 'active'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    : course.status === 'draft'
+                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                    {course.status === 'active' ? 'Aktif' : course.status === 'draft' ? 'Taslak' : 'Pasif'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{course.danceStyle}</p>
+              </Link>
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                <svg className="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{course.rating ? course.rating.toFixed(1) : '0.0'}</span>
+              </div>
+            </div>
+
+            {/* Card Body */}
+            <div className={`px-4 pb-3 space-y-2 text-xs border-t ${isAdmin ? 'border-gray-100 dark:border-slate-700' : 'border-school/10 dark:border-[#493322]'
+              }`}>
+              <div className="flex items-center justify-between pt-2">
+                {/* Schedule */}
+                <div className="text-gray-600 dark:text-gray-400">
+                  {course.recurring ? (
+                    <span>{course.schedule.map(s => `${s.day} ${s.time}`).join(', ')}</span>
+                  ) : (
+                    <span>{timestampToDate(course.date)} {course.time}</span>
+                  )}
+                </div>
+                {/* Capacity */}
+                <div className="flex items-center gap-1.5">
+                  <div className="w-16 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${colorVariant === 'school' ? 'bg-school' : 'bg-instructor'
+                        }`}
+                      style={{ width: `${Math.min(100, (students.filter(s => s.courseIds?.includes(course.id)).length / course.maxParticipants) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    {students.filter(s => s.courseIds?.includes(course.id)).length}/{course.maxParticipants}
+                  </span>
+                </div>
+              </div>
+
+              {/* Management buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedCourseForStudents(course); }}
+                  title="Öğrenci Listesi"
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium transition-all ${colorVariant === 'school' ? 'bg-school/5 border-school/20 text-school hover:bg-school/10' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                  Öğrenciler
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedCourseForInstructors(course); }}
+                  title="Eğitmen Atama"
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium transition-all ${colorVariant === 'school' ? 'bg-school/5 border-school/20 text-school hover:bg-school/10' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                  Eğitmen
+                </button>
+              </div>
+            </div>
+
+            {/* Card Footer Actions */}
+            <div className={`flex justify-end gap-2 px-4 py-2.5 border-t ${isAdmin
+              ? 'bg-gray-50/70 dark:bg-slate-900/40 border-gray-100 dark:border-slate-700'
+              : colorVariant === 'school'
+                ? 'bg-school/5 dark:bg-school/10 border-school/10 dark:border-[#493322]'
+                : 'bg-gray-50/50 dark:bg-slate-900/30 border-gray-100 dark:border-slate-700'
+              }`}>
+              <button
+                onClick={(e) => { e.stopPropagation(); editCourse(course); }}
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isAdmin
+                  ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100'
+                  : colorVariant === 'school'
+                    ? 'bg-school/10 text-school border border-school/20 hover:bg-school/20'
+                    : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                  }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                Düzenle
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); if (window.confirm('Bu kursu silmek istediğinizden emin misiniz?')) deleteCourse(course.id); }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-all"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                Sil
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
       {/* Modal - Kayıtlı Öğrenciler */}
       <SimpleModal
@@ -2581,7 +2711,17 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       onClick={() => handleAddInstructorToCourse(instructor.value, instructor.label, selectedCourseForInstructors!.id)}
                       className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors flex items-center justify-between border-b border-gray-50 dark:border-slate-700/50 last:border-0`}
                     >
-                      <span className="font-medium text-gray-900 dark:text-white">{instructor.label}</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900 dark:text-white">{instructor.label}</span>
+                        {instructor.isCertifiedConfirmed && instructor.addedBySchoolName && (
+                          <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                            <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {instructor.addedBySchoolName} tarafından onaylı
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xs bg-school/10 text-school px-2 py-1 rounded-full">Ata</span>
                     </button>
                   ))}

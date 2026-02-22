@@ -36,6 +36,7 @@ interface Instructor {
   experience?: number;
   rating?: number;
   courseIds?: string[];
+  role?: string | string[];
   createdAt: Timestamp;
 }
 
@@ -128,6 +129,11 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
   // Success message state
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Certification confirmation state
+  const [isCertifiedConfirmed, setIsCertifiedConfirmed] = useState(false);
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [instructorToApprove, setInstructorToApprove] = useState<Instructor | null>(null);
 
   // Dance styles and experience options
   const danceStyles: DanceStyle[] = ['salsa', 'bachata', 'kizomba', 'other'];
@@ -275,6 +281,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
   const handleOpenDialog = (isEditMode: boolean, instructor?: Instructor) => {
     setIsEdit(isEditMode);
+    setIsCertifiedConfirmed(false);
     if (isEditMode && instructor) {
       setFormData({
         id: instructor.id,
@@ -296,6 +303,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setFormData(defaultInstructorFormData);
+    setIsCertifiedConfirmed(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: any } }) => {
@@ -382,11 +390,44 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           schoolId: managedSchoolId,
           schoolIds: [managedSchoolId],
           schoolName: schoolInfo.displayName,
+          addedBySchoolId: managedSchoolId,
+          addedBySchoolName: schoolInfo.displayName,
+          isCertifiedConfirmed: isCertifiedConfirmed,
           photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
         await setDoc(doc(db, 'users', newInstructorId), newInstructorData);
+
+        // Instructors koleksiyonuna da ekle
+        const instructorEntryId = `instructor_${newInstructorId}`;
+        await setDoc(doc(db, 'instructors', instructorEntryId), {
+          userId: newInstructorId,
+          displayName: formData.displayName,
+          ad: formData.displayName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber || '',
+          role: ['instructor'],
+          danceStyles: formData.danceStyles,
+          uzmanlık: formData.danceStyles,
+          biography: formData.biography,
+          biyografi: formData.biography,
+          experience: formData.experience,
+          tecrube: formData.experience,
+          schoolId: managedSchoolId,
+          okul_id: managedSchoolId,
+          schoolIds: [managedSchoolId],
+          schoolName: schoolInfo.displayName,
+          addedBySchoolId: managedSchoolId,
+          addedBySchoolName: schoolInfo.displayName,
+          isCertifiedConfirmed: isCertifiedConfirmed,
+          photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
+          gorsel: formData.photoURL || '/assets/placeholders/default-instructor.png',
+          status: 'active',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+
         setInstructors([{ ...newInstructorData, createdAt: Timestamp.now() } as Instructor, ...instructors]);
         setSuccessMessage('Yeni eğitmen başarıyla oluşturuldu ve eklendi.');
         handleCloseDialog();
@@ -427,8 +468,46 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
         schoolId: managedSchoolId, // Legacy
         schoolIds: arrayUnion(managedSchoolId), // M:N
         schoolName: schoolInfo.displayName,
+        addedBySchoolId: managedSchoolId,
+        addedBySchoolName: schoolInfo.displayName,
+        isCertifiedConfirmed: isCertifiedConfirmed,
         updatedAt: serverTimestamp()
       });
+
+      // Eğitmeni 'instructors' koleksiyonuna da kaydet/güncelle
+      const instructorsQuery = query(collection(db, 'instructors'), where('userId', '==', existingUserId));
+      const instructorsSnap = await getDocs(instructorsQuery);
+
+      const instructorDataToSave = {
+        userId: existingUserId,
+        displayName: userData.displayName || '',
+        ad: userData.displayName || '',
+        email: userData.email || '',
+        phoneNumber: userData.phoneNumber || '',
+        photoURL: userData.photoURL || '/assets/placeholders/default-instructor.png',
+        gorsel: userData.photoURL || '/assets/placeholders/default-instructor.png',
+        addedBySchoolId: managedSchoolId,
+        addedBySchoolName: schoolInfo.displayName,
+        isCertifiedConfirmed: isCertifiedConfirmed,
+        schoolIds: arrayUnion(managedSchoolId),
+        schoolId: managedSchoolId,
+        okul_id: managedSchoolId,
+        schoolName: schoolInfo.displayName,
+        status: 'active',
+        role: 'instructor',
+        updatedAt: serverTimestamp()
+      };
+
+      if (!instructorsSnap.empty) {
+        const docId = instructorsSnap.docs[0].id;
+        await setDoc(doc(db, 'instructors', docId), instructorDataToSave, { merge: true });
+      } else {
+        const newInstructorId = `instructor_${existingUserId}`;
+        await setDoc(doc(db, 'instructors', newInstructorId), {
+          ...instructorDataToSave,
+          createdAt: serverTimestamp()
+        }, { merge: true });
+      }
 
       setInstructors([{ ...userData, id: existingUserId, role: newRole, schoolId: managedSchoolId, schoolName: schoolInfo.displayName } as any, ...instructors]);
       setSuccessMessage('Mevcut kullanıcı eğitmen olarak okulunuza bağlandı.');
@@ -490,6 +569,18 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
         courseIds: [], // Okuldan ayrıldığı için kurs bağlarını da koparalım
         updatedAt: serverTimestamp()
       });
+
+      // instructors koleksiyonunu da güncelle
+      const instructorsQuery = query(collection(db, 'instructors'), where('userId', '==', selectedInstructorId));
+      const instructorsSnap = await getDocs(instructorsQuery);
+      if (!instructorsSnap.empty) {
+        const docId = instructorsSnap.docs[0].id;
+        await updateDoc(doc(db, 'instructors', docId), {
+          schoolIds: arrayRemove(schoolInfo.id),
+          courseIds: [],
+          updatedAt: serverTimestamp()
+        });
+      }
 
       setInstructors(instructors.filter(instructor => instructor.id !== selectedInstructorId));
       setSuccessMessage('Eğitmen okul listenizden kaldırıldı ve tüm kurs kayıtları temizlendi.');
@@ -589,6 +680,93 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
     return '10+ yıl';
   };
 
+  const handleApproveConfirmOpen = (instructor: Instructor) => {
+    setInstructorToApprove(instructor);
+    setApproveConfirmOpen(true);
+  };
+
+  const handleApproveInstructor = async () => {
+    if (!instructorToApprove) return;
+    try {
+      setLoading(true);
+      const instructorRef = doc(db, 'users', instructorToApprove.id);
+
+      const currentRole = instructorToApprove.role;
+      let newRole;
+
+      if (Array.isArray(currentRole)) {
+        newRole = currentRole.filter(r => r !== 'draft-instructor');
+        if (!newRole.includes('instructor')) {
+          newRole.push('instructor');
+        }
+      } else {
+        newRole = 'instructor';
+      }
+
+      await updateDoc(instructorRef, {
+        role: newRole,
+        addedBySchoolId: schoolInfo.id,
+        addedBySchoolName: schoolInfo.displayName,
+        isCertifiedConfirmed: true,
+        updatedAt: serverTimestamp()
+      });
+
+      // Eğitmeni ayrıca 'instructors' koleksiyonuna da kaydet/güncelle
+      const instructorsQuery = query(collection(db, 'instructors'), where('userId', '==', instructorToApprove.id));
+      const instructorsSnap = await getDocs(instructorsQuery);
+
+      const instructorDataToSave = {
+        userId: instructorToApprove.id,
+        displayName: instructorToApprove.displayName || (instructorToApprove as any).name || '',
+        ad: instructorToApprove.displayName || (instructorToApprove as any).name || '',
+        email: instructorToApprove.email || '',
+        phoneNumber: instructorToApprove.phoneNumber || '',
+        photoURL: instructorToApprove.photoURL || '/assets/placeholders/default-instructor.png',
+        gorsel: instructorToApprove.photoURL || '/assets/placeholders/default-instructor.png',
+        danceStyles: instructorToApprove.danceStyles || [],
+        uzmanlık: instructorToApprove.danceStyles || [],
+        biography: instructorToApprove.biography || '',
+        biyografi: instructorToApprove.biography || '',
+        experience: instructorToApprove.experience || 0,
+        tecrube: instructorToApprove.experience || 0,
+        addedBySchoolId: schoolInfo.id,
+        addedBySchoolName: schoolInfo.displayName,
+        isCertifiedConfirmed: true,
+        schoolIds: arrayUnion(schoolInfo.id),
+        schoolId: schoolInfo.id,
+        okul_id: schoolInfo.id,
+        schoolName: schoolInfo.displayName,
+        status: 'active',
+        role: 'instructor',
+        updatedAt: serverTimestamp()
+      };
+
+      if (!instructorsSnap.empty) {
+        const docId = instructorsSnap.docs[0].id;
+        await setDoc(doc(db, 'instructors', docId), instructorDataToSave, { merge: true });
+      } else {
+        const newInstructorId = `instructor_${instructorToApprove.id}`;
+        await setDoc(doc(db, 'instructors', newInstructorId), {
+          ...instructorDataToSave,
+          createdAt: serverTimestamp()
+        }, { merge: true });
+      }
+
+      setInstructors(prev =>
+        prev.map(i => i.id === instructorToApprove.id ? { ...i, role: newRole } : i)
+      );
+
+      setSuccessMessage(`${instructorToApprove.displayName} eğitmen olarak doğrulandı.`);
+      setApproveConfirmOpen(false);
+      setInstructorToApprove(null);
+    } catch (err: any) {
+      console.error('Eğitmen doğrulanırken hata:', err);
+      setError('Eğitmen doğrulanırken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -649,28 +827,18 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
             ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
             : 'bg-school-bg border-school/40 dark:border-school/30 dark:bg-[#1a120b]'
             }`}>
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden lg:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className={isAdmin
                   ? 'bg-gray-50 dark:bg-slate-900'
                   : 'bg-school-bg dark:bg-school/20'
                 }>
                   <tr>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Eğitmen
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      E-posta
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Kurslar
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Değerlendirme
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      İşlemler
-                    </th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Eğitmen</th>
+                    <th scope="col" className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">E-posta</th>
+                    <th scope="col" className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kurslar</th>
+                    <th scope="col" className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
+                    <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isAdmin
@@ -682,32 +850,28 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                       ? 'hover:bg-gray-50 dark:hover:bg-slate-800'
                       : 'hover:bg-school/5 dark:hover:bg-school/10'
                       }`}>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
+                      <td className="px-4 py-4 whitespace-nowrap max-w-[180px]">
+                        <div className="flex items-center min-w-0">
+                          <div className="flex-shrink-0 h-9 w-9">
                             <Avatar
                               src={instructor.photoURL}
                               alt={instructor.displayName}
-                              className="h-10 w-10 ring-1 ring-school/20"
+                              className="h-9 w-9 ring-1 ring-school/20"
                               userType="instructor"
                             />
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-school transition-colors">
-                              {instructor.displayName}
-                            </div>
+                          <div className="ml-3 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{instructor.displayName}</div>
                             {instructor.phoneNumber && (
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {instructor.phoneNumber}
-                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{instructor.phoneNumber}</div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-gray-300">{instructor.email}</div>
+                      <td className="hidden lg:table-cell px-4 py-4">
+                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[180px]" title={instructor.email}>{instructor.email}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className="hidden xl:table-cell px-4 py-4">
                         <div className="flex flex-wrap gap-1 max-w-[200px]">
                           {instructor.courseIds && instructor.courseIds.length > 0 ? (
                             instructor.courseIds.map(courseId => {
@@ -723,7 +887,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-1">
                           <StarIcon filled={true} />
                           <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
@@ -733,12 +897,31 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleOpenQuickAssign(instructor)}
-                            className="inline-flex items-center px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 rounded-md text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all shadow-sm active:scale-95"
-                          >
-                            Kursa Ata
-                          </button>
+                          {instructor.role?.includes('draft-instructor') || instructor.role === 'draft-instructor' ? (
+                            <button
+                              onClick={() => handleApproveConfirmOpen(instructor)}
+                              className="inline-flex items-center px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800/50 rounded-md text-xs font-medium hover:bg-green-100 dark:hover:bg-green-900/20 transition-all shadow-sm active:scale-95"
+                            >
+                              Doğrula
+                            </button>
+                          ) : null}
+                          {/* Kursa Ata - Sadece doğrulanmış eğitmenler için aktif */}
+                          {(() => {
+                            const isDraft = instructor.role?.includes('draft-instructor') || instructor.role === 'draft-instructor';
+                            return (
+                              <button
+                                onClick={() => !isDraft && handleOpenQuickAssign(instructor)}
+                                disabled={isDraft}
+                                title={isDraft ? 'Önce eğitmeni doğrulayın' : 'Kursa Ata'}
+                                className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm border ${isDraft
+                                  ? 'bg-gray-50 dark:bg-gray-800/30 text-gray-300 dark:text-gray-600 border-gray-100 dark:border-gray-700 cursor-not-allowed opacity-50'
+                                  : 'bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/20 active:scale-95'
+                                  }`}
+                              >
+                                Kursa Ata
+                              </button>
+                            );
+                          })()}
                           <button
                             onClick={() => handleOpenDialog(true, instructor)}
                             className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm active:scale-95 ${isAdmin
@@ -764,87 +947,117 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           </div>
 
           {/* Mobile Card View */}
-          <div className="md:hidden space-y-4">
+          <div className="lg:hidden space-y-3 mt-4">
             {filteredInstructors.map((instructor) => (
               <div
                 key={instructor.id}
-                className="bg-white dark:bg-[#231810] rounded-lg border border-gray-200 dark:border-[#493322] shadow-sm p-4"
+                className={`rounded-xl border shadow-sm overflow-hidden ${isAdmin
+                  ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+                  : 'bg-white dark:bg-[#231810] border-school/20 dark:border-[#493322]'
+                  }`}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center max-w-[70%]">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      <Avatar
-                        src={instructor.photoURL}
-                        alt={instructor.displayName}
-                        className="h-10 w-10 ring-1 ring-school/20"
-                        userType="instructor"
-                      />
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center min-w-0">
+                      <div className="flex-shrink-0">
+                        <Avatar
+                          src={instructor.photoURL}
+                          alt={instructor.displayName}
+                          className="h-11 w-11 ring-2 ring-school/10"
+                          userType="instructor"
+                        />
+                      </div>
+                      <div className="ml-3 min-w-0">
+                        <div className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                          {instructor.displayName}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-[#cba990] truncate" title={instructor.email}>
+                          {instructor.email}
+                        </div>
+                      </div>
                     </div>
-                    <div className="ml-3 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {instructor.displayName}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 truncate" title={instructor.email}>
-                        {instructor.email}
-                      </div>
+
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <StarIcon filled={true} />
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {instructor.rating ? instructor.rating.toFixed(1) : '0.0'}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex space-x-2 flex-shrink-0">
-                    <button
-                      onClick={() => handleOpenQuickAssign(instructor)}
-                      className="inline-flex items-center px-2 py-1 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 rounded-md text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all active:scale-95"
-                    >
-                      Kursa Ata
-                    </button>
-                    <button
-                      onClick={() => handleOpenDialog(true, instructor)}
-                      className={`inline-flex items-center p-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${isAdmin
-                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800'
-                        : 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30'
-                        }`}
-                    >
-                      <PencilIcon />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteConfirmOpen(instructor.id)}
-                      className="inline-flex items-center p-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-md text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/20 transition-all active:scale-95"
-                    >
-                      <TrashIcon />
-                    </button>
+
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Atanmış Kurslar</span>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {instructor.courseIds && instructor.courseIds.length > 0 ? (
+                          instructor.courseIds.map(courseId => {
+                            const course = courses.find(c => c.id === courseId);
+                            return course ? (
+                              <span key={courseId} className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-[10px] font-semibold text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800/30">
+                                {course.name}
+                              </span>
+                            ) : null;
+                          })
+                        ) : (
+                          <p className="text-gray-400 text-xs italic">Kurs atanmamış</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {instructor.phoneNumber && (
+                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 015.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        {instructor.phoneNumber}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="col-span-2">
-                    <span className="text-sm text-gray-500 dark:text-[#cba990]">Atanmış Kurslar:</span>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {instructor.courseIds && instructor.courseIds.length > 0 ? (
-                        instructor.courseIds.map(courseId => {
-                          const course = courses.find(c => c.id === courseId);
-                          return course ? (
-                            <span key={courseId} className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                              {course.name}
-                            </span>
-                          ) : null;
-                        })
-                      ) : (
-                        <p className="font-medium text-gray-400 text-xs">-</p>
-                      )}
-                    </div>
-                  </div>
-                  {instructor.phoneNumber && (
-                    <div>
-                      <span className="text-sm text-gray-500 dark:text-[#cba990]">Telefon:</span>
-                      <p className="font-medium">{instructor.phoneNumber}</p>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-sm text-gray-500 dark:text-[#cba990]">Değerlendirme:</span>
-                    <div className="flex items-center gap-1 font-medium mt-0.5">
-                      <StarIcon filled={true} />
-                      <span>{instructor.rating ? instructor.rating.toFixed(1) : '0.0'}</span>
-                    </div>
-                  </div>
+                <div className={`flex items-center justify-end gap-2 px-4 py-3 border-t ${isAdmin ? 'bg-gray-50/50 dark:bg-slate-900/40 border-gray-100 dark:border-slate-700' : 'bg-school/5 dark:bg-[#1a120b] border-school/10 dark:border-[#493322]'
+                  }`}>
+                  {instructor.role?.includes('draft-instructor') || instructor.role === 'draft-instructor' ? (
+                    <button
+                      onClick={() => handleApproveConfirmOpen(instructor)}
+                      className="inline-flex items-center px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800/50 rounded-lg text-xs font-bold hover:bg-green-100 transition-all active:scale-95"
+                    >
+                      Doğrula
+                    </button>
+                  ) : null}
+
+                  {(() => {
+                    const isDraft = instructor.role?.includes('draft-instructor') || instructor.role === 'draft-instructor';
+                    return (
+                      <button
+                        onClick={() => !isDraft && handleOpenQuickAssign(instructor)}
+                        disabled={isDraft}
+                        className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${isDraft
+                          ? 'bg-gray-50 dark:bg-gray-800/30 text-gray-300 dark:text-gray-600 border-gray-100 dark:border-gray-700 cursor-not-allowed opacity-50'
+                          : 'bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-100 active:scale-95'
+                          }`}
+                      >
+                        Kursa Ata
+                      </button>
+                    );
+                  })()}
+
+                  <button
+                    onClick={() => handleOpenDialog(true, instructor)}
+                    className={`inline-flex items-center p-2 rounded-lg text-xs font-medium transition-all active:scale-95 ${isAdmin
+                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800'
+                      : 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30'
+                      }`}
+                  >
+                    <PencilIcon />
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteConfirmOpen(instructor.id)}
+                    className="inline-flex items-center p-2 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-lg text-xs font-medium hover:bg-red-100 transition-all active:scale-95"
+                  >
+                    <TrashIcon />
+                  </button>
                 </div>
               </div>
             ))}
@@ -944,7 +1157,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
             <Button
               variant="school"
               onClick={handleSubmit}
-              disabled={!formData.displayName || !formData.email || (!isEdit && !formData.password)}
+              disabled={!formData.displayName || !formData.email || (!isEdit && !formData.password) || (!isEdit && !isCertifiedConfirmed)}
             >
               {isEdit ? 'Güncelle' : 'Ekle'}
             </Button>
@@ -1068,6 +1281,28 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
               colorVariant="school"
             />
           </div>
+
+          {!isEdit && (
+            <div className="flex items-start p-4 mt-2 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-school/20">
+              <div className="flex items-center h-5">
+                <input
+                  id="certifiedConfirm"
+                  type="checkbox"
+                  className="w-4 h-4 text-school bg-white border-gray-300 rounded focus:ring-school dark:focus:ring-school dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  checked={isCertifiedConfirmed}
+                  onChange={(e) => setIsCertifiedConfirmed(e.target.checked)}
+                />
+              </div>
+              <div className="ml-3 text-sm">
+                <label htmlFor="certifiedConfirm" className="font-medium text-gray-900 dark:text-gray-100">
+                  Eğitmenin sertifikalı olduğunu onaylıyorum.
+                </label>
+                <p className="text-gray-600 dark:text-gray-400 text-xs mt-1">
+                  Eğitmenin sertifikalı bir eğitmen olduğu tarafınızdan onaylanmış sayılacaktır.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </SimpleModal>
 
@@ -1128,6 +1363,36 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           Bu eğitmeni okulunuzun listesinden kaldırmak istediğinize emin misiniz?
           Bu işlem eğitmeni tamamen silmez, yalnızca okulunuzla bağlantısını kaldırır.
         </p>
+      </SimpleModal>
+
+      {/* Approve Confirmation Modal */}
+      <SimpleModal
+        open={approveConfirmOpen}
+        onClose={() => setApproveConfirmOpen(false)}
+        title="Eğitmeni Doğrula"
+        colorVariant="school"
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => setApproveConfirmOpen(false)}>İptal</Button>
+            <Button variant="school" onClick={handleApproveInstructor}>Doğrula</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-school/20 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-800/50 flex items-center justify-center flex-shrink-0 text-orange-600 dark:text-orange-400">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-gray-900 dark:text-white font-medium">Dikkat: Bu işlem kalıcıdır ve eğitmeni okulunuzun referansıyla doğrular.</p>
+            </div>
+          </div>
+          <p className="text-gray-700 dark:text-gray-300">
+            <strong>{instructorToApprove?.displayName}</strong> adlı eğitmenin sertifikalı bir eğitmen olduğunu beyan ve teyit ediyorsunuz. Platform genelinde bu eğitmen, <strong>{schoolInfo.displayName}</strong> tarafından doğrulanmış olarak gösterilecektir. Bu işlemi onaylıyor musunuz?
+          </p>
+        </div>
       </SimpleModal>
     </div>
   );

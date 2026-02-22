@@ -1075,9 +1075,9 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             : 'hover:bg-instructor/5 dark:hover:bg-instructor/10'
           }`}
       >
-        <td className="px-4 py-4 whitespace-nowrap">
-          <div className="flex items-center">
-            <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
+        <td className="px-4 py-4 whitespace-nowrap max-w-[180px]">
+          <div className="flex items-center min-w-0">
+            <div className="flex-shrink-0 h-9 w-9 relative bg-green-100 rounded-full overflow-hidden">
               {student.photoURL ? (
                 <img
                   className="h-10 w-10 rounded-full object-cover absolute inset-0"
@@ -1097,20 +1097,18 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 />
               )}
             </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-900 dark:text-white">{student.displayName}</div>
+            <div className="ml-3 min-w-0">
+              <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{student.displayName}</div>
               {student.phoneNumber && (
                 <div className="text-sm text-gray-500 dark:text-gray-400">{student.phoneNumber}</div>
               )}
             </div>
           </div>
         </td>
-        <td className="px-4 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900 dark:text-white max-w-[200px] truncate" title={student.email}>
-            {student.email}
-          </div>
+        <td className="hidden lg:table-cell px-4 py-4">
+          <div className="text-sm text-gray-900 dark:text-white truncate max-w-[180px]" title={student.email}>{student.email}</div>
         </td>
-        <td className="px-4 py-4 whitespace-nowrap">
+        <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap">
           <div className="text-sm text-gray-900 dark:text-white">
             {student.level === 'beginner' && 'Başlangıç'}
             {student.level === 'intermediate' && 'Orta'}
@@ -1120,7 +1118,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           </div>
         </td>
         {userRole !== 'school' && (
-          <td className="px-4 py-4 whitespace-nowrap">
+          <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap">
             <SchoolProfile
               school={{
                 id: student.schoolId || '',
@@ -1130,7 +1128,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             />
           </td>
         )}
-        <td className="px-4 py-4 whitespace-nowrap">
+        <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap">
           <div className="flex items-center gap-1">
             <StarIcon filled={true} />
             <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
@@ -1138,7 +1136,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             </span>
           </div>
         </td>
-        <td className="px-4 py-4 whitespace-nowrap">
+        <td className="hidden xl:table-cell px-4 py-4 whitespace-nowrap">
           <div className="text-sm text-gray-900 dark:text-white">
             {student.courseIds && student.courseIds.length > 0 ? (
               <div className="flex flex-wrap gap-1">
@@ -1688,7 +1686,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             ? 'bg-school-bg border-school/40 dark:border-school/30 dark:bg-[#1a120b]'
             : 'bg-instructor-bg/50 dark:bg-[#0f172a] border-instructor/30 dark:border-instructor/20'
           }`}>
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className={isAdmin
                 ? 'bg-gray-50 dark:bg-slate-900'
@@ -1697,29 +1695,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   : 'bg-instructor-bg/80 dark:bg-instructor/10'
               }>
                 <tr>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Öğrenci
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    E-posta
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Dans Seviyesi
-                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Öğrenci</th>
+                  <th scope="col" className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">E-posta</th>
+                  <th scope="col" className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dans Seviyesi</th>
                   {userRole !== 'school' && (
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Okul
-                    </th>
+                    <th scope="col" className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Okul</th>
                   )}
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Değerlendirme
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Kurslar
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    İşlemler
-                  </th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
+                  <th scope="col" className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kurslar</th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${isAdmin
@@ -1743,114 +1727,132 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         </div>
 
         {/* Mobile Card View */}
-        <div className="md:hidden space-y-4">
+        <div className="lg:hidden space-y-3 mt-4">
           {filteredStudents.length > 0 ? (
             filteredStudents.map((student) => (
-              <div key={student.id} className={`rounded-lg shadow-sm border p-4 ${colorVariant === 'school' ? 'bg-white dark:bg-[#231810] border-gray-200 dark:border-[#493322]' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center max-w-[60%]">
-                    <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
-                      <img
-                        className="h-10 w-10 rounded-full object-cover absolute inset-0"
-                        src={student.photoURL || generateInitialsAvatar(student.displayName, 'student')}
-                        alt={student.displayName}
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          target.onerror = null;
-                          target.src = generateInitialsAvatar(student.displayName, 'student');
-                        }}
-                      />
+              <div
+                key={student.id}
+                className={`rounded-xl border shadow-sm overflow-hidden ${colorVariant === 'school'
+                  ? 'bg-white dark:bg-[#231810] border-school/20 dark:border-[#493322]'
+                  : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+                  }`}
+              >
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center min-w-0">
+                      <div className="flex-shrink-0 h-11 w-11 relative bg-green-100 rounded-full overflow-hidden ring-2 ring-school/10">
+                        <img
+                          className="h-11 w-11 rounded-full object-cover absolute inset-0"
+                          src={student.photoURL || generateInitialsAvatar(student.displayName, 'student')}
+                          alt={student.displayName}
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.onerror = null;
+                            target.src = generateInitialsAvatar(student.displayName, 'student');
+                          }}
+                        />
+                      </div>
+                      <div className="ml-3 min-w-0">
+                        <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{student.displayName}</div>
+                        <div className="text-xs text-gray-500 dark:text-[#cba990] truncate" title={student.email}>{student.email}</div>
+                      </div>
                     </div>
-                    <div className="ml-3 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{student.displayName}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 truncate" title={student.email}>{student.email}</div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <StarIcon filled={true} />
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {student.rating ? student.rating.toFixed(1) : '0.0'}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex space-x-2 flex-shrink-0">
-                    <button
-                      onClick={() => handleOpenQuickAssign(student)}
-                      className="inline-flex items-center px-2 py-1 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 rounded-md text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all active:scale-95"
-                    >
-                      Kursa Ata
-                    </button>
-                    <button
-                      onClick={() => editStudent(student)}
-                      className={`inline-flex items-center p-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${colorVariant === 'school'
-                        ? 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30'
-                        : 'bg-instructor/10 dark:bg-instructor/20 text-instructor dark:text-instructor-light border border-instructor/20 dark:border-instructor/30'
-                        }`}
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setStudentToDeleteId(student.id);
-                        setDeleteConfirmOpen(true);
-                      }}
-                      className="inline-flex items-center p-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-md text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/20 transition-all active:scale-95"
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+
+                  <div className="space-y-3 text-sm">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Seviye</span>
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          {student.level === 'beginner' && 'Başlangıç'}
+                          {student.level === 'intermediate' && 'Orta'}
+                          {student.level === 'advanced' && 'İleri'}
+                          {student.level === 'professional' && 'Profesyonel'}
+                          {!student.level && '-'}
+                        </p>
+                      </div>
+                      {student.phoneNumber && (
+                        <div>
+                          <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Telefon</span>
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{student.phoneNumber}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {userRole !== 'school' && (
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Okul</span>
+                        <div className="mt-1">
+                          <SchoolProfile
+                            school={{
+                              id: student.schoolId || '',
+                              displayName: student.schoolName || '',
+                              email: ''
+                            }}
+                            variant="card"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Kurslar</span>
+                      {student.courseIds && student.courseIds.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {student.courseIds.map(courseId => {
+                            const course = courses.find(c => c.id === courseId);
+                            return course ? (
+                              <span key={courseId} className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-900/20 text-[10px] font-semibold text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30">
+                                {course.name}
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-gray-400 text-xs italic mt-1">Kurs kaydı yok</p>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Dans Seviyesi:</span>
-                    <p className="font-medium">
-                      {student.level === 'beginner' && 'Başlangıç'}
-                      {student.level === 'intermediate' && 'Orta'}
-                      {student.level === 'advanced' && 'İleri'}
-                      {student.level === 'professional' && 'Profesyonel'}
-                      {!student.level && '-'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Değerlendirme:</span>
-                    <div className="flex items-center gap-1 font-medium mt-0.5">
-                      <StarIcon filled={true} />
-                      <span>{student.rating ? student.rating.toFixed(1) : '0.0'}</span>
-                    </div>
-                  </div>
-                  {student.phoneNumber && (
-                    <div>
-                      <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Telefon:</span>
-                      <p className="font-medium">{student.phoneNumber}</p>
-                    </div>
-                  )}
-                  {userRole !== 'school' && (
-                    <div>
-                      <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Okul:</span>
-                      <SchoolProfile
-                        school={{
-                          id: student.schoolId || '',
-                          displayName: student.schoolName || '',
-                          email: ''
-                        }}
-                        variant="card"
-                      />
-                    </div>
-                  )}
-                  <div className="col-span-2">
-                    <span className={`text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>Kurslar:</span>
-                    {student.courseIds && student.courseIds.length > 0 ? (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {student.courseIds.map(courseId => {
-                          const course = courses.find(c => c.id === courseId);
-                          return course ? (
-                            <span key={courseId} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800">
-                              {course.name}
-                            </span>
-                          ) : null;
-                        })}
-                      </div>
-                    ) : (
-                      <p className="font-medium">-</p>
-                    )}
-                  </div>
+
+                <div className={`flex items-center justify-end gap-2 px-4 py-2.5 border-t ${colorVariant === 'school'
+                  ? 'bg-school/5 dark:bg-[#1a120b] border-school/10 dark:border-[#493322]'
+                  : 'bg-gray-50 dark:bg-slate-900/40 border-gray-100 dark:border-slate-700'
+                  }`}>
+                  <button
+                    onClick={() => handleOpenQuickAssign(student)}
+                    className="inline-flex items-center px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-all active:scale-95"
+                  >
+                    Kursa Ata
+                  </button>
+                  <button
+                    onClick={() => editStudent(student)}
+                    className={`inline-flex items-center p-2 rounded-lg text-xs font-medium transition-all active:scale-95 ${colorVariant === 'school'
+                      ? 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30'
+                      : 'bg-instructor/10 dark:bg-instructor/20 text-instructor dark:text-instructor-light border border-instructor/20 dark:border-instructor/30'
+                      }`}
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStudentToDeleteId(student.id);
+                      setDeleteConfirmOpen(true);
+                    }}
+                    className="inline-flex items-center p-2 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-lg text-xs font-medium hover:bg-red-100 transition-all active:scale-95"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))
