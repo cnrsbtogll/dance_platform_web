@@ -128,7 +128,7 @@ function InstructorRequests() {
             city: 'Belirtilmemiş',
             level: 'beginner',
             danceStyles: requestData.danceStyles || [],
-            photoURL: requestData.photoURL || "/assets/images/dance/egitmen_default.jpg"
+            photoURL: requestData.photoURL || ""
           };
 
           await setDoc(userDocRef, newUserData);
@@ -155,7 +155,7 @@ function InstructorRequests() {
         userId: userId,
         displayName: `${requestData.firstName} ${requestData.lastName}`.trim(),
         email: userData.email || requestData.userEmail,
-        photoURL: requestData.photoURL || userData.photoURL || "/assets/images/dance/egitmen_default.jpg",
+        photoURL: requestData.photoURL || userData.photoURL || "",
         phoneNumber: userData.phoneNumber || requestData.contactNumber,
         role: 'instructor' as UserRole,
         specialties: requestData.danceStyles || [],
@@ -335,7 +335,8 @@ function InstructorRequests() {
                           <Avatar
                             src={request.photoURL || ''}
                             alt={`${request.firstName} ${request.lastName}`}
-                            className="h-10 w-10 rounded-full"
+                            className="h-10 w-10"
+                            userType="instructor"
                           />
                         </div>
                         <div>
@@ -428,7 +429,7 @@ function InstructorRequests() {
               </button>
             </div>
             <div className="flex items-center space-x-3 mb-4">
-              <Avatar src={contactRequest.photoURL || ''} alt={`${contactRequest.firstName} ${contactRequest.lastName}`} className="h-12 w-12 rounded-full" />
+              <Avatar src={contactRequest.photoURL || ''} alt={`${contactRequest.firstName} ${contactRequest.lastName}`} className="h-12 w-12" userType="instructor" />
               <div>
                 <p className="font-semibold text-gray-900 dark:text-white">{contactRequest.firstName} {contactRequest.lastName}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Eğitmen Adayı</p>
@@ -502,7 +503,8 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                   <Avatar
                     src={request.photoURL || ''}
                     alt={`${request.firstName} ${request.lastName}`}
-                    className="h-16 w-16 rounded-full"
+                    className="h-16 w-16"
+                    userType="instructor"
                   />
                   <h3 className="text-xl leading-6 font-bold text-gray-900 dark:text-white">
                     {`${request.firstName} ${request.lastName}`}

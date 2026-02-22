@@ -24,6 +24,7 @@ import { db, auth } from '../../../../api/firebase/firebase';
 import { motion } from 'framer-motion';
 import ImageUploader from '../../../../common/components/ui/ImageUploader';
 import { resizeImageFromBase64 } from '../../../../api/services/userService';
+import Avatar from '../../../../common/components/ui/Avatar';
 import { generateInitialsAvatar } from '../../../../common/utils/imageUtils';
 import CustomSelect from '../../../../common/components/ui/CustomSelect';
 import CustomPhoneInput from '../../../../common/components/ui/CustomPhoneInput';
@@ -223,7 +224,7 @@ function InstructorManagement(): JSX.Element {
           tecrube: data.experience || data.tecrube || 'Belirtilmemiş',
           biyografi: data.bio || data.biyografi || '',
           okul_id: data.okul_id || data.schoolId || '',
-          gorsel: data.photoURL || data.gorsel || '/assets/images/dance/egitmen_default.jpg',
+          gorsel: data.photoURL || data.gorsel || '',
           userId: data.userId || null,
           email: data.email || '',
           displayName: data.displayName || data.ad || 'İsimsiz Eğitmen',
@@ -325,7 +326,7 @@ function InstructorManagement(): JSX.Element {
       tecrube: '',
       biyografi: '',
       okul_id: '',
-      gorsel: '/assets/images/dance/egitmen_default.jpg',
+      gorsel: '',
       email: '',
       phoneNumber: '',
       password: ''
@@ -360,7 +361,7 @@ function InstructorManagement(): JSX.Element {
       if (base64Image === null) {
         setFormVeri(prev => ({
           ...prev,
-          gorsel: '/assets/images/dance/egitmen_default.jpg'
+          gorsel: ''
         }));
         setLoading(false);
         return;
@@ -492,7 +493,7 @@ function InstructorManagement(): JSX.Element {
         id: userId,
         email,
         displayName: invitationData.displayName,
-        role: ['instructor'],
+        role: ['draft-instructor'],
         level: 'advanced',
         photoURL: '',
         phoneNumber: invitationData.phoneNumber || '',
@@ -711,6 +712,7 @@ function InstructorManagement(): JSX.Element {
               <div>
                 <CustomSelect
                   label="Uzmanlık Alanı"
+                  name="uzmanlık"
                   value={formVeri.uzmanlık}
                   onChange={handleSelectChange('uzmanlık')}
                   options={danceStyles.map(style => ({
@@ -740,6 +742,7 @@ function InstructorManagement(): JSX.Element {
               <div>
                 <CustomSelect
                   label="Çalıştığı Okul"
+                  name="okul_id"
                   value={formVeri.okul_id}
                   onChange={handleSelectChange('okul_id')}
                   options={dansOkullari.map(okul => ({
@@ -778,7 +781,6 @@ function InstructorManagement(): JSX.Element {
 
               <div>
                 <CustomPhoneInput
-                  id="phoneNumber"
                   name="phoneNumber"
                   value={formVeri.phoneNumber}
                   onChange={handleInputChange}
@@ -829,7 +831,6 @@ function InstructorManagement(): JSX.Element {
                 <ImageUploader
                   currentPhotoURL={formVeri.gorsel}
                   onImageChange={(base64Image) => handleImageChange(base64Image)}
-                  title="Eğitmen Fotoğrafı"
                   shape="circle"
                   width={200}
                   height={200}
@@ -913,26 +914,13 @@ function InstructorManagement(): JSX.Element {
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 relative bg-blue-100 rounded-full overflow-hidden">
-                            {egitmen.gorsel ? (
-                              <img
-                                className="h-10 w-10 rounded-full object-cover absolute inset-0"
-                                src={egitmen.gorsel}
-                                alt={egitmen.ad}
-                                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                                  const target = e.currentTarget;
-                                  target.onerror = null;
-                                  // Hata durumunda baş harf avatarını göster
-                                  target.src = generateInitialsAvatar(egitmen.ad, 'instructor');
-                                }}
-                              />
-                            ) : (
-                              <img
-                                className="h-10 w-10 rounded-full object-cover"
-                                src={generateInitialsAvatar(egitmen.ad, 'instructor')}
-                                alt={egitmen.ad}
-                              />
-                            )}
+                          <div className="flex-shrink-0 h-10 w-10 relative rounded-full overflow-hidden">
+                            <Avatar
+                              src={egitmen.gorsel}
+                              alt={egitmen.ad}
+                              className="h-10 w-10"
+                              userType="instructor"
+                            />
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">{egitmen.ad}</div>

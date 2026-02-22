@@ -26,6 +26,8 @@ import Button from '../../../../common/components/ui/Button';
 import CustomSelect from '../../../../common/components/ui/CustomSelect';
 import CustomInput from '../../../../common/components/ui/CustomInput';
 import SimpleModal from '../../../../common/components/ui/SimpleModal';
+import Avatar from '../../../../common/components/ui/Avatar';
+import { generateInitialsAvatar } from '../../../../common/utils/imageUtils';
 
 // Dans stilleri için interface
 interface DanceStyle {
@@ -302,12 +304,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [instructors, setInstructors] = useState<Array<{ label: string; value: string; courseIds?: string[] }>>([]);
+  const [instructors, setInstructors] = useState<Array<{ label: string; value: string; courseIds?: string[]; photoURL?: string }>>([]);
   const [schools, setSchools] = useState<Array<{ label: string; value: string }>>([]);
   const [loadingInstructors, setLoadingInstructors] = useState<boolean>(true);
   const [loadingSchools, setLoadingSchools] = useState<boolean>(true);
   const [selectedContactCourse, setSelectedContactCourse] = useState<Course | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'draft'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'draft'>('active');
   const [instructorSearchTerm, setInstructorSearchTerm] = useState<string>('');
   const [students, setStudents] = useState<any[]>([]);
   const [loadingStudents, setLoadingStudents] = useState<boolean>(true);
@@ -590,7 +592,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           const data = doc.data();
           const roles = Array.isArray(data.role) ? data.role : [data.role];
 
-          if (roles.includes('instructor')) {
+          if (roles.includes('instructor') || roles.includes('draft-instructor')) {
             validDocs.push({ id: doc.id, ...data });
           }
         });
@@ -608,7 +610,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
             return {
               label: data.displayName || data.email || 'İsimsiz Eğitmen',
               value: data.id,
-              courseIds: data.courseIds || []
+              courseIds: data.courseIds || [],
+              photoURL: data.photoURL || ''
             };
           })
           .sort((a, b) => a.label.localeCompare(b.label));
@@ -713,20 +716,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   // Öğrencileri getir (Kayıtlı sayısı için)
   const fetchStudents = async () => {
     try {
-      const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as string[]).includes('school') : false;
-      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
-      if (!effectiveSchoolId && !isAdmin) return;
-
+      // Okul kısıtlamasını kaldırıyoruz: Tüm öğrencileri arayabilmek için okulId filtresini sildik
       const usersRef = collection(db, 'users');
-      let q;
-      if (isAdmin) {
-        q = query(usersRef, where('role', 'array-contains', 'student'));
-      } else {
-        q = query(
-          usersRef,
-          where('schoolIds', 'array-contains', effectiveSchoolId)
-        );
-      }
+      // Rol filtresini Firestore tarafında veya yerel olarak yapabiliriz. 
+      // Firestore 'array-contains' filtresi için index gerektirebilir, 
+      // bu yüzden tüm kullanıcıları çekip yerel filtrelemeye devam ediyoruz.
+      const q = query(usersRef);
 
       const querySnapshot = await getDocs(q);
       const studentList = querySnapshot.docs
@@ -751,13 +746,29 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   // Öğrenciyi kursa ekle
   const handleAddStudentToCourse = async (studentId: string, courseId: string) => {
     try {
+      const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as string[]).includes('school') : false;
+      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
       await updateDoc(doc(db, 'users', studentId), {
         courseIds: arrayUnion(courseId),
+        // Eğer bir okul bağlamındaysak, öğrenciyi o okulun listesine de ekleyelim
+        ...(effectiveSchoolId ? { schoolIds: arrayUnion(effectiveSchoolId) } : {}),
         updatedAt: serverTimestamp()
       });
       // State'i güncelle
-      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, courseIds: [...(s.courseIds || []), courseId] } : s));
-      setSuccess('Öğrenci kursa başarıyla eklendi.');
+      setStudents(prev => prev.map(s => {
+        if (s.id === studentId) {
+          const currentCourseIds = s.courseIds || [];
+          const currentSchoolIds = s.schoolIds || [];
+          return {
+            ...s,
+            courseIds: currentCourseIds.includes(courseId) ? currentCourseIds : [...currentCourseIds, courseId],
+            schoolIds: effectiveSchoolId && !currentSchoolIds.includes(effectiveSchoolId) ? [...currentSchoolIds, effectiveSchoolId] : currentSchoolIds
+          };
+        }
+        return s;
+      }));
+      setSuccess('Öğrenci kursa başarıyla eklendi ve okul öğrencilerine dahil edildi.');
       setStudentSearchInModal('');
     } catch (err) {
       console.error('Öğrenci eklenirken hata:', err);
@@ -821,7 +832,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         schoolName: schoolNameData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        photoURL: '/assets/placeholders/default-student.png',
+        photoURL: '',
         courseIds: selectedCourseForStudents?.id ? [selectedCourseForStudents.id] : []
       };
 
@@ -889,29 +900,90 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         displayName: quickAddInstructorData.displayName,
         email: quickAddInstructorData.email,
         phoneNumber: quickAddInstructorData.phoneNumber || '',
-        role: ['instructor'],
+        role: ['draft-instructor'],
+        isInstructor: true,
         status: 'active',
         schoolId: effectiveSchoolId,
+        schoolIds: [effectiveSchoolId], // Liste olarak da ekleyelim
         schoolName: schoolNameData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        photoURL: '/assets/placeholders/default-instructor.png',
+        photoURL: '',
         danceStyles: [],
-        experience: 0
+        experience: 0,
+        // Eğer course içindeysek ve modal ile ekliyorsak o kursa ata
+        courseIds: selectedCourseForInstructors?.id ? [selectedCourseForInstructors.id] : []
       };
 
+      // 1. Users koleksiyonuna ekle
       await setDoc(doc(db, 'users', newUser.uid), newInstructorData);
 
+      // 2. Instructors koleksiyonuna da ekle (Admin panelinde görünmesi için)
+      const instructorEntryId = `instructor_${newUser.uid}`;
+      await setDoc(doc(db, 'instructors', instructorEntryId), {
+        userId: newUser.uid,
+        ad: quickAddInstructorData.displayName,
+        displayName: quickAddInstructorData.displayName,
+        email: quickAddInstructorData.email,
+        phoneNumber: quickAddInstructorData.phoneNumber || '',
+        okul_id: effectiveSchoolId,
+        schoolId: effectiveSchoolId,
+        schoolName: schoolNameData,
+        status: 'pending', // Onay bekliyor olarak işaretle
+        role: ['instructor'],
+        uzmanlık: [],
+        tecrube: 0,
+        biyografi: '',
+        gorsel: '',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        courseIds: newInstructorData.courseIds
+      });
+
       // Listeye ekle (DropDown için)
-      const newInstructorLabel = { label: newInstructorData.displayName, value: newInstructorData.id, courseIds: [] };
+      const newInstructorLabel = {
+        label: newInstructorData.displayName,
+        value: newInstructorData.id,
+        courseIds: newInstructorData.courseIds,
+        photoURL: ''
+      };
       setInstructors(prev => [newInstructorLabel, ...prev]);
 
-      // O anki Form Data'ya (Oluşturulan kurs) eğitmeni otomatik seçili atayalım
-      setFormData(prev => ({
-        ...prev,
-        instructorIds: [...prev.instructorIds, newInstructorData.id],
-        instructorNames: [...prev.instructorNames, newInstructorData.displayName]
-      }));
+      // Eğer mevcut bir modal içindeysek (Manage Instructors modal)
+      if (selectedCourseForInstructors) {
+        // Kurs dokümanını güncelle
+        const courseRef = doc(db, 'courses', selectedCourseForInstructors.id);
+        await updateDoc(courseRef, {
+          instructorIds: arrayUnion(newInstructorData.id),
+          instructorNames: arrayUnion(newInstructorData.displayName),
+          updatedAt: serverTimestamp()
+        });
+
+        // Local courses state'ini güncelle
+        setCourses(prev => prev.map(c =>
+          c.id === selectedCourseForInstructors.id
+            ? {
+              ...c,
+              instructorIds: [...(c.instructorIds || []), newInstructorData.id],
+              instructorNames: [...(c.instructorNames || []), newInstructorData.displayName]
+            }
+            : c
+        ));
+
+        // Modal state'ini güncelle
+        setSelectedCourseForInstructors(prev => prev ? ({
+          ...prev,
+          instructorIds: [...(prev.instructorIds || []), newInstructorData.id],
+          instructorNames: [...(prev.instructorNames || []), newInstructorData.displayName]
+        }) : null);
+      } else {
+        // Sadece form data'ya ekle (Yeni kurs oluşturma flow'u)
+        setFormData(prev => ({
+          ...prev,
+          instructorIds: [...prev.instructorIds, newInstructorData.id],
+          instructorNames: [...prev.instructorNames, newInstructorData.displayName]
+        }));
+      }
 
       setSuccess('Yeni eğitmen oluşturuldu ve kursa eklendi.');
       setShowQuickAddInstructor(false);
@@ -968,8 +1040,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
         // Update the instructor user document with the courseId
         const instructorRef = doc(db, 'users', instructorId);
+
+        // Okul bağlamını belirle
+        const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as any as string[]).includes('school') : false;
+        const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
         await updateDoc(instructorRef, {
           courseIds: arrayUnion(courseId),
+          // Eğer eğitmen bu okula bağlı değilse, okul listesine ekle
+          ...(effectiveSchoolId ? { schoolIds: arrayUnion(effectiveSchoolId) } : {}),
           updatedAt: serverTimestamp()
         });
 
@@ -1393,34 +1472,46 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       </svg>
                       Yeni Eğitmen Oluştur ve Seç
                     </h4>
+                    {/* Browser Autofill Prevention Hacks */}
+                    <input type="text" style={{ display: 'none' }} />
+                    <input type="password" style={{ display: 'none' }} />
+
                     <div className="space-y-3">
                       <input
                         type="text"
                         placeholder="Ad Soyad"
                         value={quickAddInstructorData.displayName}
                         onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, displayName: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                        autoComplete="off"
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                       />
                       <input
                         type="email"
                         placeholder="E-posta Adresi"
                         value={quickAddInstructorData.email}
                         onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, email: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                        autoComplete="off"
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                       />
                       <input
                         type="tel"
                         placeholder="Telefon Numarası (Opsiyonel)"
                         value={quickAddInstructorData.phoneNumber}
                         onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                        autoComplete="dont-fill-this"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute('readonly')}
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                       />
                       <input
                         type="password"
                         placeholder="Giriş Şifresi Belirle"
                         value={quickAddInstructorData.password}
                         onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, password: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                        autoComplete="new-password-no-fill"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute('readonly')}
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                       />
                       <div className="flex justify-end gap-2 pt-2">
                         <button
@@ -2048,7 +2139,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
+            <tbody className={`divide-y ${isAdmin
+              ? 'bg-white dark:bg-slate-800 divide-gray-200 dark:divide-slate-700'
+              : colorVariant === 'school'
+                ? 'bg-school-bg dark:bg-[#1a120b] divide-school/20 dark:divide-[#493322]'
+                : 'bg-instructor-bg/30 dark:bg-slate-900/40 divide-instructor/20 dark:divide-slate-800'
+              }`}>
               {courses.filter(course =>
                 (statusFilter === 'all' || course.status === statusFilter) &&
                 (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -2134,7 +2230,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                         onClick={() => editCourse(course)}
                         className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm active:scale-95 ${isAdmin
                           ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
-                          : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-slate-600'
+                          : colorVariant === 'school'
+                            ? 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30 hover:bg-school/20 dark:hover:bg-school/30'
+                            : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-slate-600'
                           }`}
                       >
                         Düzenle
@@ -2163,7 +2261,11 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         onClose={() => setSelectedCourseForStudents(null)}
         title={`"${selectedCourseForStudents?.name}" - Kayıtlı Öğrenciler`}
         colorVariant={isAdmin ? 'admin' : (colorVariant as 'school' | 'instructor')}
-        bodyClassName="bg-white dark:bg-slate-900"
+        bodyClassName={isAdmin
+          ? 'bg-white dark:bg-slate-900'
+          : colorVariant === 'school'
+            ? 'bg-orange-50/30 dark:bg-[#1a120b]'
+            : 'bg-instructor-bg/20 dark:bg-slate-900/60'}
         actions={
           <Button
             type="button"
@@ -2175,7 +2277,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         }
       >
         <div className="space-y-4">
-          <div className="flex justify-between items-center bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-100 dark:border-slate-700">
+          <div className={`flex justify-between items-center p-3 rounded-lg border ${colorVariant === 'school' ? 'bg-school/5 border-school/20 dark:border-school/10' : 'bg-gray-50 dark:bg-slate-800/50 border-gray-100 dark:border-slate-700'}`}>
             <div className="text-sm text-gray-600 dark:text-gray-400">
               Toplam: <span className="font-bold text-gray-900 dark:text-white">{students.filter(s => s.courseIds?.includes(selectedCourseForStudents?.id)).length}</span> öğrenci
             </div>
@@ -2189,7 +2291,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                 placeholder="İsim veya email ile öğrenci ara ve ekle..."
                 value={studentSearchInModal}
                 onChange={(e) => setStudentSearchInModal(e.target.value)}
-                className={`w-full px-4 py-2 rounded-xl border text-sm focus:ring-2 outline-none transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-white ${inputFocusRing}`}
+                className={`w-full px-4 py-2 rounded-xl border text-sm focus:ring-2 outline-none transition-all bg-white dark:bg-[#231810] dark:border-school/20 dark:text-white ${inputFocusRing}`}
               />
               <svg className="w-4 h-4 absolute right-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -2204,34 +2306,46 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                   </svg>
                   Yeni Öğrenci Oluştur ve Ekle
                 </h4>
+                {/* Browser Autofill Prevention Hacks */}
+                <input type="text" style={{ display: 'none' }} />
+                <input type="password" style={{ display: 'none' }} />
+
                 <div className="space-y-3">
                   <input
                     type="text"
                     placeholder="Ad Soyad"
                     value={quickAddStudentData.displayName}
                     onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, displayName: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                    autoComplete="off"
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                   />
                   <input
                     type="email"
                     placeholder="E-posta Adresi"
                     value={quickAddStudentData.email}
                     onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                    autoComplete="off"
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                   />
                   <input
                     type="tel"
                     placeholder="Telefon Numarası (Opsiyonel)"
                     value={quickAddStudentData.phoneNumber}
                     onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                    autoComplete="dont-fill-this"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute('readonly')}
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                   />
                   <input
                     type="password"
                     placeholder="Giriş Şifresi Belirle"
                     value={quickAddStudentData.password}
                     onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, password: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm rounded border focus:ring-1 focus:ring-school outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                    autoComplete="new-password-no-fill"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute('readonly')}
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                   />
                   <div className="flex justify-end gap-2 pt-2">
                     <button
@@ -2262,11 +2376,14 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
             {studentSearchInModal.length >= 2 && !showQuickAddStudent && (
               <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-10">
                 {students
-                  .filter(s =>
-                    !s.courseIds?.includes(selectedCourseForStudents?.id) &&
-                    (s.displayName?.toLowerCase().includes(studentSearchInModal.toLowerCase()) ||
-                      s.email?.toLowerCase().includes(studentSearchInModal.toLowerCase()))
-                  )
+                  .filter(s => {
+                    const isAlreadyInCourse = s.courseIds?.includes(selectedCourseForStudents?.id);
+                    const matchesSearch = (s.displayName?.toLowerCase().includes(studentSearchInModal.toLowerCase()) ||
+                      s.email?.toLowerCase().includes(studentSearchInModal.toLowerCase()));
+                    // Eğer admin ise tüm sistemdeki "student" rollü kişileri görsün
+                    // Okul ise zaten sadece kendi öğrencilerini fetch ettik
+                    return !isAlreadyInCourse && matchesSearch;
+                  })
                   .map(student => (
                     <button
                       key={student.id}
@@ -2304,10 +2421,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
             {students.filter(s => s.courseIds?.includes(selectedCourseForStudents?.id)).length > 0 ? (
               students.filter(s => s.courseIds?.includes(selectedCourseForStudents?.id)).map((student) => (
-                <div key={student.id} className="group flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div key={student.id} className={`group flex items-center justify-between p-3 rounded-xl border transition-colors ${colorVariant === 'school' ? 'border-school/10 dark:border-school/20 hover:bg-school/5 dark:hover:bg-school/10' : 'border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-gray-500 uppercase">
-                      {student.displayName?.charAt(0) || '?'}
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border border-gray-100 dark:border-slate-700">
+                      <Avatar
+                        src={student.photoURL}
+                        alt={student.displayName}
+                        className="w-full h-full"
+                        userType="student"
+                      />
                     </div>
                     <div>
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">{student.displayName}</div>
@@ -2345,7 +2467,11 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         onClose={() => setSelectedCourseForInstructors(null)}
         title={`"${selectedCourseForInstructors?.name}" - Görevli Eğitmenler`}
         colorVariant={isAdmin ? 'admin' : (colorVariant as 'school' | 'instructor')}
-        bodyClassName="bg-white dark:bg-slate-900"
+        bodyClassName={isAdmin
+          ? 'bg-white dark:bg-slate-900'
+          : colorVariant === 'school'
+            ? 'bg-orange-50/30 dark:bg-[#1a120b]'
+            : 'bg-instructor-bg/20 dark:bg-slate-900/60'}
         actions={
           <Button
             type="button"
@@ -2357,7 +2483,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         }
       >
         <div className="space-y-4">
-          <div className="flex justify-between items-center bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-100 dark:border-slate-700">
+          <div className={`flex justify-between items-center p-3 rounded-lg border ${colorVariant === 'school' ? 'bg-school/5 border-school/20 dark:border-school/10' : 'bg-gray-50 dark:bg-slate-800/50 border-gray-100 dark:border-slate-700'}`}>
             <div className="text-sm text-gray-600 dark:text-gray-400">
               Görevli: <span className="font-bold text-gray-900 dark:text-white">
                 {Array.from(new Set([
@@ -2376,7 +2502,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                 placeholder="İsim ile eğitmen ara ve ata..."
                 value={instructorSearchInModal}
                 onChange={(e) => setInstructorSearchInModal(e.target.value)}
-                className={`w-full px-4 py-2 rounded-xl border text-sm focus:ring-2 outline-none transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-white ${inputFocusRing}`}
+                className={`w-full px-4 py-2 rounded-xl border text-sm focus:ring-2 outline-none transition-all bg-white dark:bg-[#231810] dark:border-school/20 dark:text-white ${inputFocusRing}`}
               />
               <svg className="w-4 h-4 absolute right-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -2412,9 +2538,81 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               </div>
             )}
 
-            <div className="text-xs text-right text-gray-500 dark:text-gray-400 mt-1">
-              Eğitmen Feriha'da kayıtlı değil mi? <button type="button" onClick={(e) => { e.preventDefault(); setShowQuickAddInstructor(true); setSelectedCourseForInstructors(null); editCourse(selectedCourseForInstructors!); setCurrentStep(3); }} className="text-school dark:text-school-light font-medium hover:underline">Sıfırdan Eğitmen Ekle</button>
-            </div>
+            {/* Hızlı Eğitmen Ekleme Formu */}
+            {showQuickAddInstructor ? (
+              <div className="bg-school/5 border border-school/20 rounded-xl p-4 mt-2 mb-4 animate-in fade-in zoom-in-95 duration-200">
+                <h4 className="text-sm font-semibold text-school mb-3 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Yeni Eğitmen Oluştur ve Ata
+                </h4>
+                {/* Browser Autofill Prevention Hacks */}
+                <input type="text" style={{ display: 'none' }} />
+                <input type="password" style={{ display: 'none' }} />
+
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Eğitmen Ad Soyad"
+                    value={quickAddInstructorData.displayName}
+                    onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, displayName: e.target.value }))}
+                    autoComplete="off"
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <input
+                    type="email"
+                    placeholder="E-posta Adresi"
+                    value={quickAddInstructorData.email}
+                    onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, email: e.target.value }))}
+                    autoComplete="off"
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Telefon Numarası (Opsiyonel)"
+                    value={quickAddInstructorData.phoneNumber}
+                    onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                    autoComplete="dont-fill-this"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute('readonly')}
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Giriş Şifresi Belirle"
+                    value={quickAddInstructorData.password}
+                    onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, password: e.target.value }))}
+                    autoComplete="new-password-no-fill"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute('readonly')}
+                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
+                  />
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickAddInstructor(false)}
+                      className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 font-medium"
+                      disabled={isQuickAddingInstructor}
+                    >
+                      İptal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleQuickAddInstructor}
+                      disabled={isQuickAddingInstructor}
+                      className="text-xs px-4 py-1.5 bg-school text-white rounded shadow-sm hover:bg-school-light font-medium transition-colors disabled:opacity-50"
+                    >
+                      {isQuickAddingInstructor ? 'Ekleniyor...' : 'Kaydet ve Kursa Ata'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-right text-gray-500 dark:text-gray-400 mt-1">
+                Eğitmen Feriha'da kayıtlı değil mi? <button type="button" onClick={() => setShowQuickAddInstructor(true)} className="text-school dark:text-school-light font-medium hover:underline">Sıfırdan Eğitmen Ekle</button>
+              </div>
+            )}
           </div>
 
           <div className="max-h-80 overflow-y-auto space-y-2 pr-1 mt-4">
@@ -2429,10 +2627,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               const name = matchedInstructor?.label || fallbackName || 'İsimsiz Eğitmen';
 
               return (
-                <div key={id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div key={id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${colorVariant === 'school' ? 'border-school/10 dark:border-school/20 hover:bg-school/5 dark:hover:bg-school/10' : 'border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-gray-500 uppercase">
-                      {name.charAt(0)}
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border border-gray-100 dark:border-slate-700">
+                      <Avatar
+                        src={matchedInstructor?.photoURL}
+                        alt={name}
+                        className="w-full h-full"
+                        userType="instructor"
+                      />
                     </div>
                     <div>
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">{name}</div>

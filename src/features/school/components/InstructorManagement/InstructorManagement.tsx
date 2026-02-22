@@ -635,13 +635,10 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
                           <Avatar
-                            src={
-                              instructor.photoURL && instructor.photoURL !== '/assets/placeholders/default-instructor.png'
-                                ? instructor.photoURL
-                                : `https://ui-avatars.com/api/?name=${encodeURIComponent(instructor.displayName)}&background=b45309&color=fff`
-                            }
+                            src={instructor.photoURL}
                             alt={instructor.displayName}
                             className="h-10 w-10 ring-1 ring-school/20"
+                            userType="instructor"
                           />
                         </div>
                         <div className="ml-4">
@@ -728,6 +725,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                         src={instructor.photoURL}
                         alt={instructor.displayName}
                         className="h-10 w-10 ring-1 ring-school/20"
+                        userType="instructor"
                       />
                     </div>
                     <div className="ml-3 min-w-0">
