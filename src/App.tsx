@@ -571,7 +571,12 @@ function AppContent(): JSX.Element {
               <>
                 <button
                   onClick={() => setShowChatList(true)}
-                  className="fixed bottom-6 right-6 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group z-50"
+                  className={`fixed bottom-6 right-6 bg-gradient-to-r ${currentUser?.role === 'school'
+                    ? 'from-amber-700 to-yellow-900'
+                    : currentUser?.role === 'instructor'
+                      ? 'from-instructor-dark to-instructor'
+                      : 'from-brand-pink to-rose-600'
+                    } text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group z-50`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -595,7 +600,12 @@ function AppContent(): JSX.Element {
                     />
                     <div className="fixed inset-y-0 right-0 max-w-md w-full bg-white dark:bg-slate-800 shadow-xl">
                       <div className="h-full flex flex-col">
-                        <div className="px-4 py-6 bg-gradient-to-r from-brand-pink to-rose-600">
+                        <div className={`px-4 py-6 bg-gradient-to-r ${currentUser?.role === 'school'
+                          ? 'from-amber-700 to-yellow-900'
+                          : currentUser?.role === 'instructor'
+                            ? 'from-instructor-dark to-instructor'
+                            : 'from-brand-pink to-rose-600'
+                          }`}>
                           <div className="flex items-center justify-between">
                             <h2 className="text-xl font-semibold text-white">
                               Mesajlarım {unreadCount > 0 && <span className="text-sm ml-2">({unreadCount} okunmamış)</span>}
