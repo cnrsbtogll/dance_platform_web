@@ -60,8 +60,8 @@ const CourseSearchPage: React.FC = () => {
 
         querySnapshot.forEach((doc) => {
           fetchedCourses.push({
-            id: doc.id,
             ...doc.data(),
+            id: doc.id,        // doc.id her zaman kazansın, içerideki id field'ını ezmeli
           } as DanceClass);
         });
 

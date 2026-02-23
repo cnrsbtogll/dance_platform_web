@@ -4,16 +4,52 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { getCourseImage } from '../../../common/utils/imageUtils';
+import { ChatDialog } from '../../../features/chat/components/ChatDialog';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface CourseCardProps {
   course: DanceClass;
   onEnroll?: (courseId: string) => void;
 }
 
+// Chat target tipi
+interface ChatTarget {
+  id: string;
+  displayName: string;
+  photoURL?: string;
+  role: 'student' | 'instructor' | 'school' | 'partner';
+}
+
 const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [chatTarget, setChatTarget] = useState<ChatTarget | null>(null);
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
+
+  const hasInstructor = !!(course.instructorId && course.instructorName);
+  const hasSchool = !!(course.schoolId && course.schoolName);
+
+  // İletişime Geç tıklanınca: giriş yoksa signin'e yönlendir,
+  // her iki taraf varsa picker aç, tek taraf varsa direkt chat aç
+  const handleContact = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!currentUser) {
+      navigate('/signin', { state: { returnUrl: `/courses/${course.id}` } });
+      return;
+    }
+    if (hasInstructor && hasSchool) {
+      setIsPickerOpen(true);
+    } else if (hasInstructor) {
+      setChatTarget({ id: course.instructorId, displayName: course.instructorName!, role: 'instructor' });
+    } else if (hasSchool) {
+      setChatTarget({ id: course.schoolId!, displayName: course.schoolName!, role: 'school' });
+    } else {
+      // Fallback – bilgi yok, detay sayfasına yönlendir
+      navigate(`/courses/${course.id}`);
+    }
+  };
 
   // Dans stiline göre renk
   const getDanceStyleColor = (style: string) => {
@@ -142,116 +178,83 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Modal açıldığında veya butonlara tıklandığında navigasyonu engelle
-    if (isContactModalOpen) return;
+    if (isPickerOpen || chatTarget) return;
     navigate(`/courses/${course.id}`);
   };
 
-  const ContactModal = () => (
-    <Transition appear show={isContactModalOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={() => setIsContactModalOpen(false)}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black bg-opacity-25" />
+  // Chat hedef seçim modalı (eğitmen + okul her ikisi de varsa gösterilir)
+  const ChatPickerModal = () => (
+    <Transition appear show={isPickerOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={() => setIsPickerOpen(false)}>
+        <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0"
+          enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
         </Transition.Child>
-
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                <Dialog.Title
-                  as="h3"
-                  className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4"
-                >
-                  {course.name} - İletişim Bilgileri
-                </Dialog.Title>
-
-                <div className="mt-2 space-y-4">
-                  {course.schoolName && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Dans Okulu</h4>
-                      <p className="text-base text-gray-900 dark:text-white">{course.schoolName}</p>
-                    </div>
-                  )}
-
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child as={Fragment} enter="ease-out duration-200"
+              enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
+              leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+              <Dialog.Panel className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 shadow-2xl overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-700">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Eğitmen</h4>
-                    <p className="text-base text-gray-900 dark:text-white">{course.instructorName}</p>
+                    <Dialog.Title className="text-base font-bold text-slate-900 dark:text-white">
+                      Kiminle İletişime Geçmek İstiyorsunuz?
+                    </Dialog.Title>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{course.name}</p>
                   </div>
-
-                  {course.phoneNumber && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Telefon</h4>
-                      <a
-                        href={`tel:${course.phoneNumber}`}
-                        className="text-base text-brand-pink hover:text-indigo-800"
-                      >
-                        {course.phoneNumber}
-                      </a>
-                    </div>
-                  )}
-
-                  {course.email && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">E-posta</h4>
-                      <a
-                        href={`mailto:${course.email}`}
-                        className="text-base text-brand-pink hover:text-indigo-800"
-                      >
-                        {course.email}
-                      </a>
-                    </div>
-                  )}
-
-                  {course.location?.address && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Adres</h4>
-                      <p className="text-base text-gray-900 dark:text-white">{course.location.address}</p>
-                    </div>
-                  )}
-
-                  <div className="mt-6">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      * Lütfen iletişime geçerken bu kursun adını belirtmeyi unutmayın.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    className="inline-flex justify-center rounded-md border border-transparent bg-rose-100 px-4 py-2 text-sm font-medium text-indigo-900 hover:bg-indigo-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-pink focus-visible:ring-offset-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsContactModalOpen(false);
-                    }}
-                  >
-                    Kapat
+                  <button onClick={() => setIsPickerOpen(false)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
-                  {course.phoneNumber && (
-                    <a
-                      href={`tel:${course.phoneNumber}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex justify-center rounded-md border border-transparent bg-brand-pink px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-pink focus-visible:ring-offset-2"
+                </div>
+                <div className="p-4 space-y-3">
+                  {hasInstructor && (
+                    <button
+                      onClick={() => { setIsPickerOpen(false); setChatTarget({ id: course.instructorId, displayName: course.instructorName!, role: 'instructor' }); }}
+                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-brand-pink hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all cursor-pointer group"
                     >
-                      Hemen Ara
-                    </a>
+                      <div className="w-10 h-10 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-brand-pink flex items-center justify-center flex-shrink-0 group-hover:bg-brand-pink group-hover:text-white transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Eğitmen</p>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{course.instructorName}</p>
+                      </div>
+                      <svg className="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </button>
                   )}
+                  {hasSchool && (
+                    <button
+                      onClick={() => { setIsPickerOpen(false); setChatTarget({ id: course.schoolId!, displayName: course.schoolName!, role: 'school' }); }}
+                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer group"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Dans Okulu</p>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{course.schoolName}</p>
+                      </div>
+                      <svg className="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                <div className="px-4 pb-4">
+                  <button onClick={() => setIsPickerOpen(false)}
+                    className="w-full h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+                    İptal
+                  </button>
                 </div>
               </Dialog.Panel>
             </Transition.Child>
@@ -358,11 +361,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
             {/* Butonlar */}
             <div className="flex space-x-2">
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setIsContactModalOpen(true);
-                }}
+                onClick={handleContact}
                 className="flex-1 py-2 px-4 text-sm font-medium rounded-md border border-brand-pink text-brand-pink hover:bg-brand-light dark:hover:bg-rose-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink transition-colors cursor-pointer"
               >
                 İletişime Geç
@@ -377,8 +376,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
             </div>
           </div>
         </div>
-      </div >
-      <ContactModal />
+      </div>
+      <ChatPickerModal />
+      {chatTarget && (
+        <ChatDialog
+          open={!!chatTarget}
+          onClose={() => setChatTarget(null)}
+          partner={chatTarget}
+          chatType={chatTarget.role === 'school' ? 'student-school' : 'student-instructor'}
+        />
+      )}
     </>
   );
 };
