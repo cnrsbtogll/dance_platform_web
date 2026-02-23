@@ -1064,40 +1064,49 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     }
   };
 
-  // Delete student
+  // Delete/Unlink student
   const deleteStudentHandler = async (studentId: string): Promise<void> => {
     setLoading(true);
     setError(null);
     setDeleteConfirmOpen(false);
 
     try {
-      // Get current user's school context
-      const userRef = doc(db, 'users', currentUser?.uid || '');
-      const userDoc = await getDoc(userRef);
-      const userData = userDoc.data();
-      const effectiveSchoolId = schoolId || userData?.schoolId || currentUser?.uid;
+      const studentRef = doc(db, 'users', studentId);
+      const isInstructorMode = userRole === 'instructor' && !isAdmin;
 
-      if (!effectiveSchoolId) {
-        throw new Error('Okul bilgisi bulunamadı.');
+      if (isInstructorMode) {
+        // Just unlink the instructor
+        await updateDoc(studentRef, {
+          instructorIds: arrayRemove(currentUser?.uid || ''), // if it's an array
+          instructorId: '', // legacy string field map
+          updatedAt: serverTimestamp()
+        });
+        setSuccess('Öğrenci başarıyla listenizden çıkarıldı.');
+      } else {
+        // School / Admin Mode: unlink from school
+        const userRef = doc(db, 'users', currentUser?.uid || '');
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data();
+        const effectiveSchoolId = schoolId || userData?.schoolId || currentUser?.uid;
+
+        if (!effectiveSchoolId) {
+          throw new Error('Okul bilgisi bulunamadı.');
+        }
+
+        await updateDoc(studentRef, {
+          schoolId: null, // Legacy
+          schoolIds: arrayRemove(effectiveSchoolId), // M:N
+          updatedAt: serverTimestamp()
+        });
+        setSuccess('Öğrenci başarıyla okuldan ayrıldı.');
       }
 
-      // Unlink from school instead of deleting doc
-      const studentRef = doc(db, 'users', studentId);
-
-      // Update the student document to remove this school
-      await updateDoc(studentRef, {
-        schoolId: null, // Legacy
-        schoolIds: arrayRemove(effectiveSchoolId), // M:N
-        updatedAt: serverTimestamp()
-      });
-
-      // Remove from state
+      // Remove from UI state
       const updatedStudents = students.filter(student => student.id !== studentId);
       setStudents(updatedStudents);
-      setSuccess('Öğrenci başarıyla okuldan ayrıldı.');
     } catch (err) {
-      console.error('Öğrenci ayrılırken hata oluştu:', err);
-      setError('Öğrenci ayrılırken bir hata oluştu. Lütfen tekrar deneyin.');
+      console.error('Öğrenci ayrılırken/kaldırılırken hata oluştu:', err);
+      setError('İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
       setStudentToDeleteId(null);
@@ -1716,14 +1725,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         </div>
       </SimpleModal>
 
-      {/* Existing User Warning Modal */}
       <SimpleModal
         open={deleteConfirmOpen}
         onClose={() => {
           setDeleteConfirmOpen(false);
           setStudentToDeleteId(null);
         }}
-        title="Öğrenciyi Kaldır"
+        title={userRole === 'instructor' && !isAdmin ? "Öğrenciyi Listeden Çıkar" : "Öğrenciyi Kaldır"}
         colorVariant={colorVariant as 'school' | 'instructor'}
         actions={
           <>
@@ -1731,13 +1739,16 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               setDeleteConfirmOpen(false);
               setStudentToDeleteId(null);
             }}>İptal</Button>
-            <Button variant="danger" onClick={() => studentToDeleteId && deleteStudentHandler(studentToDeleteId)}>Kaldır</Button>
+            <Button variant="danger" onClick={() => studentToDeleteId && deleteStudentHandler(studentToDeleteId)}>
+              {userRole === 'instructor' && !isAdmin ? "Çıkar" : "Kaldır"}
+            </Button>
           </>
         }
       >
         <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-          Bu öğrenciyi okulunuzun listesinden kaldırmak istediğinize emin misiniz?
-          Bu işlem öğrencinin hesabını tamamen silmez, yalnızca okulunuzla bağlantısını kaldırır. Kayıtlı olduğu kurslardaki geçmiş verileri korunacaktır.
+          {userRole === 'instructor' && !isAdmin
+            ? "Bu öğrenciyi kendi öğrencilerim listesinden çıkarmak istediğinize emin misiniz? Bu işlem öğrencinin platformdaki asıl hesabını veya kurslarındaki kaydını silmez, yalnızca sizin listenizden çıkarır."
+            : "Bu öğrenciyi okulunuzun listesinden kaldırmak istediğinize emin misiniz? Bu işlem öğrencinin hesabını tamamen silmez, yalnızca okulunuzla bağlantısını kaldırır. Kayıtlı olduğu kurslardaki geçmiş verileri korunacaktır."}
         </p>
       </SimpleModal>
 
