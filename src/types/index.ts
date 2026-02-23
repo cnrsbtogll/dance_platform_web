@@ -127,6 +127,9 @@ export interface DanceClass {
   tags?: string[];
   phoneNumber?: string;
   email?: string;
+  locationType?: 'school' | 'custom';
+  customAddress?: string;
+  schoolAddress?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -171,6 +174,8 @@ export interface Course {
     endTime: string;
   }[];
   location: string;
+  locationType?: 'school' | 'custom';
+  customAddress?: string;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;

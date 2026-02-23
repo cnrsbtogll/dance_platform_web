@@ -125,6 +125,8 @@ interface Course {
   instructorPhone?: string;
   schoolPhone: string;
   schoolAddress: string;
+  locationType?: 'school' | 'custom';
+  customAddress?: string;
   createdAt?: any;
   updatedAt?: any;
   rating?: number;
@@ -153,6 +155,9 @@ interface FormData {
   imageUrl: string;
   highlights: string[];
   tags: string[];
+  locationType?: 'school' | 'custom';
+  customAddress?: string;
+  schoolAddress: string;
 }
 
 interface CourseManagementProps {
@@ -304,7 +309,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     },
     imageUrl: '/placeholders/default-course-image.png',
     highlights: [],
-    tags: []
+    tags: [],
+    locationType: 'school',
+    customAddress: '',
+    schoolAddress: ''
   });
   const [currentStep, setCurrentStep] = useState<number>(1);
   const totalSteps = 4;
@@ -1388,29 +1396,76 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                   required
                 />
 
-                {/* Freelance / School selection for instructors */}
+                {/* Konum Tipi Seçimi Geliştirmesi */}
                 {colorVariant === 'instructor' && !isAdmin && (
-                  <div className="pt-2">
+                  <div className="pt-2 space-y-4">
                     <CustomSelect
-                      name="schoolId"
-                      label="Okul Bağlantısı (Opsiyonel)"
-                      options={schools}
-                      value={formData.schoolId}
+                      name="locationType"
+                      label="Kurs Nerede Verilecek?"
+                      options={[
+                        { label: 'Bir Dans Okulunda', value: 'school' },
+                        { label: 'Özel Adreste', value: 'custom' }
+                      ]}
+                      value={formData.locationType || 'school'}
                       onChange={(value) => {
-                        const style = value as string;
-                        const selectedSchool = schools.find(s => s.value === style);
+                        const type = value as 'school' | 'custom';
                         setFormData({
                           ...formData,
-                          schoolId: style,
-                          schoolName: selectedSchool?.label || ''
+                          locationType: type,
+                          // Seçim değiştiğinde diğer alanları temizle
+                          schoolId: type === 'custom' ? '' : formData.schoolId,
+                          schoolName: type === 'custom' ? '' : formData.schoolName,
+                          schoolAddress: type === 'custom' ? '' : formData.schoolAddress,
+                          customAddress: type === 'school' ? '' : formData.customAddress
                         });
                       }}
-                      placeholder="Freelance (Okulsuz)"
                       colorVariant={colorVariant}
+                      required
                     />
-                    <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
-                      Okul seçerseniz, kurs o okulun adı ve konumuyla yayınlanır. Seçmezseniz "Freelance" olarak görünür.
-                    </p>
+
+                    {formData.locationType === 'school' && (
+                      <div className="animate-in fade-in slide-in-from-top-2">
+                        <CustomSelect
+                          name="schoolId"
+                          label="Hangi Dans Okulunda?"
+                          options={schools}
+                          value={formData.schoolId}
+                          onChange={(value) => {
+                            const style = value as string;
+                            const selectedSchool = schools.find(s => s.value === style);
+                            setFormData({
+                              ...formData,
+                              schoolId: style,
+                              schoolName: selectedSchool?.label || ''
+                            });
+                          }}
+                          placeholder="Okul Seçin"
+                          colorVariant={colorVariant}
+                        />
+                        <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
+                          Seçtiğiniz dans okulunun kayıtlı adresi kurs detaylarında öğrencilere gösterilecektir.
+                        </p>
+                      </div>
+                    )}
+
+                    {formData.locationType === 'custom' && (
+                      <div className="animate-in fade-in slide-in-from-top-2">
+                        <CustomInput
+                          name="customAddress"
+                          label="Açık Adres (Sokak, Bina No, Mahalle, İlçe/İl)"
+                          value={formData.customAddress || ''}
+                          onChange={(e) => setFormData({ ...formData, customAddress: e.target.value })}
+                          multiline
+                          rows={3}
+                          placeholder="Örn: Caferağa Mah. Moda Cad. No:24/1 Kadıköy/İstanbul"
+                          colorVariant={colorVariant}
+                          required={formData.locationType === 'custom'}
+                        />
+                        <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
+                          Öğrenciler kursun nerede yapılacağını bulmak için doğrudan bu adresi göreceklerdir.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1767,7 +1822,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       instructorNames: course.instructorNames || [],
       schedule: course.schedule || [],
       date: course.date,
-      time: course.time || '18:00'
+      time: course.time || '18:00',
+      locationType: course.locationType || 'school',
+      customAddress: course.customAddress || '',
+      schoolAddress: course.schoolAddress || ''
     });
     setCurrentStep(1);
     setEditMode(true);
@@ -1805,7 +1863,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       },
       imageUrl: '/placeholders/default-course-image.png',
       highlights: [],
-      tags: []
+      tags: [],
+      locationType: 'school',
+      customAddress: '',
+      schoolAddress: ''
     });
     setCurrentStep(1);
     setEditMode(true);
@@ -1880,7 +1941,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       tags: courseData.tags || [],
       createdAt: courseData.createdAt,
       updatedAt: courseData.updatedAt,
-      rating: courseData.rating
+      rating: courseData.rating,
+      locationType: courseData.locationType || 'school',
+      customAddress: courseData.customAddress || ''
     };
   };
 
@@ -1910,7 +1973,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     try {
       // Inherit school location
       let finalLocation = formData.location;
-      if (formData.schoolId) {
+      if (formData.locationType === 'school' && formData.schoolId) {
         // Try schools collection first as it's the standard for schoolId
         const schoolRef = doc(db, 'schools', formData.schoolId);
         let schoolSnap = await getDoc(schoolRef);
@@ -1926,6 +1989,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           if (schoolData.location) {
             finalLocation = schoolData.location;
           }
+          formData.schoolAddress = schoolData.address || schoolData.location?.address || '';
         }
       } else {
         // Freelance course - clear school name if it was somehow set
@@ -1933,6 +1997,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       }
 
       const cleanedData = cleanDataForFirebase(formData);
+
+      // Clean up location data based on type
+      if (cleanedData.locationType === 'custom') {
+        cleanedData.schoolId = '';
+        cleanedData.schoolName = '';
+      } else {
+        cleanedData.customAddress = '';
+      }
+
       const courseDataToSave = {
         ...cleanedData,
         location: finalLocation,

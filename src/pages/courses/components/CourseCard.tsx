@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DanceClass } from '../../../types';
 import { Link, useNavigate } from 'react-router-dom';
 import { Dialog, Transition } from '@headlessui/react';
@@ -6,6 +6,8 @@ import { Fragment } from 'react';
 import { getCourseImage } from '../../../common/utils/imageUtils';
 import { ChatDialog } from '../../../features/chat/components/ChatDialog';
 import { useAuth } from '../../../contexts/AuthContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../api/firebase/firebase';
 
 interface CourseCardProps {
   course: DanceClass;
@@ -20,12 +22,58 @@ interface ChatTarget {
   role: 'student' | 'instructor' | 'school' | 'partner';
 }
 
+const PinIcon = () => (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
 const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [chatTarget, setChatTarget] = useState<ChatTarget | null>(null);
+  const [resolvedSchoolAddress, setResolvedSchoolAddress] = useState<string | null>(null);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+
+  // locationType yoksa school olarak kabul et
+  const effectiveLocationType = course.locationType || 'school';
+
+  // Okul adresi yoksa schoolId ile Firebase'den çek
+  useEffect(() => {
+    if (effectiveLocationType !== 'school') return;
+
+    const existingAddr = course.schoolAddress || (course as any).location?.address;
+    if (existingAddr) {
+      setResolvedSchoolAddress(existingAddr);
+      return;
+    }
+
+    const schoolId = course.schoolId;
+    if (!schoolId) return;
+
+    const fetchSchoolAddress = async () => {
+      try {
+        // Önce schools koleksiyonunu dene
+        let snap = await getDoc(doc(db, 'schools', schoolId));
+        if (!snap.exists()) {
+          snap = await getDoc(doc(db, 'users', schoolId));
+        }
+        if (snap.exists()) {
+          const data = snap.data();
+          const addr = data.address || data.location?.address;
+          const city = data.city || data.district;
+          const parts = [addr, city].filter(Boolean);
+          if (parts.length) setResolvedSchoolAddress(parts.join(', '));
+        }
+      } catch {
+        // sessizce geç
+      }
+    };
+
+    fetchSchoolAddress();
+  }, [course.schoolId, course.schoolAddress, effectiveLocationType]);
 
   const hasInstructor = !!(course.instructorId && course.instructorName);
   const hasSchool = !!(course.schoolId && course.schoolName);
@@ -149,32 +197,33 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
     });
   };
 
-  // Ders zamanını formatla
-  const formatSchedule = () => {
-    if (course.recurring && course.daysOfWeek?.length) {
-      const days = course.daysOfWeek
-        .map(day => {
-          switch (day.toLowerCase()) {
-            case 'monday': return 'Pts';
-            case 'tuesday': return 'Sal';
-            case 'wednesday': return 'Çar';
-            case 'thursday': return 'Per';
-            case 'friday': return 'Cum';
-            case 'saturday': return 'Cts';
-            case 'sunday': return 'Paz';
-            default: return day.substring(0, 3);
-          }
-        })
-        .join(', ');
-      return `${days} ${course.time}`;
+  // Gün kısaltması
+  const normDay = (day: string) => {
+    switch (day.toLowerCase()) {
+      case 'monday': return 'Pzt';
+      case 'tuesday': return 'Sal';
+      case 'wednesday': return 'Çar';
+      case 'thursday': return 'Per';
+      case 'friday': return 'Cum';
+      case 'saturday': return 'Cts';
+      case 'sunday': return 'Paz';
+      default: return day.substring(0, 3);
     }
-    return `${formatDate(course.date)} ${course.time}`;
   };
 
-  // Fiyatı formatla (1000 -> 1.000 ₺)
+  // Ders zamanını formatla (sadece saat - günler chip olarak gösterilecek)
+  const formatSchedule = () => {
+    if (course.recurring && course.daysOfWeek?.length) {
+      return course.time || '';
+    }
+    return `${formatDate(course.date)} ${course.time || ''}`;
+  };
+
+  // Fiyatı formatla — recurring ise "/ay" ekle
   const formatPrice = () => {
     const currencySymbol = course.currency === 'TRY' ? '₺' : course.currency === 'USD' ? '$' : '€';
-    return `${course.price.toLocaleString('tr-TR')} ${currencySymbol}`;
+    const suffix = course.recurring ? '/ay' : '/ders';
+    return `${course.price.toLocaleString('tr-TR')} ${currencySymbol} ${suffix}`;
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -289,12 +338,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
             {getLevelName(course.level)}
           </div>
 
-          {/* Zamanlama rozeti */}
-          <div className="absolute bottom-4 left-4 bg-white dark:bg-slate-800/80 dark:bg-gray-900/80 backdrop-blur-sm text-gray-800 dark:text-gray-200 px-3 py-1 text-sm font-medium rounded-full flex items-center">
+          {/* Zamanlama rozeti - recurring ise sadece saat, değilse tarih+saat */}
+          <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-900/80 backdrop-blur-sm text-gray-800 dark:text-gray-200 px-3 py-1 text-sm font-medium rounded-full flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-brand-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            {formatSchedule()}
+            {formatSchedule() || 'Saat belirtilmedi'}
           </div>
         </div>
 
@@ -303,27 +352,47 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
           {/* Üst Kısım */}
           <div className="flex-grow">
             <div className="flex justify-between items-start mb-3">
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-1.5">
                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getDanceStyleColor(course.danceStyle)} text-white`}>
                   {getDanceStyleName(course.danceStyle)}
                 </span>
-                {course.recurring && (
-                  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                    Periyodik
+                {/* Periyodik ise gün chip'leri göster */}
+                {course.recurring && course.daysOfWeek?.length ? (
+                  course.daysOfWeek.map(day => (
+                    <span key={day} className="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                      {normDay(day)}
+                    </span>
+                  ))
+                ) : !course.recurring && (
+                  <span className="px-2 py-1 text-xs rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                    Tek Seferlik
                   </span>
                 )}
               </div>
-              <div className="text-lg font-bold text-brand-pink">
-                {formatPrice()}
+              <div className="text-base font-bold text-brand-pink text-right leading-tight">
+                <div>{formatPrice()}</div>
               </div>
             </div>
 
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">{course.name}</h3>
 
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
               {course.instructorName}
-              {course.schoolName && ` • ${course.schoolName}`}
+              {effectiveLocationType === 'custom'
+                ? ' • Freelance'
+                : (course.locationType === 'school' || !course.locationType) && course.schoolName
+                  ? ` • ${course.schoolName}`
+                  : ''}
             </p>
+
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 mb-3">
+              <span className="text-emerald-500"><PinIcon /></span>
+              <span className="line-clamp-1">
+                {effectiveLocationType === 'custom'
+                  ? (course.customAddress || 'Adres belirtilmedi')
+                  : (resolvedSchoolAddress || course.schoolName || 'Okul Konumu')}
+              </span>
+            </div>
 
             <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">
               {course.description}

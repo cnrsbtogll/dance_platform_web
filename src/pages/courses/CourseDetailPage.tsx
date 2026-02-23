@@ -199,7 +199,7 @@ const ChatPickerModal: React.FC<{
                   </button>
                 )}
                 {/* Okul seçeneği */}
-                {course.schoolId && (school?.displayName || school?.name || course.schoolName) && (
+                {course.locationType === 'school' && course.schoolId && (school?.displayName || school?.name || course.schoolName) && (
                   <button
                     onClick={() => onSelect({ id: course.schoolId!, displayName: school?.displayName || school?.name || course.schoolName!, role: 'school' })}
                     className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer group"
@@ -286,8 +286,8 @@ const EnrollModal: React.FC<{
                               type="button"
                               onClick={() => setGender(g)}
                               className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all cursor-pointer border-2 ${gender === g
-                                  ? 'bg-brand-pink border-brand-pink text-white'
-                                  : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-brand-pink'
+                                ? 'bg-brand-pink border-brand-pink text-white'
+                                : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-brand-pink'
                                 }`}
                             >
                               {g === 'male' ? 'Erkek' : g === 'female' ? 'Kadın' : 'Diğer'}
@@ -431,9 +431,18 @@ const CourseDetailPage: React.FC = () => {
         const schoolId = c.schoolId || c.location?.schoolId;
         if (schoolId) {
           try {
-            const sSnap = await getDoc(doc(db, 'users', schoolId));
+            // Try schools collection first
+            let sSnap = await getDoc(doc(db, 'schools', schoolId));
+
+            // Fallback to users
+            if (!sSnap.exists()) {
+              sSnap = await getDoc(doc(db, 'users', schoolId));
+            }
+
             if (sSnap.exists()) setSchool(sSnap.data() as SchoolData);
-          } catch { /* not critical */ }
+          } catch (err) {
+            console.error('Okul detayları yüklenirken hata:', err);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -491,19 +500,30 @@ const CourseDetailPage: React.FC = () => {
   // Location text
   const getLocationText = () => {
     if (!course) return null;
+
+    // 1. Yeni yapı: locationType kontrolü
+    if (course.locationType === 'custom') {
+      return course.customAddress || 'Adres belirtilmedi';
+    }
+
+    if (course.locationType === 'school' || !course.locationType) {
+      const addr = school?.address || course.schoolAddress || (course as any).location?.address;
+      const city = school?.city || school?.district || (course as any).location?.city;
+
+      const parts = [addr, city].filter(Boolean);
+      return parts.length ? parts.join(', ') : (school?.displayName || school?.name || course.schoolName || 'Okul Konumu');
+    }
+
+    // 2. Geriye dönük uyumluluk (Legacy)
     const loc = (course as any).location;
     if (!loc) return null;
     if (typeof loc === 'string') return loc;
-    if (loc.type === 'school' && (school || loc.schoolName)) {
-      const parts = [
-        school?.address,
-        school?.city || school?.district,
-      ].filter(Boolean);
-      return parts.length ? parts.join(', ') : (loc.schoolName || school?.displayName || school?.name);
-    }
+
+    // Eğer loc objesi varsa ve içinde customAddress varsa
     if (loc.customAddress) return loc.customAddress;
+
     const parts = [loc.address, loc.city, loc.state].filter(Boolean);
-    return parts.length ? parts.join(', ') : null;
+    return parts.length ? parts.join(', ') : 'Adres belirtilmedi';
   };
 
   // Days of week chips
@@ -580,6 +600,11 @@ const CourseDetailPage: React.FC = () => {
                       {normLevel(course.level)}
                     </span>
                   )}
+                  {!course.recurring && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-400/90 text-white shadow-sm backdrop-blur-sm">
+                      Tek Seferlik
+                    </span>
+                  )}
                 </div>
 
                 {/* Rating on image */}
@@ -619,17 +644,29 @@ const CourseDetailPage: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* School */}
-                      {(school?.displayName || school?.name || course.schoolName) && (
+                      {/* School / Freelance */}
+                      {course.locationType === 'custom' ? (
                         <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                           <span className="text-blue-500"><Ic.School /></span>
                           <span>
                             <span className="text-slate-400 dark:text-slate-500 mr-1">Okul:</span>
                             <span className="font-medium text-slate-800 dark:text-slate-200">
-                              {school?.displayName || school?.name || course.schoolName}
+                              Freelance
                             </span>
                           </span>
                         </div>
+                      ) : (
+                        (course.locationType === 'school' || !course.locationType) && (school?.displayName || school?.name || course.schoolName) ? (
+                          <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+                            <span className="text-blue-500"><Ic.School /></span>
+                            <span>
+                              <span className="text-slate-400 dark:text-slate-500 mr-1">Okul:</span>
+                              <span className="font-medium text-slate-800 dark:text-slate-200">
+                                {school?.displayName || school?.name || course.schoolName}
+                              </span>
+                            </span>
+                          </div>
+                        ) : null
                       )}
 
                       {/* Location */}
@@ -659,7 +696,9 @@ const CourseDetailPage: React.FC = () => {
                         <span className="text-2xl font-bold text-brand-pink">
                           {fmtCurrency(course.price, course.currency)}
                         </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">/ ders</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">
+                          {course.recurring ? '/ ay' : '/ ders'}
+                        </span>
                       </div>
 
                       {/* Capacity */}
