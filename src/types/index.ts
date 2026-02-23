@@ -20,6 +20,7 @@ export interface User {
   height?: number;
   weight?: number;
   availableTimes?: string[];
+  isPartnerSearchActive?: boolean;
   role: UserRole;  // Artık zorunlu ve tekil
   createdAt?: Date;
   updatedAt?: Date;
@@ -126,6 +127,9 @@ export interface DanceClass {
   tags?: string[];
   phoneNumber?: string;
   email?: string;
+  locationType?: 'school' | 'custom';
+  customAddress?: string;
+  schoolAddress?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -170,6 +174,8 @@ export interface Course {
     endTime: string;
   }[];
   location: string;
+  locationType?: 'school' | 'custom';
+  customAddress?: string;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
@@ -190,6 +196,7 @@ export interface FirebaseUser {
   danceStyles?: DanceStyle[];
   createdAt: any;
   updatedAt: any;
+  isPartnerSearchActive?: boolean;
   // Additional fields for instructor
   specialties?: string[];
   experience?: number;

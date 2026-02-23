@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, getDocs, getDoc, doc, DocumentData } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, getDocs, getDoc, doc, DocumentData, writeBatch, arrayUnion } from 'firebase/firestore';
 import { db } from '../../../api/firebase/firebase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { ChatDialog } from './ChatDialog';
@@ -23,9 +23,10 @@ interface Chat {
 
 interface ChatListProps {
   onClose?: () => void;
+  onChatSelect?: (chat: { id: string; displayName: string; photoURL?: string; role?: 'student' | 'instructor' | 'school' | 'partner' }) => void;
 }
 
-export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
+export const ChatList: React.FC<ChatListProps> = ({ onClose, onChatSelect }) => {
   const { currentUser } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<{
@@ -35,6 +36,38 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
     role?: 'student' | 'instructor' | 'school' | 'partner';
   } | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const handleDeleteChat = async (partnerId: string, e: React.MouseEvent | React.TouchEvent | PointerEvent | Event) => {
+    e.stopPropagation();
+    if (!window.confirm('Bu sohbeti listenizden silmek istediğinize emin misiniz? (Karşı taraftan silinmeyecektir)')) {
+      return;
+    }
+
+    try {
+      const q = query(
+        collection(db, 'messages'),
+        where('participants', 'array-contains', currentUser!.uid)
+      );
+      const snap = await getDocs(q);
+      const batch = writeBatch(db);
+
+      snap.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        if ((data.senderId === partnerId || data.receiverId === partnerId)) {
+          // If not already deleted for me
+          if (!data.deletedFor?.includes(currentUser!.uid)) {
+            batch.update(docSnap.ref, {
+              deletedFor: arrayUnion(currentUser!.uid)
+            });
+          }
+        }
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error('Sohbet silinirken hata oluştu:', err);
+      alert('Sohbet silinirken bir hata oluştu. Lütfen tekrar deneyin.');
+    }
+  };
 
   useEffect(() => {
     if (!currentUser) {
@@ -46,21 +79,29 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
 
     const q = query(
       collection(db, 'messages'),
-      where('participants', 'array-contains', currentUser.uid),
-      orderBy('timestamp', 'desc')
+      where('participants', 'array-contains', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       console.log('Toplam mesaj sayısı:', snapshot.docs.length);
-      console.log('Ham mesaj verileri:', snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })));
+
+      // Sadece bizim için SİLİNMEYEN belgeleri filtrele
+      const validDocs = snapshot.docs.filter(docSnap =>
+        !docSnap.data().deletedFor?.includes(currentUser.uid)
+      );
+
+      // Timestamp'e göre descending (en yeni ilk) sıraya tekrar diz (sorgudan orderBy çıktı çünkü)
+      validDocs.sort((a, b) => (b.data().timestamp?.toMillis?.() || 0) - (a.data().timestamp?.toMillis?.() || 0));
+
+      console.log('Geçerli ham mesaj verileri:', validDocs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })));
 
       const chatMap = new Map<string, Chat>();
       const processedPartners = new Set<string>();
 
-      for (const docSnap of snapshot.docs) {
+      for (const docSnap of validDocs) {
         const message = docSnap.data();
         const partnerId = message.senderId === currentUser.uid ? message.receiverId : message.senderId;
-        
+
         console.log('İşlenen mesaj:', {
           messageId: docSnap.id,
           content: message.content,
@@ -71,29 +112,76 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
 
         if (!processedPartners.has(partnerId)) {
           processedPartners.add(partnerId);
-          
+
           try {
-            // Partner bilgilerini direkt döküman ID'si ile al
+            let userData: Partial<UserData> = {};
+            let partnerRoleFromDb: string = 'student';
+            let exists = false;
+
+            // 1. users koleksiyonunda ara
             const userDocRef = doc(db, 'users', partnerId);
             const userDocSnap = await getDoc(userDocRef);
-            
-            console.log('Partner bilgileri:', {
-              partnerId,
-              exists: userDocSnap.exists(),
-              userData: userDocSnap.data()
-            });
-            
+
             if (userDocSnap.exists()) {
-              const userData = userDocSnap.data() as UserData;
-              const userRole = Array.isArray(userData.role) ? userData.role[0] : userData.role;
+              userData = userDocSnap.data() as UserData;
+              partnerRoleFromDb = (Array.isArray(userData.role) ? userData.role[0] : userData.role) || 'student';
+              exists = true;
+            } else {
+              // 2. instructors koleksiyonunda ara
+              const instructorDocRef = doc(db, 'instructors', partnerId);
+              const instructorDocSnap = await getDoc(instructorDocRef);
+              if (instructorDocSnap.exists()) {
+                const instrData = instructorDocSnap.data() as any;
+                partnerRoleFromDb = 'instructor';
+                exists = true;
+                if (instrData.userId) {
+                  const trueUserSnap = await getDoc(doc(db, 'users', instrData.userId));
+                  if (trueUserSnap.exists()) {
+                    userData = trueUserSnap.data() as UserData;
+                  } else {
+                    userData = { displayName: instrData.displayName || instrData.name };
+                  }
+                } else {
+                  userData = { displayName: instrData.displayName || instrData.name };
+                }
+              } else {
+                // 3. schools koleksiyonunda ara
+                const schoolDocRef = doc(db, 'schools', partnerId);
+                const schoolDocSnap = await getDoc(schoolDocRef);
+                if (schoolDocSnap.exists()) {
+                  const schData = schoolDocSnap.data() as any;
+                  partnerRoleFromDb = 'school';
+                  exists = true;
+                  userData = {
+                    displayName: schData.displayName || schData.schoolName || schData.name,
+                    photoURL: schData.photoURL || schData.logo
+                  };
+                }
+              }
+            }
+
+            // 4. Metadata Fallback (Eğer hiçbir dökümanda bulunamazsa chat meta verisinden adı çözmeye çalış)
+            const isSender = message.senderId === currentUser.uid;
+            const fallbackName = isSender ? message.metadata?.receiverName : message.metadata?.senderName;
+
+            if (exists || fallbackName) {
               const validRole = (role?: string): role is Chat['partnerRole'] => {
                 return role === 'student' || role === 'instructor' || role === 'school' || role === 'partner';
               };
 
+              // Eğer role database'den alınamadıysa ama mevcutsa (metadata kontrolü via chatType)
+              if (!exists && message.metadata?.chatType) {
+                if (message.metadata.chatType === 'student-instructor') {
+                  partnerRoleFromDb = isSender ? 'instructor' : 'student';
+                } else if (message.metadata.chatType === 'student-school') {
+                  partnerRoleFromDb = isSender ? 'school' : 'student';
+                }
+              }
+
               chatMap.set(partnerId, {
                 partnerId,
-                partnerName: userData.displayName || 'İsimsiz Kullanıcı',
-                partnerRole: validRole(userRole) ? userRole : 'student',
+                partnerName: userData.displayName || fallbackName || 'İsimsiz Kullanıcı',
+                partnerRole: validRole(partnerRoleFromDb) ? partnerRoleFromDb : 'student',
                 partnerPhotoURL: userData.photoURL || '/assets/images/default-avatar.png',
                 lastMessage: message.content,
                 timestamp: message.timestamp?.toDate() || new Date(),
@@ -104,9 +192,9 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
               const unreadMessages = snapshot.docs.filter(msgDoc => {
                 const msgData = msgDoc.data();
                 // Gönderen partner ise ve mesaj görüntülenmemişse
-                return msgData.senderId === partnerId && 
-                       msgData.receiverId === currentUser.uid && 
-                       !msgData.viewed;
+                return msgData.senderId === partnerId &&
+                  msgData.receiverId === currentUser.uid &&
+                  !msgData.viewed;
               });
 
               if (chatMap.has(partnerId)) {
@@ -129,7 +217,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
 
       const sortedChats = Array.from(chatMap.values()).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       console.log('İşlenmiş sohbet listesi:', sortedChats);
-      
+
       setChats(sortedChats);
       setLoading(false);
     }, (error) => {
@@ -155,6 +243,21 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
     }
   };
 
+  const getRoleBadgeStyle = (role: Chat['partnerRole']) => {
+    switch (role) {
+      case 'instructor':
+        return 'bg-[#005f73]/10 text-[#005f73] border-[#005f73]/30 dark:bg-[#005f73]/20 dark:text-[#005f73] dark:border-[#005f73]/40';
+      case 'school':
+        return 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/30 dark:bg-[#f59e0b]/20 dark:text-[#f59e0b] dark:border-[#f59e0b]/40';
+      case 'student':
+        return 'bg-[#ED3D81]/10 text-[#ED3D81] border-[#ED3D81]/30 dark:bg-[#ED3D81]/20 dark:text-[#ED3D81] dark:border-[#ED3D81]/40';
+      case 'partner':
+        return 'bg-rose-50 text-brand-pink border-brand-pink/20 dark:bg-rose-900/20 dark:text-brand-pink dark:border-brand-pink/20';
+      default:
+        return 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-slate-800 dark:text-gray-400 dark:border-gray-700';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -171,7 +274,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
           {chats.length} sohbet
         </span>
       </div> */}
-      
+
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow divide-y">
         {chats.length === 0 ? (
           <div className="p-4 sm:p-6 text-center text-gray-500 dark:text-gray-400">
@@ -183,18 +286,25 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
           </div>
         ) : (
           <div className="divide-y">
-            {chats.map((chat) => (
+            {chats.map((chat: Chat) => (
               <div
                 key={chat.partnerId}
-                className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-150"
-                onClick={() => setSelectedChat({
-                  id: chat.partnerId,
-                  displayName: chat.partnerName,
-                  photoURL: chat.partnerPhotoURL,
-                  role: chat.partnerRole
-                })}
+                className="group relative flex items-center p-3 sm:p-4 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 transition-colors duration-150"
+                onClick={() => {
+                  const sel = {
+                    id: chat.partnerId,
+                    displayName: chat.partnerName,
+                    photoURL: chat.partnerPhotoURL,
+                    role: chat.partnerRole
+                  };
+                  if (onChatSelect) {
+                    onChatSelect(sel);
+                  } else {
+                    setSelectedChat(sel);
+                  }
+                }}
               >
-                <div className="flex items-center gap-2 sm:gap-4">
+                <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-4 pr-10">
                   <div className="relative flex-shrink-0">
                     <img
                       src={chat.partnerPhotoURL || '/assets/images/default-avatar.png'}
@@ -211,25 +321,44 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <div className="flex justify-between items-start">
                       <div className="min-w-0">
-                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate pr-2">{chat.partnerName}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{getRoleLabel(chat.partnerRole)}</p>
+                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate pr-2">
+                          {chat.partnerName}
+                        </h3>
+                        <div className="mt-0.5">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-semibold border ${getRoleBadgeStyle(chat.partnerRole)}`}>
+                            {getRoleLabel(chat.partnerRole)}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap flex-shrink-0">
+                      <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap flex-shrink-0 pr-2">
                         {chat.timestamp.toLocaleDateString('tr-TR', {
                           hour: '2-digit',
                           minute: '2-digit'
                         })}
                       </span>
                     </div>
-                    
+
                     <p className={`text-xs sm:text-sm ${chat.unreadCount > 0 ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'} truncate`}>
                       {chat.lastMessage}
                     </p>
                   </div>
+                </div>
+
+                {/* Delete Button - Absolute Right Positioned */}
+                <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={(e) => handleDeleteChat(chat.partnerId, e)}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                    title="Sohbeti Sil"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}

@@ -20,7 +20,7 @@ interface CustomSelectProps {
   placeholder?: string;
   fullWidth?: boolean;
   allowEmpty?: boolean;
-  colorVariant?: 'default' | 'school' | 'instructor';
+  colorVariant?: 'default' | 'school' | 'instructor' | 'student';
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -41,16 +41,18 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   const [open, setOpen] = useState(false);
 
   const isSchool = colorVariant === 'school';
+  const isInstructor = colorVariant === 'instructor';
+  const isStudent = colorVariant === 'student';
   const bg = isDark ? (isSchool ? '#231810' : '#1e293b') : '#ffffff';
   const bgHover = isDark ? (isSchool ? '#493322' : '#334155') : '#f9fafb';
   const textColor = isDark ? (isSchool ? '#ffffff' : '#f1f5f9') : '#111827';
   const labelColor = isDark ? (isSchool ? '#cba990' : '#94a3b8') : '#6B7280';
   const borderColor = isDark ? (isSchool ? '#493322' : '#475569') : '#E5E7EB';
   const borderHover = isDark ? (isSchool ? '#cba990' : '#64748b') : '#9CA3AF';
-  const borderFocus = isDark ? (isSchool ? '#b45309' : '#a78bfa') : (isSchool ? '#b45309' : '#7c3aed');
+  const borderFocus = isSchool ? '#b45309' : isInstructor ? (isDark ? '#a78bfa' : '#7c3aed') : isStudent ? '#9f1239' : (isDark ? '#a78bfa' : '#7c3aed');
   const placeholderColor = isDark ? (isSchool ? '#8e715b' : '#64748b') : '#9CA3AF';
-  const selectedBg = isDark ? (isSchool ? '#493322' : '#334155') : '#f5f3ff';
-  const selectedHoverBg = isDark ? (isSchool ? '#493322' : '#475569') : '#ede9fe';
+  const selectedBg = isDark ? (isSchool ? '#493322' : '#334155') : (isStudent ? '#fff1f2' : '#f5f3ff');
+  const selectedHoverBg = isDark ? (isSchool ? '#493322' : '#475569') : (isStudent ? '#ffe4e6' : '#ede9fe');
 
   const handleChange = (event: any) => {
     const selectedValue = event.target.value;
@@ -216,7 +218,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             }}
           >
             <Button
-              variant={isSchool ? 'school' : colorVariant === 'instructor' ? 'instructor' : 'primary'}
+              variant={isSchool ? 'school' : isInstructor ? 'instructor' : 'primary'}
               fullWidth
               onClick={(e) => {
                 e.preventDefault();

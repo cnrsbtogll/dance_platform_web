@@ -14,8 +14,8 @@ import {
   arrayUnion,
   arrayRemove
 } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { db, secondaryAuth } from '../../../../api/firebase/firebase';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
+import { db, auth, secondaryAuth } from '../../../../api/firebase/firebase';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { DanceLevel, DanceStyle } from '../../../../types';
 import CustomInput from '../../../../common/components/ui/CustomInput';
@@ -67,7 +67,7 @@ const defaultInstructorFormData: InstructorFormData = {
   danceStyles: [],
   biography: '',
   experience: 0,
-  password: ''
+  password: 'feriha123'
 };
 
 // SVG icons (no MUI dependency)
@@ -397,7 +397,15 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
-        await setDoc(doc(db, 'users', newInstructorId), newInstructorData);
+        await setDoc(doc(db, 'users', newInstructorId), {
+          ...newInstructorData,
+          emailVerified: false,
+          password: formData.password
+        });
+
+        // Hesap oluşturulunca e-posta doğrulama maili gönder
+        await sendEmailVerification(userCredential.user);
+        await secondaryAuth.signOut();
 
         // Instructors koleksiyonuna da ekle
         const instructorEntryId = `instructor_${newInstructorId}`;
@@ -520,6 +528,46 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
       console.error('Kullanıcı bağlanırken hata:', err);
       setError('Kullanıcı bağlanırken bir hata oluştu.');
       setLoading(false);
+    }
+  };
+
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  // Şifre Sıfırlama E-postası Gönder
+  const handleSendPasswordResetEmail = async (email: string) => {
+    if (!window.confirm("Eğitmene şifre sıfırlama e-postası gönderilecektir. Emin misiniz?")) {
+      return;
+    }
+    try {
+      setIsResettingPassword(true);
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMessage('Şifre sıfırlama bağlantısı eğitmenin e-posta adresine gönderildi!');
+      setOpenDialog(false);
+    } catch (err: any) {
+      console.error('Şifre sıfırlama e-postası hatası:', err);
+      setError('Şifre sıfırlama e-postası gönderilirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  // E-posta Doğrulama Maili Gönder
+  const handleSendVerificationEmail = async (email: string) => {
+    if (!window.confirm(`"${email}" adresine e-posta doğrulama bağlantısı gönderilecektir. Emin misiniz?`)) {
+      return;
+    }
+    try {
+      setIsResettingPassword(true);
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMessage('Doğrulama/sıfırlama bağlantısı eğitmenin e-posta adresine gönderildi!');
+      setOpenDialog(false);
+    } catch (err: any) {
+      console.error('Doğrulama e-postası hatası:', err);
+      setError('Doğrulama e-postası gönderilirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -1214,25 +1262,54 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 onPhoneNumberChange={(number) => handlePhoneChange('+90', number)}
                 autoComplete="new-password"
               />
-              <div className="flex flex-col gap-1">
-                <CustomInput
-                  name="password"
-                  label={isEdit ? "Yeni Şifre (Opsiyonel)" : "Şifre"}
-                  type="password"
-                  value={formData.password || ''}
-                  onChange={handleInputChange}
-                  required={!isEdit}
-                  fullWidth
-                  colorVariant="school"
-                  placeholder={isEdit ? "Değiştirmek için girin" : "Giriş şifresi oluşturun"}
-                  autoComplete="new-password"
-                />
-                {isEdit && (
-                  <span className="text-[10px] text-gray-500 italic">
-                    * Yeni bir şifre girerseniz kullanıcının giriş şifresi güncellenir.
-                  </span>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Şifre ve E-posta İşlemleri</label>
+                {!isEdit ? (
+                  <div className="px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Eğitmen hesabı <span className="text-gray-900 dark:text-white font-bold">feriha123</span> şifresiyle oluşturulacak ve doğrulama e-postası gönderilecektir.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {/* Şifre Sıfırlama */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Eğitmen şifresini unuttuysa sıfırlama e-postası gönderin.
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        disabled={isResettingPassword || !formData.email}
+                        onClick={() => {
+                          if (formData.email) {
+                            handleSendPasswordResetEmail(formData.email);
+                          }
+                        }}
+                      >
+                        {isResettingPassword ? 'Gönderiliyor...' : 'Şifre Sıfırla'}
+                      </Button>
+                    </div>
+                    {/* Doğrulama e-postası */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <span className="text-sm text-amber-700 dark:text-amber-400">
+                        E-posta doğrulama bağlantısı gönder.
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        disabled={isResettingPassword || !formData.email}
+                        onClick={() => {
+                          if (formData.email) {
+                            handleSendVerificationEmail(formData.email);
+                          }
+                        }}
+                      >
+                        {isResettingPassword ? 'Gönderiliyor...' : 'Doğrulama Gönder'}
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
+
             </div>
           </div>
 

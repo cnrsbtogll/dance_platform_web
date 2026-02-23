@@ -125,6 +125,8 @@ interface Course {
   instructorPhone?: string;
   schoolPhone: string;
   schoolAddress: string;
+  locationType?: 'school' | 'custom';
+  customAddress?: string;
   createdAt?: any;
   updatedAt?: any;
   rating?: number;
@@ -153,6 +155,9 @@ interface FormData {
   imageUrl: string;
   highlights: string[];
   tags: string[];
+  locationType?: 'school' | 'custom';
+  customAddress?: string;
+  schoolAddress: string;
 }
 
 interface CourseManagementProps {
@@ -304,7 +309,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     },
     imageUrl: '/placeholders/default-course-image.png',
     highlights: [],
-    tags: []
+    tags: [],
+    locationType: 'school',
+    customAddress: '',
+    schoolAddress: ''
   });
   const [currentStep, setCurrentStep] = useState<number>(1);
   const totalSteps = 4;
@@ -325,11 +333,11 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const [studentSearchInModal, setStudentSearchInModal] = useState<string>('');
   const [instructorSearchInModal, setInstructorSearchInModal] = useState<string>('');
   const [showQuickAddStudent, setShowQuickAddStudent] = useState<boolean>(false);
-  const [quickAddStudentData, setQuickAddStudentData] = useState({ displayName: '', email: '', password: '', phoneNumber: '' });
+  const [quickAddStudentData, setQuickAddStudentData] = useState({ displayName: '', email: '', password: 'feriha123', phoneNumber: '' });
   const [isQuickAdding, setIsQuickAdding] = useState(false);
 
   const [showQuickAddInstructor, setShowQuickAddInstructor] = useState<boolean>(false);
-  const [quickAddInstructorData, setQuickAddInstructorData] = useState({ displayName: '', email: '', password: '', phoneNumber: '' });
+  const [quickAddInstructorData, setQuickAddInstructorData] = useState({ displayName: '', email: '', password: 'feriha123', phoneNumber: '' });
   const [isQuickAddingInstructor, setIsQuickAddingInstructor] = useState(false);
   const [instructorToRemove, setInstructorToRemove] = useState<{ id: string, name: string, courseId: string } | null>(null);
 
@@ -556,11 +564,6 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       loadingInstructors
     });
 
-    if (instructorId) {
-      console.log('Instructor ID mevcut, eğitmenler getirilmeyecek');
-      return;
-    }
-
     if (!auth.currentUser?.uid) {
       console.error('Oturum açmış kullanıcı bilgisi bulunamadı');
       return;
@@ -759,21 +762,35 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as string[]).includes('school') : false;
       const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
 
-      await updateDoc(doc(db, 'users', studentId), {
+      const courseRef = doc(db, 'courses', courseId);
+      const courseSnap = await getDoc(courseRef);
+      const courseData = courseSnap.exists() ? courseSnap.data() : null;
+      const courseInstructorIds = courseData?.instructorIds || (courseData?.instructorId ? [courseData.instructorId] : []);
+
+      const updatePayload: any = {
         courseIds: arrayUnion(courseId),
-        // Eğer bir okul bağlamındaysak, öğrenciyi o okulun listesine de ekleyelim
         ...(effectiveSchoolId ? { schoolIds: arrayUnion(effectiveSchoolId) } : {}),
         updatedAt: serverTimestamp()
-      });
+      };
+
+      if (courseInstructorIds.length > 0) {
+        updatePayload.instructorIds = arrayUnion(...courseInstructorIds);
+      }
+
+      await updateDoc(doc(db, 'users', studentId), updatePayload);
+
       // State'i güncelle
       setStudents(prev => prev.map(s => {
         if (s.id === studentId) {
           const currentCourseIds = s.courseIds || [];
           const currentSchoolIds = s.schoolIds || [];
+          const currentInstructorIds = s.instructorIds || [];
+
           return {
             ...s,
             courseIds: currentCourseIds.includes(courseId) ? currentCourseIds : [...currentCourseIds, courseId],
-            schoolIds: effectiveSchoolId && !currentSchoolIds.includes(effectiveSchoolId) ? [...currentSchoolIds, effectiveSchoolId] : currentSchoolIds
+            schoolIds: effectiveSchoolId && !currentSchoolIds.includes(effectiveSchoolId) ? [...currentSchoolIds, effectiveSchoolId] : currentSchoolIds,
+            instructorIds: [...new Set([...currentInstructorIds, ...courseInstructorIds])]
           };
         }
         return s;
@@ -799,9 +816,21 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       setError(null);
 
       const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as any as string[]).includes('school') : false;
-      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+      const isInstructorUser = typeof userRole === 'string' ? userRole === 'instructor' : Array.isArray(userRole) ? (userRole as any as string[]).includes('instructor') : false;
 
-      if (!effectiveSchoolId && !isAdmin) {
+      // Önce prop'tan al, yoksa Firestore'dan çek
+      let effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
+      if (!effectiveSchoolId && auth.currentUser?.uid) {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          effectiveSchoolId = userDoc.data().schoolId || userDoc.data().schoolIds?.[0] || null;
+        }
+      }
+
+      // Eğitmen okuldan bağımsız öğrenci ekleyebilir — okul zorunlu değil
+      if (!effectiveSchoolId && !isAdmin && !isInstructorUser) {
         throw new Error("Okul bilgisi bulunamadı");
       }
 
@@ -813,9 +842,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         return;
       }
 
-      // We need to use dynamic import for firebase auth methods to avoid top level issues or use existing imports
-      // Firebase auth module is imported at top
-      const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+      const { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } = await import('firebase/auth');
       const { secondaryAuth } = await import('../../../../api/firebase/firebase');
 
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, quickAddStudentData.email, quickAddStudentData.password);
@@ -825,9 +852,17 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         displayName: quickAddStudentData.displayName
       });
 
-      const schoolRef = doc(db, 'users', effectiveSchoolId);
-      const schoolDoc = await getDoc(schoolRef);
-      const schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : 'Bilinmeyen Okul';
+      // E-posta doğrulama maili gönder
+      await sendEmailVerification(newUser);
+
+      let schoolNameData = '';
+      if (effectiveSchoolId) {
+        const schoolRef = doc(db, 'users', effectiveSchoolId);
+        const schoolDoc = await getDoc(schoolRef);
+        schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : '';
+      }
+
+      const courseInstructorIds = selectedCourseForStudents?.instructorIds || (auth.currentUser?.uid ? [auth.currentUser.uid] : []);
 
       // Assign to user collection
       const newStudentData = {
@@ -837,9 +872,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         phoneNumber: quickAddStudentData.phoneNumber || '',
         role: ['student'],
         level: 'beginner',
-        schoolId: effectiveSchoolId,
-        schoolIds: [effectiveSchoolId],
-        schoolName: schoolNameData,
+        schoolId: effectiveSchoolId || null,
+        schoolIds: effectiveSchoolId ? [effectiveSchoolId] : [],
+        instructorIds: courseInstructorIds,
+        schoolName: schoolNameData || null,
+        emailVerified: false,
+        password: quickAddStudentData.password,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         photoURL: '',
@@ -848,12 +886,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
       await setDoc(doc(db, 'users', newUser.uid), newStudentData);
 
+      // secondary auth session kapat
+      await secondaryAuth.signOut();
+
       // Update local state
       setStudents(prev => [{ ...newStudentData } as any, ...prev]);
 
       setSuccess('Yeni öğrenci oluşturuldu ve kursa eklendi.');
       setShowQuickAddStudent(false);
-      setQuickAddStudentData({ displayName: '', email: '', password: '', phoneNumber: '' });
+      setQuickAddStudentData({ displayName: '', email: '', password: 'feriha123', phoneNumber: '' });
 
       // Sign out from the secondary auth so it doesn't affect main session
       await secondaryAuth.signOut();
@@ -878,9 +919,21 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       setError(null);
 
       const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as any as string[]).includes('school') : false;
-      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+      const isInstructorUser = typeof userRole === 'string' ? userRole === 'instructor' : Array.isArray(userRole) ? (userRole as any as string[]).includes('instructor') : false;
 
-      if (!effectiveSchoolId && !isAdmin) {
+      // Önce prop'tan al, yoksa Firestore'dan çek
+      let effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
+      if (!effectiveSchoolId && auth.currentUser?.uid) {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          effectiveSchoolId = userDoc.data().schoolId || userDoc.data().schoolIds?.[0] || null;
+        }
+      }
+
+      // Eğitmen okuldan bağımsız ekleyebilir
+      if (!effectiveSchoolId && !isAdmin && !isInstructorUser) {
         throw new Error("Okul bilgisi bulunamadı");
       }
 
@@ -891,7 +944,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         return;
       }
 
-      const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+      const { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } = await import('firebase/auth');
       const { secondaryAuth } = await import('../../../../api/firebase/firebase');
 
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, quickAddInstructorData.email, quickAddInstructorData.password);
@@ -901,9 +954,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         displayName: quickAddInstructorData.displayName
       });
 
-      const schoolRef = doc(db, 'users', effectiveSchoolId);
-      const schoolDoc = await getDoc(schoolRef);
-      const schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : 'Bilinmeyen Okul';
+      // E-posta doğrulama maili gönder
+      await sendEmailVerification(newUser);
+
+      let schoolNameData = '';
+      if (effectiveSchoolId) {
+        const schoolRef = doc(db, 'users', effectiveSchoolId);
+        const schoolDoc = await getDoc(schoolRef);
+        schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : '';
+      }
 
       const newInstructorData = {
         id: newUser.uid,
@@ -913,15 +972,16 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         role: isSchoolUser ? ['instructor'] : ['draft-instructor'],
         isInstructor: true,
         status: 'active',
-        schoolId: effectiveSchoolId,
-        schoolIds: [effectiveSchoolId], // Liste olarak da ekleyelim
-        schoolName: schoolNameData,
+        schoolId: effectiveSchoolId || null,
+        schoolIds: effectiveSchoolId ? [effectiveSchoolId] : [],
+        schoolName: schoolNameData || null,
+        emailVerified: false,
+        password: quickAddInstructorData.password,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         photoURL: '',
         danceStyles: [],
         experience: 0,
-        // Eğer course içindeysek ve modal ile ekliyorsak o kursa ata
         courseIds: selectedCourseForInstructors?.id ? [selectedCourseForInstructors.id] : []
       };
 
@@ -936,10 +996,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         displayName: quickAddInstructorData.displayName,
         email: quickAddInstructorData.email,
         phoneNumber: quickAddInstructorData.phoneNumber || '',
-        okul_id: effectiveSchoolId,
-        schoolId: effectiveSchoolId,
-        schoolName: schoolNameData,
-        status: isSchoolUser ? 'active' : 'pending', // Okul eklerse aktif, admin eklerse onay bekliyor
+        okul_id: effectiveSchoolId || null,
+        schoolId: effectiveSchoolId || null,
+        schoolName: schoolNameData || null,
+        status: isSchoolUser ? 'active' : 'pending',
         role: ['instructor'],
         uzmanlık: [],
         tecrube: 0,
@@ -997,7 +1057,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
       setSuccess('Yeni eğitmen oluşturuldu ve kursa eklendi.');
       setShowQuickAddInstructor(false);
-      setQuickAddInstructorData({ displayName: '', email: '', password: '', phoneNumber: '' });
+      setQuickAddInstructorData({ displayName: '', email: '', password: 'feriha123', phoneNumber: '' });
 
       await secondaryAuth.signOut();
     } catch (err: any) {
@@ -1102,6 +1162,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     const courseId = cId || instructorToRemove?.courseId;
 
     if (!instructorId || !courseId) return;
+
+    if (auth.currentUser?.uid === instructorId) {
+      setError('Kendinizi kurstan çıkaramazsınız.');
+      setInstructorToRemove(null);
+      return;
+    }
 
     setInstructorToRemove(null);
     try {
@@ -1330,29 +1396,76 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                   required
                 />
 
-                {/* Freelance / School selection for instructors */}
+                {/* Konum Tipi Seçimi Geliştirmesi */}
                 {colorVariant === 'instructor' && !isAdmin && (
-                  <div className="pt-2">
+                  <div className="pt-2 space-y-4">
                     <CustomSelect
-                      name="schoolId"
-                      label="Okul Bağlantısı (Opsiyonel)"
-                      options={schools}
-                      value={formData.schoolId}
+                      name="locationType"
+                      label="Kurs Nerede Verilecek?"
+                      options={[
+                        { label: 'Bir Dans Okulunda', value: 'school' },
+                        { label: 'Özel Adreste', value: 'custom' }
+                      ]}
+                      value={formData.locationType || 'school'}
                       onChange={(value) => {
-                        const style = value as string;
-                        const selectedSchool = schools.find(s => s.value === style);
+                        const type = value as 'school' | 'custom';
                         setFormData({
                           ...formData,
-                          schoolId: style,
-                          schoolName: selectedSchool?.label || ''
+                          locationType: type,
+                          // Seçim değiştiğinde diğer alanları temizle
+                          schoolId: type === 'custom' ? '' : formData.schoolId,
+                          schoolName: type === 'custom' ? '' : formData.schoolName,
+                          schoolAddress: type === 'custom' ? '' : formData.schoolAddress,
+                          customAddress: type === 'school' ? '' : formData.customAddress
                         });
                       }}
-                      placeholder="Freelance (Okulsuz)"
                       colorVariant={colorVariant}
+                      required
                     />
-                    <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
-                      Okul seçerseniz, kurs o okulun adı ve konumuyla yayınlanır. Seçmezseniz "Freelance" olarak görünür.
-                    </p>
+
+                    {formData.locationType === 'school' && (
+                      <div className="animate-in fade-in slide-in-from-top-2">
+                        <CustomSelect
+                          name="schoolId"
+                          label="Hangi Dans Okulunda?"
+                          options={schools}
+                          value={formData.schoolId}
+                          onChange={(value) => {
+                            const style = value as string;
+                            const selectedSchool = schools.find(s => s.value === style);
+                            setFormData({
+                              ...formData,
+                              schoolId: style,
+                              schoolName: selectedSchool?.label || ''
+                            });
+                          }}
+                          placeholder="Okul Seçin"
+                          colorVariant={colorVariant}
+                        />
+                        <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
+                          Seçtiğiniz dans okulunun kayıtlı adresi kurs detaylarında öğrencilere gösterilecektir.
+                        </p>
+                      </div>
+                    )}
+
+                    {formData.locationType === 'custom' && (
+                      <div className="animate-in fade-in slide-in-from-top-2">
+                        <CustomInput
+                          name="customAddress"
+                          label="Açık Adres (Sokak, Bina No, Mahalle, İlçe/İl)"
+                          value={formData.customAddress || ''}
+                          onChange={(e) => setFormData({ ...formData, customAddress: e.target.value })}
+                          multiline
+                          rows={3}
+                          placeholder="Örn: Caferağa Mah. Moda Cad. No:24/1 Kadıköy/İstanbul"
+                          colorVariant={colorVariant}
+                          required={formData.locationType === 'custom'}
+                        />
+                        <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
+                          Öğrenciler kursun nerede yapılacağını bulmak için doğrudan bu adresi göreceklerdir.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1533,16 +1646,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                         onFocus={(e) => e.target.removeAttribute('readonly')}
                         className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                       />
-                      <input
-                        type="password"
-                        placeholder="Giriş Şifresi Belirle"
-                        value={quickAddInstructorData.password}
-                        onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, password: e.target.value }))}
-                        autoComplete="new-password-no-fill"
-                        readOnly
-                        onFocus={(e) => e.target.removeAttribute('readonly')}
-                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
-                      />
+                      <div className="w-full px-3 py-2 text-xs rounded-lg border bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400">
+                        Eğitmen şifresi varsayılan olarak <span className="font-bold text-gray-900 dark:text-white">feriha123</span> yapılacaktır.
+                      </div>
                       <div className="flex justify-end gap-2 pt-2">
                         <button
                           type="button"
@@ -1672,13 +1778,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         }
 
         try {
-          // isAdmin kontrolünü kaldıralım, schoolId varsa da çağıralım
-          if (schoolId || isAdmin) {
-            console.log('Eğitmenler yüklenecek çünkü:', { schoolId, isAdmin });
-            await fetchInstructors();
-          } else {
-            console.log('Eğitmenler yüklenmeyecek çünkü:', { schoolId, isAdmin });
-          }
+          console.log('Eğitmenler yüklenecek');
+          await fetchInstructors();
         } catch (e) {
           console.error('Eğitmenler yüklenirken hata:', e);
         }
@@ -1721,7 +1822,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       instructorNames: course.instructorNames || [],
       schedule: course.schedule || [],
       date: course.date,
-      time: course.time || '18:00'
+      time: course.time || '18:00',
+      locationType: course.locationType || 'school',
+      customAddress: course.customAddress || '',
+      schoolAddress: course.schoolAddress || ''
     });
     setCurrentStep(1);
     setEditMode(true);
@@ -1759,7 +1863,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       },
       imageUrl: '/placeholders/default-course-image.png',
       highlights: [],
-      tags: []
+      tags: [],
+      locationType: 'school',
+      customAddress: '',
+      schoolAddress: ''
     });
     setCurrentStep(1);
     setEditMode(true);
@@ -1834,7 +1941,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       tags: courseData.tags || [],
       createdAt: courseData.createdAt,
       updatedAt: courseData.updatedAt,
-      rating: courseData.rating
+      rating: courseData.rating,
+      locationType: courseData.locationType || 'school',
+      customAddress: courseData.customAddress || ''
     };
   };
 
@@ -1864,7 +1973,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     try {
       // Inherit school location
       let finalLocation = formData.location;
-      if (formData.schoolId) {
+      if (formData.locationType === 'school' && formData.schoolId) {
         // Try schools collection first as it's the standard for schoolId
         const schoolRef = doc(db, 'schools', formData.schoolId);
         let schoolSnap = await getDoc(schoolRef);
@@ -1880,6 +1989,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           if (schoolData.location) {
             finalLocation = schoolData.location;
           }
+          formData.schoolAddress = schoolData.address || schoolData.location?.address || '';
         }
       } else {
         // Freelance course - clear school name if it was somehow set
@@ -1887,6 +1997,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       }
 
       const cleanedData = cleanDataForFirebase(formData);
+
+      // Clean up location data based on type
+      if (cleanedData.locationType === 'custom') {
+        cleanedData.schoolId = '';
+        cleanedData.schoolName = '';
+      } else {
+        cleanedData.customAddress = '';
+      }
+
       const courseDataToSave = {
         ...cleanedData,
         location: finalLocation,
@@ -2524,16 +2643,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                     onFocus={(e) => e.target.removeAttribute('readonly')}
                     className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                   />
-                  <input
-                    type="password"
-                    placeholder="Giriş Şifresi Belirle"
-                    value={quickAddStudentData.password}
-                    onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, password: e.target.value }))}
-                    autoComplete="new-password-no-fill"
-                    readOnly
-                    onFocus={(e) => e.target.removeAttribute('readonly')}
-                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
-                  />
+                  <div className="w-full px-3 py-2 text-xs rounded-lg border bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400">
+                    Öğrenci şifresi varsayılan olarak <span className="font-bold text-gray-900 dark:text-white">feriha123</span> yapılacaktır.
+                  </div>
                   <div className="flex justify-end gap-2 pt-2">
                     <button
                       type="button"
@@ -2775,16 +2887,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                     onFocus={(e) => e.target.removeAttribute('readonly')}
                     className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                   />
-                  <input
-                    type="password"
-                    placeholder="Giriş Şifresi Belirle"
-                    value={quickAddInstructorData.password}
-                    onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, password: e.target.value }))}
-                    autoComplete="new-password-no-fill"
-                    readOnly
-                    onFocus={(e) => e.target.removeAttribute('readonly')}
-                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
-                  />
+                  <div className="w-full px-3 py-2 text-xs rounded-lg border bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400">
+                    Eğitmen şifresi varsayılan olarak <span className="font-bold text-gray-900 dark:text-white">feriha123</span> yapılacaktır.
+                  </div>
                   <div className="flex justify-end gap-2 pt-2">
                     <button
                       type="button"
@@ -2839,15 +2944,17 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       <div className="text-xs text-gray-500 dark:text-gray-400">ID: {id.substring(0, 8)}...</div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setInstructorToRemove({ id, name, courseId: selectedCourseForInstructors!.id })}
-                    className="p-1.5 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                    title="Kurstan Çıkar"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  {auth.currentUser?.uid !== id && (
+                    <button
+                      onClick={() => setInstructorToRemove({ id, name, courseId: selectedCourseForInstructors!.id })}
+                      className="p-1.5 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                      title="Kurstan Çıkar"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               );
             })}

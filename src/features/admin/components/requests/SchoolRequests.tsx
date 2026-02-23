@@ -228,33 +228,26 @@ function SchoolRequests(): JSX.Element {
     );
   }
 
-  if (requests.length === 0) {
-    return (
-      <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Okul Başvuruları</h2>
-        <p className="text-gray-600 dark:text-gray-400">Şu anda bekleyen okul başvurusu bulunmamaktadır.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col gap-3 mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200">Okul Başvuruları</h2>
-        <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden text-sm">
+        {/* Scrollable filter bar — stays one line on all screen sizes */}
+        <div className="flex overflow-x-auto pb-1 gap-2 scrollbar-hide">
           {(['all', 'pending', 'approved', 'rejected'] as const).map((s) => {
             const labels = { all: 'Tümü', pending: 'Bekleyen', approved: 'Onaylandı', rejected: 'Reddedildi' };
             const colors = {
-              all: statusFilter === s ? 'bg-gray-700 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
-              pending: statusFilter === s ? 'bg-yellow-500 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
-              approved: statusFilter === s ? 'bg-green-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
-              rejected: statusFilter === s ? 'bg-red-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
+              all: statusFilter === s ? 'bg-gray-700 text-white border-gray-700' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700',
+              pending: statusFilter === s ? 'bg-yellow-500 text-white border-yellow-500' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20',
+              approved: statusFilter === s ? 'bg-green-600 text-white border-green-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-green-50 dark:hover:bg-green-900/20',
+              rejected: statusFilter === s ? 'bg-red-600 text-white border-red-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/20',
             };
             return (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 font-medium transition-colors ${colors[s]}`}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${colors[s]}`}
               >
                 {labels[s]}
               </button>

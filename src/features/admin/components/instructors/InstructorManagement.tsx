@@ -617,12 +617,20 @@ function InstructorManagement(): JSX.Element {
 
   // Eğitmen silme
   const egitmenSil = async (id: string): Promise<void> => {
+    const egitmenToDelete = egitmenler.find(e => e.id === id);
+    if (!egitmenToDelete) return;
+
     if (window.confirm('Bu eğitmeni silmek istediğinizden emin misiniz?')) {
       setLoading(true);
       setError(null);
       try {
         // Firestore'dan sil
         await deleteDoc(doc(db, 'instructors', id));
+
+        // Eğer varsa users koleksiyonundan da sil
+        if (egitmenToDelete.userId) {
+          await deleteDoc(doc(db, 'users', egitmenToDelete.userId));
+        }
 
         // State'i güncelle
         const filtrelenmisEgitmenler = egitmenler.filter(egitmen => egitmen.id !== id);
@@ -782,8 +790,10 @@ function InstructorManagement(): JSX.Element {
               <div>
                 <CustomPhoneInput
                   name="phoneNumber"
-                  value={formVeri.phoneNumber}
-                  onChange={handleInputChange}
+                  countryCode="+90" // Default or extracted
+                  phoneNumber={formVeri.phoneNumber || ''}
+                  onCountryCodeChange={() => { }} // Ignoring country code for now as form is single combined string mostly
+                  onPhoneNumberChange={(val: string) => setFormVeri(prev => ({ ...prev, phoneNumber: val }))}
                   label="Telefon"
                 />
               </div>

@@ -67,3 +67,14 @@ input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px #1a120b inset !important;
 }
 
+/* Scrollbar hide utility for scrollable filter bars */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+

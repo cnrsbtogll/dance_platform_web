@@ -156,7 +156,7 @@ function PartnerSearchPage(): JSX.Element {
 
     // Cinsiyet değerini dönüştür
     const convertGender = (gender: string | undefined): string => {
-      if (!gender) return 'Belirtilmemiş';
+      if (!gender) return '';
       switch (gender.toLowerCase()) {
         case 'male': return 'Erkek';
         case 'female': return 'Kadın';
@@ -168,14 +168,14 @@ function PartnerSearchPage(): JSX.Element {
     return {
       id: user.id,
       ad: user.displayName || 'İsimsiz Kullanıcı',
-      yas: typeof user.age === 'number' ? user.age : 0,
+      yas: typeof user.age === 'number' && user.age > 0 ? user.age : 0,
       cinsiyet: convertGender(user.gender),
       seviye: user.level === 'beginner' ? 'Başlangıç' :
         user.level === 'intermediate' ? 'Orta' :
           user.level === 'advanced' ? 'İleri' :
             user.level === 'professional' ? 'Profesyonel' : 'Başlangıç',
       dans: standardizedDanceStyles,
-      konum: user.city || 'Belirtilmemiş',
+      konum: user.city || '',
       saatler: user.availableTimes || [],
       foto: user.photoURL || '',
       puan: typeof user.rating === 'number' ? user.rating : 4.0,
@@ -378,19 +378,43 @@ function PartnerSearchPage(): JSX.Element {
       querySnapshot.forEach((doc) => {
         const userData = doc.data() as DocumentData;
 
-        // Check if user has student or instructor role but not admin role
+        // Parse roles safely
+        const userRoles = Array.isArray(userData.role) ? userData.role : [userData.role || ''];
+        const isUserAdmin = userRoles.includes('admin') || userRoles.includes('school');
+        const isUserInstructor = userRoles.includes('instructor');
+        const isUserStudent = userRoles.includes('student');
+
+        // Parse current user roles securely
+        const currentUserRoles = currentUserData?.role
+          ? (Array.isArray(currentUserData.role) ? currentUserData.role : [currentUserData.role])
+          : [];
+        const currentUserIsInstructor = currentUserRoles.includes('instructor');
+        const currentUserIsStudent = currentUserRoles.includes('student');
+
         let isValidUser = false;
 
-        if (Array.isArray(userData.role)) {
-          // If role is an array, check it includes 'student' or 'instructor' but not 'admin'
-          isValidUser = (userData.role.includes('student') || userData.role.includes('instructor')) &&
-            !userData.role.includes('admin');
-        } else {
-          // If role is a string, it should be either 'student' or 'instructor'
-          isValidUser = userData.role === 'student' || userData.role === 'instructor';
+        // Check if user has student or instructor role but not admin role
+        if (!isUserAdmin) {
+          const isOptedIn = userData.isPartnerSearchActive === true;
+          const isOptedOut = userData.isPartnerSearchActive === false;
+
+          if (isUserInstructor) {
+            // Eğitmenler: YALNIZCA başka bir oturum açmış eğitmen görebilir.
+            // Anonim (giriş yapmamış) kullanıcılar eğitmenleri HİÇ göremez.
+            // Eğitmen ayrıca isPartnerSearchActive=true ile kendi isteğiyle katılmış olmalı.
+            if (currentUserIsInstructor && isOptedIn) {
+              isValidUser = true;
+            }
+          } else if (isUserStudent) {
+            // Öğrenciler: Diğer öğrencileri ve anonim kullanıcılar görebilir.
+            // Öğrenci isPartnerSearchActive=false ile kendini gizlemedikçe kavumdadır.
+            if ((currentUserIsStudent || currentUserRoles.length === 0) && !isOptedOut) {
+              isValidUser = true;
+            }
+          }
         }
 
-        // Include students & instructors & exclude current user if logged in
+        // Include valid users & exclude current user if logged in
         if ((!currentUser || doc.id !== currentUser.id) && isValidUser) {
           users.push({
             id: doc.id,
@@ -1100,7 +1124,11 @@ function PartnerSearchPage(): JSX.Element {
             <div className="flex items-end justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white mb-1">{partner.ad}</h2>
-                <p className="text-gray-200 text-sm">{partner.yas} yaşında • {partner.cinsiyet}</p>
+                <p className="text-gray-200 text-sm">
+                  {partner.yas ? `${partner.yas} yaşında` : ''}
+                  {partner.yas && partner.cinsiyet ? ' • ' : ''}
+                  {partner.cinsiyet || ''}
+                </p>
               </div>
               {partner.puan > 0 && (
                 <div className="flex items-center bg-black/30 px-2 py-1 rounded-lg">
@@ -1157,30 +1185,8 @@ function PartnerSearchPage(): JSX.Element {
 
         {/* Kart içeriği - alt kısım */}
         <div className="p-5 flex-grow flex flex-col">
-          {/* Fiziksel özellikler */}
-          {(partner.boy || partner.kilo) && (
-            <div className="mb-4">
-              <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-2">Fiziksel Özellikler</h3>
-              <div className="flex flex-wrap gap-4">
-                {partner.boy && (
-                  <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
-                    </svg>
-                    <span className="text-sm dark:text-gray-300">{partner.boy} cm</span>
-                  </div>
-                )}
-                {partner.kilo && (
-                  <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                    </svg>
-                    <span className="text-sm dark:text-gray-300">{partner.kilo} kg</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+
+
 
           <div className="mb-4">
             <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-2">Dans Stilleri</h3>
@@ -1195,7 +1201,12 @@ function PartnerSearchPage(): JSX.Element {
                   </span>
                 ))
               ) : (
-                <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm">Belirtilmemiş</span>
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Henüz belirtilmemiş
+                </span>
               )}
             </div>
           </div>
@@ -1213,7 +1224,12 @@ function PartnerSearchPage(): JSX.Element {
                   </span>
                 ))
               ) : (
-                <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm">Belirtilmemiş</span>
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Henüz belirtilmemiş
+                </span>
               )}
             </div>
           </div>

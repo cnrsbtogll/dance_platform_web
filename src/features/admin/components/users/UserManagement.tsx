@@ -856,9 +856,12 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  // Delete student
+  // Delete user (student/instructor/school)
   const deleteStudentHandler = async (studentId: string): Promise<void> => {
-    if (!window.confirm('Bu öğrenciyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+    const studentToDelete = students.find(s => s.id === studentId);
+    if (!studentToDelete) return;
+
+    if (!window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
       return;
     }
 
@@ -866,19 +869,33 @@ export const UserManagement: React.FC = () => {
     setError(null);
 
     try {
-      // Delete from Firestore
+      // Create batch or do sequential deletes
+      const roles = Array.isArray(studentToDelete.role) ? studentToDelete.role : [studentToDelete.role];
+
+      // Delete from role-specific collections
+      if (roles.includes('instructor')) {
+        const instructorsRef = collection(db, 'instructors');
+        const q = query(instructorsRef, where('userId', '==', studentId));
+        const querySnapshot = await getDocs(q);
+        const deletePromises = querySnapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
+        await Promise.all(deletePromises);
+      }
+
+      if (roles.includes('school')) {
+        await deleteDoc(doc(db, 'schools', studentId));
+      }
+
+      // Delete from main users collection
       await deleteDoc(doc(db, 'users', studentId));
 
       // Remove from state
       const updatedStudents = students.filter(student => student.id !== studentId);
       setStudents(updatedStudents);
-      setSuccess('Öğrenci başarıyla silindi.');
+      setSuccess('Kullanıcı başarıyla silindi.');
 
-      // Note: Deleting the auth user would require admin SDK or reauthentication,
-      // so we're only deleting the Firestore document here.
     } catch (err) {
-      console.error('Öğrenci silinirken hata oluştu:', err);
-      setError('Öğrenci silinirken bir hata oluştu. Lütfen tekrar deneyin.');
+      console.error('Kullanıcı silinirken hata oluştu:', err);
+      setError('Kullanıcı silinirken bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
     }
@@ -1179,7 +1196,7 @@ export const UserManagement: React.FC = () => {
               <button
                 onClick={() => handleAddNewUser('student')}
                 disabled={loading}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none transition-colors disabled:opacity-50"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none transition-colors disabled:opacity-50"
               >
                 <svg className="h-3.5 w-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -1189,7 +1206,7 @@ export const UserManagement: React.FC = () => {
               <button
                 onClick={() => handleAddNewUser('instructor')}
                 disabled={loading}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition-colors disabled:opacity-50"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition-colors disabled:opacity-50"
               >
                 <svg className="h-3.5 w-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -1199,7 +1216,7 @@ export const UserManagement: React.FC = () => {
               <button
                 onClick={() => handleAddNewUser('school')}
                 disabled={loading}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-colors disabled:opacity-50"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-colors disabled:opacity-50"
               >
                 <svg className="h-3.5 w-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -1210,6 +1227,7 @@ export const UserManagement: React.FC = () => {
           )}
         </div>
       </div>
+
 
       {editMode ? (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
