@@ -129,6 +129,12 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
 
       snapshot.forEach((doc) => {
         const data = doc.data();
+
+        // Eğer mesaj bizim için silinmişse atla
+        if (data.deletedFor?.includes(currentUser.uid)) {
+          return;
+        }
+
         // Sadece bu sohbete ait mesajları filtrele
         if (!processedMessageIds.has(doc.id) &&
           ((data.senderId === currentUser.uid && data.receiverId === partner.id) ||

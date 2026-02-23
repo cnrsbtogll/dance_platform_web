@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, getDocs, getDoc, doc, DocumentData } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, getDocs, getDoc, doc, DocumentData, writeBatch, arrayUnion } from 'firebase/firestore';
 import { db } from '../../../api/firebase/firebase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { ChatDialog } from './ChatDialog';
@@ -37,6 +37,38 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose, onChatSelect }) => 
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const handleDeleteChat = async (partnerId: string, e: React.MouseEvent | React.TouchEvent | PointerEvent | Event) => {
+    e.stopPropagation();
+    if (!window.confirm('Bu sohbeti listenizden silmek istediğinize emin misiniz? (Karşı taraftan silinmeyecektir)')) {
+      return;
+    }
+
+    try {
+      const q = query(
+        collection(db, 'messages'),
+        where('participants', 'array-contains', currentUser!.uid)
+      );
+      const snap = await getDocs(q);
+      const batch = writeBatch(db);
+
+      snap.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        if ((data.senderId === partnerId || data.receiverId === partnerId)) {
+          // If not already deleted for me
+          if (!data.deletedFor?.includes(currentUser!.uid)) {
+            batch.update(docSnap.ref, {
+              deletedFor: arrayUnion(currentUser!.uid)
+            });
+          }
+        }
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error('Sohbet silinirken hata oluştu:', err);
+      alert('Sohbet silinirken bir hata oluştu. Lütfen tekrar deneyin.');
+    }
+  };
+
   useEffect(() => {
     if (!currentUser) {
       console.log('Kullanıcı bulunamadı:', currentUser);
@@ -52,12 +84,21 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose, onChatSelect }) => 
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       console.log('Toplam mesaj sayısı:', snapshot.docs.length);
-      console.log('Ham mesaj verileri:', snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })));
+
+      // Sadece bizim için SİLİNMEYEN belgeleri filtrele
+      const validDocs = snapshot.docs.filter(docSnap =>
+        !docSnap.data().deletedFor?.includes(currentUser.uid)
+      );
+
+      // Timestamp'e göre descending (en yeni ilk) sıraya tekrar diz (sorgudan orderBy çıktı çünkü)
+      validDocs.sort((a, b) => (b.data().timestamp?.toMillis?.() || 0) - (a.data().timestamp?.toMillis?.() || 0));
+
+      console.log('Geçerli ham mesaj verileri:', validDocs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })));
 
       const chatMap = new Map<string, Chat>();
       const processedPartners = new Set<string>();
 
-      for (const docSnap of snapshot.docs) {
+      for (const docSnap of validDocs) {
         const message = docSnap.data();
         const partnerId = message.senderId === currentUser.uid ? message.receiverId : message.senderId;
 
@@ -245,10 +286,10 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose, onChatSelect }) => 
           </div>
         ) : (
           <div className="divide-y">
-            {chats.map((chat) => (
+            {chats.map((chat: Chat) => (
               <div
                 key={chat.partnerId}
-                className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-150"
+                className="group relative flex items-center p-3 sm:p-4 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 transition-colors duration-150"
                 onClick={() => {
                   const sel = {
                     id: chat.partnerId,
@@ -263,7 +304,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose, onChatSelect }) => 
                   }
                 }}
               >
-                <div className="flex items-center gap-2 sm:gap-4">
+                <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-4 pr-10">
                   <div className="relative flex-shrink-0">
                     <img
                       src={chat.partnerPhotoURL || '/assets/images/default-avatar.png'}
@@ -284,7 +325,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose, onChatSelect }) => 
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <div className="flex justify-between items-start">
                       <div className="min-w-0">
-                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">
+                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate pr-2">
                           {chat.partnerName}
                         </h3>
                         <div className="mt-0.5">
@@ -293,7 +334,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose, onChatSelect }) => 
                           </span>
                         </div>
                       </div>
-                      <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap flex-shrink-0">
+                      <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap flex-shrink-0 pr-2">
                         {chat.timestamp.toLocaleDateString('tr-TR', {
                           hour: '2-digit',
                           minute: '2-digit'
@@ -305,6 +346,19 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose, onChatSelect }) => 
                       {chat.lastMessage}
                     </p>
                   </div>
+                </div>
+
+                {/* Delete Button - Absolute Right Positioned */}
+                <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={(e) => handleDeleteChat(chat.partnerId, e)}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                    title="Sohbeti Sil"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}
