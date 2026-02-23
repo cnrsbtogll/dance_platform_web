@@ -20,6 +20,7 @@ export interface User {
   height?: number;
   weight?: number;
   availableTimes?: string[];
+  isPartnerSearchActive?: boolean;
   role: UserRole;  // Artık zorunlu ve tekil
   createdAt?: Date;
   updatedAt?: Date;
@@ -190,6 +191,7 @@ export interface FirebaseUser {
   danceStyles?: DanceStyle[];
   createdAt: any;
   updatedAt: any;
+  isPartnerSearchActive?: boolean;
   // Additional fields for instructor
   specialties?: string[];
   experience?: number;

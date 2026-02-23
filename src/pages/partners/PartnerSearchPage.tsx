@@ -378,19 +378,43 @@ function PartnerSearchPage(): JSX.Element {
       querySnapshot.forEach((doc) => {
         const userData = doc.data() as DocumentData;
 
-        // Check if user has student or instructor role but not admin role
+        // Parse roles safely
+        const userRoles = Array.isArray(userData.role) ? userData.role : [userData.role || ''];
+        const isUserAdmin = userRoles.includes('admin') || userRoles.includes('school');
+        const isUserInstructor = userRoles.includes('instructor');
+        const isUserStudent = userRoles.includes('student');
+
+        // Parse current user roles securely
+        const currentUserRoles = currentUserData?.role
+          ? (Array.isArray(currentUserData.role) ? currentUserData.role : [currentUserData.role])
+          : [];
+        const currentUserIsInstructor = currentUserRoles.includes('instructor');
+        const currentUserIsStudent = currentUserRoles.includes('student');
+
         let isValidUser = false;
 
-        if (Array.isArray(userData.role)) {
-          // If role is an array, check it includes 'student' or 'instructor' but not 'admin'
-          isValidUser = (userData.role.includes('student') || userData.role.includes('instructor')) &&
-            !userData.role.includes('admin');
-        } else {
-          // If role is a string, it should be either 'student' or 'instructor'
-          isValidUser = userData.role === 'student' || userData.role === 'instructor';
+        // Check if user has student or instructor role but not admin role
+        if (!isUserAdmin) {
+          const isOptedIn = userData.isPartnerSearchActive === true;
+          const isOptedOut = userData.isPartnerSearchActive === false;
+
+          if (isUserInstructor) {
+            // Eğitmenler: YALNIZCA başka bir oturum açmış eğitmen görebilir.
+            // Anonim (giriş yapmamış) kullanıcılar eğitmenleri HİÇ göremez.
+            // Eğitmen ayrıca isPartnerSearchActive=true ile kendi isteğiyle katılmış olmalı.
+            if (currentUserIsInstructor && isOptedIn) {
+              isValidUser = true;
+            }
+          } else if (isUserStudent) {
+            // Öğrenciler: Diğer öğrencileri ve anonim kullanıcılar görebilir.
+            // Öğrenci isPartnerSearchActive=false ile kendini gizlemedikçe kavumdadır.
+            if ((currentUserIsStudent || currentUserRoles.length === 0) && !isOptedOut) {
+              isValidUser = true;
+            }
+          }
         }
 
-        // Include students & instructors & exclude current user if logged in
+        // Include valid users & exclude current user if logged in
         if ((!currentUser || doc.id !== currentUser.id) && isValidUser) {
           users.push({
             id: doc.id,
