@@ -327,6 +327,50 @@ function AppContent(): JSX.Element {
     setShowChatList(false);
   };
 
+  // E-posta doğrulama banner state'leri — erken return'lerden ÖNCE tanımlanmalı (Rules of Hooks)
+  const [emailBannerDismissed, setEmailBannerDismissed] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setIsEmailVerified(firebaseUser.emailVerified);
+        firebaseUser.reload()
+          .then(() => setIsEmailVerified(firebaseUser.emailVerified))
+          .catch(err => console.warn('User reload ignored:', err));
+      } else {
+        setIsEmailVerified(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleSendVerificationEmail = async () => {
+    if (!auth.currentUser) return;
+    try {
+      const { sendEmailVerification } = await import('firebase/auth');
+      await sendEmailVerification(auth.currentUser);
+      alert('Doğrulama e-postası gönderildi! Lütfen e-posta kutunuzu kontrol edin.');
+    } catch {
+      alert('E-posta gönderilemedi, lütfen daha sonra tekrar deneyin.');
+    }
+  };
+
+  useEffect(() => {
+    console.log('--- BANNER DEGISTI DURUMU ---', {
+      isAuthenticated,
+      isEmailVerified,
+      emailBannerDismissed,
+      isOffline,
+      error,
+      userExists: !!user,
+      currentUserObj: auth.currentUser ? {
+        email: auth.currentUser.email,
+        emailVerified: auth.currentUser.emailVerified
+      } : 'null'
+    });
+  }, [isAuthenticated, isEmailVerified, emailBannerDismissed, isOffline, error, user]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
@@ -400,14 +444,37 @@ function AppContent(): JSX.Element {
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
             {isAuthenticated && <InstructorRedirect user={user} />}
             {isOffline && (
-              <div className="bg-yellow-500 text-white text-center py-2 px-4 fixed top-0 left-0 w-full z-50">
+              <div className="bg-yellow-500 text-white text-center py-2 px-4 fixed top-0 left-0 w-full z-[60]">
                 ⚠️ Çevrimdışı moddasınız. İnternet bağlantınızı kontrol edin.
               </div>
             )}
 
             {error && !isOffline && (
-              <div className="bg-orange-500 text-white text-center py-2 px-4 fixed top-0 left-0 w-full z-50">
+              <div className="bg-orange-500 text-white text-center py-2 px-4 fixed top-0 left-0 w-full z-[60]">
                 ⚠️ {getUserFriendlyErrorMessage(error)}
+              </div>
+            )}
+
+            {/* E-posta doğrulama uyarı banner'ı */}
+            {isAuthenticated && isEmailVerified === false && !emailBannerDismissed && !isOffline && !error && (
+              <div className="bg-amber-500 text-white flex items-center justify-between py-2 px-4 fixed top-0 left-0 w-full z-[60] gap-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <span>✉️</span>
+                  <span>E-posta adresiniz henüz doğrulanmadı. Lütfen gelen kutunuzu kontrol edin.</span>
+                  <button
+                    onClick={handleSendVerificationEmail}
+                    className="underline font-bold hover:text-amber-100 transition-colors ml-1"
+                  >
+                    Tekrar Gönder
+                  </button>
+                </div>
+                <button
+                  onClick={() => setEmailBannerDismissed(true)}
+                  className="text-white hover:text-amber-100 flex-shrink-0 text-lg leading-none"
+                  aria-label="Kapat"
+                >
+                  ✕
+                </button>
               </div>
             )}
 

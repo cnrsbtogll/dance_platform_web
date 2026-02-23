@@ -1509,13 +1509,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    {/* E-posta doğrulama durumu */}
-                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${(selectedStudent as any).emailVerified
-                      ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
-                      : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
-                      }`}>
-                      <span>{(selectedStudent as any).emailVerified ? '✅ E-posta doğrulandı' : '⚠️ E-posta henüz doğrulanmadı'}</span>
-                    </div>
                     {/* Şifre Sıfırlama */}
                     <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
                       <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -1534,26 +1527,24 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                         {isResettingPassword ? 'Gönderiliyor...' : 'Şifre Sıfırla'}
                       </Button>
                     </div>
-                    {/* Doğrulama e-postası - sadece doğrulanmamışsa göster */}
-                    {!(selectedStudent as any).emailVerified && (
-                      <div className="flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                        <span className="text-sm text-amber-700 dark:text-amber-400">
-                          E-posta doğrulama bağlantısı gönder.
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outlined"
-                          disabled={isResettingPassword || !formData.email}
-                          onClick={() => {
-                            if (formData.email) {
-                              handleSendVerificationEmail(formData.email);
-                            }
-                          }}
-                        >
-                          {isResettingPassword ? 'Gönderiliyor...' : 'Doğrulama Gönder'}
-                        </Button>
-                      </div>
-                    )}
+                    {/* Doğrulama e-postası */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <span className="text-sm text-amber-700 dark:text-amber-400">
+                        E-posta doğrulama bağlantısı gönder.
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        disabled={isResettingPassword || !formData.email}
+                        onClick={() => {
+                          if (formData.email) {
+                            handleSendVerificationEmail(formData.email);
+                          }
+                        }}
+                      >
+                        {isResettingPassword ? 'Gönderiliyor...' : 'Doğrulama Gönder'}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
