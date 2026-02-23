@@ -156,7 +156,7 @@ function PartnerSearchPage(): JSX.Element {
 
     // Cinsiyet değerini dönüştür
     const convertGender = (gender: string | undefined): string => {
-      if (!gender) return 'Belirtilmemiş';
+      if (!gender) return '';
       switch (gender.toLowerCase()) {
         case 'male': return 'Erkek';
         case 'female': return 'Kadın';
@@ -168,14 +168,14 @@ function PartnerSearchPage(): JSX.Element {
     return {
       id: user.id,
       ad: user.displayName || 'İsimsiz Kullanıcı',
-      yas: typeof user.age === 'number' ? user.age : 0,
+      yas: typeof user.age === 'number' && user.age > 0 ? user.age : 0,
       cinsiyet: convertGender(user.gender),
       seviye: user.level === 'beginner' ? 'Başlangıç' :
         user.level === 'intermediate' ? 'Orta' :
           user.level === 'advanced' ? 'İleri' :
             user.level === 'professional' ? 'Profesyonel' : 'Başlangıç',
       dans: standardizedDanceStyles,
-      konum: user.city || 'Belirtilmemiş',
+      konum: user.city || '',
       saatler: user.availableTimes || [],
       foto: user.photoURL || '',
       puan: typeof user.rating === 'number' ? user.rating : 4.0,
@@ -1124,7 +1124,11 @@ function PartnerSearchPage(): JSX.Element {
             <div className="flex items-end justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white mb-1">{partner.ad}</h2>
-                <p className="text-gray-200 text-sm">{partner.yas} yaşında • {partner.cinsiyet}</p>
+                <p className="text-gray-200 text-sm">
+                  {partner.yas ? `${partner.yas} yaşında` : ''}
+                  {partner.yas && partner.cinsiyet ? ' • ' : ''}
+                  {partner.cinsiyet || ''}
+                </p>
               </div>
               {partner.puan > 0 && (
                 <div className="flex items-center bg-black/30 px-2 py-1 rounded-lg">
@@ -1197,7 +1201,12 @@ function PartnerSearchPage(): JSX.Element {
                   </span>
                 ))
               ) : (
-                <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm">Belirtilmemiş</span>
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Henüz belirtilmemiş
+                </span>
               )}
             </div>
           </div>
@@ -1215,7 +1224,12 @@ function PartnerSearchPage(): JSX.Element {
                   </span>
                 ))
               ) : (
-                <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm">Belirtilmemiş</span>
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Henüz belirtilmemiş
+                </span>
               )}
             </div>
           </div>
