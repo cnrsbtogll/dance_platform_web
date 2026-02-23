@@ -16,6 +16,7 @@ import { toast, Toaster } from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import DanceStyleSelect from '../../common/components/ui/DanceStyleSelect';
 import AvailableTimesSelect from '../../common/components/ui/AvailableTimesSelect';
+import ChangePasswordForm from '../../features/shared/components/profile/ChangePasswordForm';
 
 interface ProfileEditorProps {
   user: User | null;
@@ -194,7 +195,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
     try {
       // Prepare user data without photo URL for Firebase Auth
       const { photoURL, ...profileData } = formData;
-      
+
       const updatedUserData: Partial<User> = {
         ...profileData,
         id: user.id,
@@ -206,10 +207,10 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
       // Update user profile in Firestore
       const updatedUser = await updateUserProfile(user.id, updatedUserData);
       onUpdate(updatedUser);
-      
+
       // Update auth context with only display name
       await updateAuthProfile(formData.displayName);
-      
+
       // Başarılı mesajı göster
       toast.success('Profiliniz başarıyla güncellendi!', {
         duration: 3000,
@@ -245,7 +246,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           Bu bilgiler dans partnerinizle eşleşmeniz için gereklidir.
         </p>
       </div>
-      
+
       <ImageUploader
         currentPhotoURL={formData.photoURL}
         onImageChange={handlePhotoUploadSuccess}
@@ -255,7 +256,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
         width={150}
         height={150}
       />
-      
+
       <div>
         <CustomInput
           name="displayName"
@@ -267,7 +268,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           helperText={errors.displayName}
         />
       </div>
-      
+
       <div>
         <CustomSelect
           name="gender"
@@ -283,7 +284,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           error={errors.gender ? 'error' : ''}
         />
       </div>
-      
+
       <div>
         <AgeInput
           value={formData.age}
@@ -293,7 +294,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           helperText={errors.age}
         />
       </div>
-      
+
       <div>
         <CitySelect
           value={formData.city}
@@ -303,7 +304,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           helperText={errors.city}
         />
       </div>
-      
+
       <div>
         <CustomPhoneInput
           name="phoneNumber"
@@ -311,7 +312,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           countryCode="+90"
           phoneNumber={formData.phoneNumber}
           onPhoneNumberChange={(value: string) => handleInputChange({ target: { name: 'phoneNumber', value } })}
-          onCountryCodeChange={() => {}}
+          onCountryCodeChange={() => { }}
         />
       </div>
 
@@ -328,7 +329,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           onChange={handleTimeChange}
         />
       </div>
-      
+
       <div className="flex justify-end">
         <Button
           onClick={nextStep}
@@ -349,7 +350,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           Bu bilgileri paylaşmak isteğe bağlıdır, ancak daha uyumlu partner eşleştirmeleri yapılmasına yardımcı olur.
         </p>
       </div>
-      
+
       <div>
         <CustomInput
           type="text"
@@ -363,7 +364,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           placeholder="Örn: 175"
         />
       </div>
-      
+
       <div>
         <CustomInput
           type="text"
@@ -377,7 +378,7 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           placeholder="Örn: 70"
         />
       </div>
-      
+
       <div className="flex justify-between">
         <Button
           onClick={prevStep}
@@ -396,10 +397,9 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
       </div>
     </div>
   );
-
   return (
-    <>
-      <Toaster 
+    <div className="max-w-2xl mx-auto p-6 space-y-8">
+      <Toaster
         position="top-center"
         toastOptions={{
           style: {
@@ -426,10 +426,14 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
           },
         }}
       />
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto p-6">
+      <form onSubmit={handleSubmit}>
         {step === 1 ? renderBasicInfoForm() : renderPhysicalAttributesForm()}
       </form>
-    </>
+
+      <div className="mt-8 border-t border-gray-200 dark:border-gray-700/50 pt-8">
+        <ChangePasswordForm colorVariant="default" />
+      </div>
+    </div>
   );
 };
 

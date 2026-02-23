@@ -11,6 +11,7 @@ import CustomPhoneInput from '../../../common/components/ui/CustomPhoneInput';
 import { useNavigate } from 'react-router-dom';
 import { updateProfile } from 'firebase/auth';
 import CustomInput from '../../../common/components/ui/CustomInput';
+import ChangePasswordForm from '../../shared/components/profile/ChangePasswordForm';
 
 interface InstructorProfileFormProps {
   user: User;
@@ -512,8 +513,8 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
         <button
           onClick={() => setActiveTab('user')}
           className={`${activeTab === 'user'
-              ? 'border-instructor text-instructor'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
+            ? 'border-instructor text-instructor'
+            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
             } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
         >
           Kullanıcı Bilgileri
@@ -521,8 +522,8 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
         <button
           onClick={() => setActiveTab('instructor')}
           className={`${activeTab === 'instructor'
-              ? 'border-instructor text-instructor'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
+            ? 'border-instructor text-instructor'
+            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
             } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
         >
           Eğitmen Bilgileri
@@ -790,6 +791,10 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
           </div>
         </div>
       )}
+
+      <div className="mt-12 border-t border-gray-200 dark:border-slate-700/50 pt-8">
+        <ChangePasswordForm colorVariant="instructor" />
+      </div>
     </div>
   );
 };

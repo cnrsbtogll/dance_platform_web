@@ -3,6 +3,7 @@ import { School } from '../../../../types';
 import Button from '../../../../common/components/ui/Button';
 import CustomInput from '../../../../common/components/ui/CustomInput';
 import SimpleModal from '../../../../common/components/ui/SimpleModal';
+import ChangePasswordForm from '../../../shared/components/profile/ChangePasswordForm';
 
 interface SchoolProfileProps {
   school: School;
@@ -141,6 +142,10 @@ export const SchoolProfile: React.FC<SchoolProfileProps> = ({
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mt-8">
+        <ChangePasswordForm colorVariant="school" />
       </div>
 
       {/* Edit Modal */}
