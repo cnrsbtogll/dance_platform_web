@@ -22,6 +22,7 @@ import SchoolDetailPage from './pages/schools/SchoolDetailPage';
 import Festivals from './pages/festivals/Festivals';
 import Nights from './pages/nights/Nights';
 import useAuth from './common/hooks/useAuth';
+import AuthGuide from './pages/help/AuthGuide';
 import { auth } from './api/firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { AuthProvider } from './contexts/AuthContext';
@@ -473,24 +474,21 @@ function AppContent(): JSX.Element {
                     />
                   }
                 />
-                <Route
-                  path="/profile"
-                  element={
-                    isAuthenticated ? (
-                      <ProfilePage
-                        user={currentUser}
-                        onUpdate={(updatedUser) => {
-                          console.log('Profil güncellendi:', updatedUser);
-                          // Profil güncellendiğinde yapılacak işlemler
-                        }}
-                      />
-                    ) : (
-                      <Navigate to="/signin" />
-                    )
-                  }
-                />
+                <Route path="/profile" element={
+                  isAuthenticated ? (
+                    <ProfilePage
+                      user={currentUser}
+                      onUpdate={(updatedUser) => {
+                        console.log('Profil güncellendi:', updatedUser);
+                      }}
+                    />
+                  ) : (
+                    <Navigate to="/signin" />
+                  )
+                } />
                 <Route path="/signin" element={isAuthenticated ? <Navigate to="/" /> : <SignIn />} />
                 <Route path="/signup" element={isAuthenticated ? <Navigate to="/" /> : <SignUp />} />
+                <Route path="/yardim/giris-kayit" element={<AuthGuide />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </div>
@@ -505,13 +503,22 @@ function AppContent(): JSX.Element {
                     </p>
                   </div>
 
-                  <div>
+                  <div className="mb-6 md:mb-0">
                     <h3 className="text-lg font-semibold mb-3">Bağlantılar</h3>
                     <ul className="space-y-2">
-                      <li><a href="/courses" className="text-gray-300 hover:text-white">Kurs Bul</a></li>
-                      <li><a href="/partners" className="text-gray-300 hover:text-white">Partner Bul</a></li>
-                      <li><a href="/festivals" className="text-gray-300 hover:text-white">Festivaller</a></li>
-                      <li><a href="/nights" className="text-gray-300 hover:text-white">Geceler</a></li>
+                      <li><a href="/courses" className="text-gray-300 hover:text-white transition-colors">Kurs Bul</a></li>
+                      <li><a href="/partners" className="text-gray-300 hover:text-white transition-colors">Partner Bul</a></li>
+                      <li><a href="/festivals" className="text-gray-300 hover:text-white transition-colors">Festivaller</a></li>
+                      <li><a href="/nights" className="text-gray-300 hover:text-white transition-colors">Geceler</a></li>
+                    </ul>
+                  </div>
+
+                  <div className="mb-6 md:mb-0">
+                    <h3 className="text-lg font-semibold mb-3">Yardım & Destek</h3>
+                    <ul className="space-y-2">
+                      <li><a href="/yardim/giris-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Siteye Nasıl Giriş Yapılır?</a></li>
+                      <li><a href="/become-instructor" className="text-gray-300 hover:text-white transition-colors">Eğitmen Ol</a></li>
+                      <li><a href="/become-school" className="text-gray-300 hover:text-white transition-colors">Okul Ekle</a></li>
                     </ul>
                   </div>
 

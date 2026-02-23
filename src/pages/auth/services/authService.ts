@@ -58,6 +58,15 @@ export const signIn = async (email: string, password: string): Promise<UserCrede
   }
 };
 
+// Şifre sıfırlama maili gönderme fonksiyonu
+export const resetPassword = async (email: string): Promise<void> => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    throw error;
+  }
+};
+
 // Çıkış yapma fonksiyonu
 export const signOut = async (): Promise<void> => {
   return firebaseSignOut(auth);
