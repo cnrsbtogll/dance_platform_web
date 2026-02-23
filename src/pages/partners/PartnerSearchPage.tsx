@@ -1181,30 +1181,8 @@ function PartnerSearchPage(): JSX.Element {
 
         {/* Kart içeriği - alt kısım */}
         <div className="p-5 flex-grow flex flex-col">
-          {/* Fiziksel özellikler */}
-          {(partner.boy || partner.kilo) && (
-            <div className="mb-4">
-              <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-2">Fiziksel Özellikler</h3>
-              <div className="flex flex-wrap gap-4">
-                {partner.boy && (
-                  <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
-                    </svg>
-                    <span className="text-sm dark:text-gray-300">{partner.boy} cm</span>
-                  </div>
-                )}
-                {partner.kilo && (
-                  <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                    </svg>
-                    <span className="text-sm dark:text-gray-300">{partner.kilo} kg</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+
+
 
           <div className="mb-4">
             <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-2">Dans Stilleri</h3>

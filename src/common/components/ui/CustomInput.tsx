@@ -18,7 +18,7 @@ export interface CustomInputProps {
   className?: string;
   required?: boolean;
   disabled?: boolean;
-  colorVariant?: 'default' | 'school' | 'instructor';
+  colorVariant?: 'default' | 'school' | 'instructor' | 'student';
   startIcon?: React.ReactNode;
   autoComplete?: string;
 }
@@ -45,12 +45,14 @@ export const CustomInput: React.FC<CustomInputProps> = ({
   const { isDark } = useTheme();
 
   const isSchool = colorVariant === 'school';
+  const isInstructor = colorVariant === 'instructor';
+  const isStudent = colorVariant === 'student';
   const bg = isDark ? (isSchool ? '#231810' : '#1e293b') : '#ffffff';
   const textColor = isDark ? (isSchool ? '#ffffff' : '#f1f5f9') : '#111827';
   const labelColor = isDark ? (isSchool ? '#cba990' : '#94a3b8') : '#6B7280';
   const borderColor = isDark ? (isSchool ? '#493322' : '#475569') : '#E5E7EB';
   const borderHover = isDark ? (isSchool ? '#cba990' : '#64748b') : '#9CA3AF';
-  const borderFocus = isDark ? (isSchool ? '#b45309' : '#a78bfa') : (isSchool ? '#b45309' : '#7c3aed');
+  const borderFocus = isSchool ? '#b45309' : isInstructor ? (isDark ? '#a78bfa' : '#7c3aed') : isStudent ? '#9f1239' : (isDark ? '#a78bfa' : '#7c3aed');
   const disabledBg = isDark ? (isSchool ? '#1a120b' : '#0f172a') : '#f9fafb';
   const disabledText = isDark ? (isSchool ? '#8e715b' : '#64748b') : '#9CA3AF';
 
