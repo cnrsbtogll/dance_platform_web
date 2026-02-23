@@ -338,7 +338,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
                         ? 'bg-red-500'
                         : course.currentParticipants / course.maxParticipants > 0.5
                           ? 'bg-yellow-500'
-                          : 'bg-gradient-to-r from-emerald-500 to-green-600'
+                          : 'bg-brand-pink'
                         }`}
                       style={{ width: `${(course.currentParticipants / course.maxParticipants) * 100}%` }}
                     ></div>
@@ -357,27 +357,23 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
 
             {/* Butonlar */}
             <div className="flex space-x-2">
-              <Link
-                to={`/courses/${course.id}`}
-                onClick={(e) => e.stopPropagation()}
-                className="flex-1 py-2 px-4 text-sm font-medium rounded-md text-brand-pink bg-rose-50 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink text-center"
-              >
-                Detaylar
-              </Link>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
                   setIsContactModalOpen(true);
                 }}
-                disabled={course.currentParticipants >= course.maxParticipants}
-                className={`flex-1 py-2 px-4 text-sm font-medium rounded-md ${course.currentParticipants >= course.maxParticipants
-                  ? 'bg-gray-300 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
-                  }`}
+                className="flex-1 py-2 px-4 text-sm font-medium rounded-md border border-brand-pink text-brand-pink hover:bg-brand-light dark:hover:bg-rose-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink transition-colors cursor-pointer"
               >
                 İletişime Geç
               </button>
+              <Link
+                to={`/courses/${course.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1 py-2 px-4 text-sm font-medium rounded-md bg-brand-pink text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink text-center transition-colors cursor-pointer"
+              >
+                Detaylar
+              </Link>
             </div>
           </div>
         </div>

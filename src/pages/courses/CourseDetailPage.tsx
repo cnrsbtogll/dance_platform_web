@@ -1,11 +1,12 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../../api/firebase/firebase';
 import { DanceClass } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { Dialog, Transition } from '@headlessui/react';
 import { getCourseImage } from '../../common/utils/imageUtils';
+import { ChatDialog } from '../../features/chat/components/ChatDialog';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const DAY_MAP: Record<string, string> = {
@@ -149,13 +150,14 @@ const StarRating: React.FC<{ rating: number; count?: number; size?: 'sm' | 'md' 
   );
 };
 
-// ─── Contact Modal ────────────────────────────────────────────────────────────
-const ContactModal: React.FC<{
+// ─── Chat Target Picker Modal ────────────────────────────────────────────────
+const ChatPickerModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   course: CourseData;
   school: SchoolData | null;
-}> = ({ isOpen, onClose, course, school }) => (
+  onSelect: (target: { id: string; displayName: string; photoURL?: string; role: 'instructor' | 'school' }) => void;
+}> = ({ isOpen, onClose, course, school, onSelect }) => (
   <Transition appear show={isOpen} as={Fragment}>
     <Dialog as="div" className="relative z-50" onClose={onClose}>
       <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0"
@@ -167,12 +169,11 @@ const ContactModal: React.FC<{
           <Transition.Child as={Fragment} enter="ease-out duration-200"
             enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
             leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-            <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-2xl overflow-hidden">
-              {/* Header */}
+            <Dialog.Panel className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-700">
                 <div>
                   <Dialog.Title className="text-base font-bold text-slate-900 dark:text-white">
-                    İletişim Bilgileri
+                    Kiminle İletişime Geçmek İstiyorsunuz?
                   </Dialog.Title>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{course.name}</p>
                 </div>
@@ -180,65 +181,46 @@ const ContactModal: React.FC<{
                   <Ic.X />
                 </button>
               </div>
-
-              <div className="p-6 space-y-5">
-                {/* Eğitmen */}
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-brand-light dark:bg-rose-900/30 text-brand-pink flex items-center justify-center flex-shrink-0">
-                    <Ic.User />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Eğitmen</p>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{course.instructorName || '—'}</p>
-                    {course.phoneNumber && (
-                      <a href={`tel:${course.phoneNumber}`} className="text-xs text-brand-pink hover:underline flex items-center gap-1 mt-1">
-                        <Ic.Phone /> {course.phoneNumber}
-                      </a>
-                    )}
-                    {course.email && (
-                      <a href={`mailto:${course.email}`} className="text-xs text-brand-pink hover:underline flex items-center gap-1 mt-1">
-                        <Ic.Mail /> {course.email}
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {/* Okul */}
-                {(school || course.schoolName) && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+              <div className="p-4 space-y-3">
+                {/* Eğitmen seçeneği */}
+                {course.instructorId && course.instructorName && (
+                  <button
+                    onClick={() => onSelect({ id: course.instructorId, displayName: course.instructorName!, role: 'instructor' })}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-brand-pink hover:bg-brand-light dark:hover:bg-rose-900/20 transition-all cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-brand-light dark:bg-rose-900/30 text-brand-pink flex items-center justify-center flex-shrink-0 group-hover:bg-brand-pink group-hover:text-white transition-colors">
+                      <Ic.User />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Eğitmen</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{course.instructorName}</p>
+                    </div>
+                    <Ic.ChevronRight />
+                  </button>
+                )}
+                {/* Okul seçeneği */}
+                {course.schoolId && (school?.displayName || school?.name || course.schoolName) && (
+                  <button
+                    onClick={() => onSelect({ id: course.schoolId!, displayName: school?.displayName || school?.name || course.schoolName!, role: 'school' })}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-500 group-hover:text-white transition-colors">
                       <Ic.School />
                     </div>
-                    <div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Dans Okulu</p>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                        {school?.displayName || school?.name || course.schoolName}
-                      </p>
-                      {(school?.phone) && (
-                        <a href={`tel:${school.phone}`} className="text-xs text-brand-pink hover:underline flex items-center gap-1 mt-1">
-                          <Ic.Phone /> {school.phone}
-                        </a>
-                      )}
-                      {(school?.email) && (
-                        <a href={`mailto:${school.email}`} className="text-xs text-brand-pink hover:underline flex items-center gap-1 mt-1">
-                          <Ic.Mail /> {school.email}
-                        </a>
-                      )}
-                      {(school?.address || school?.city) && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
-                          <Ic.Pin />
-                          {[school?.address, school?.city].filter(Boolean).join(', ')}
-                        </p>
-                      )}
+                    <div className="text-left">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Dans Okulu</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{school?.displayName || school?.name || course.schoolName}</p>
                     </div>
-                  </div>
+                    <Ic.ChevronRight />
+                  </button>
+                )}
+                {!course.instructorId && !course.schoolId && (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">İletişim bilgisi bulunamadı.</p>
                 )}
               </div>
-
-              <div className="px-6 pb-6">
-                <button onClick={onClose}
-                  className="w-full h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors cursor-pointer">
-                  Kapat
+              <div className="px-4 pb-4">
+                <button onClick={onClose} className="w-full h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+                  İptal
                 </button>
               </div>
             </Dialog.Panel>
@@ -249,56 +231,114 @@ const ContactModal: React.FC<{
   </Transition>
 );
 
-// ─── Enroll Modal ─────────────────────────────────────────────────────────────
+// ─── Profile Completion + Enroll Modal ───────────────────────────────────────
 const EnrollModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (gender: string, phone: string) => void;
   course: CourseData;
   loading: boolean;
-}> = ({ isOpen, onClose, onConfirm, course, loading }) => (
-  <Transition appear show={isOpen} as={Fragment}>
-    <Dialog as="div" className="relative z-50" onClose={onClose}>
-      <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0"
-        enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0">
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
-      </Transition.Child>
-      <div className="fixed inset-0 overflow-y-auto">
-        <div className="flex min-h-full items-center justify-center p-4">
-          <Transition.Child as={Fragment} enter="ease-out duration-200"
-            enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
-            leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-            <Dialog.Panel className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 shadow-2xl p-6">
-              <Dialog.Title className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                Derse Kaydol
-              </Dialog.Title>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                <span className="font-medium text-slate-800 dark:text-white">{course.name}</span> kursuna kaydolmak istediğinizi onaylıyor musunuz?
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-                Kaydolduktan sonra ödeme ile ilgili bilgi için okul ile iletişime geçmeniz gerekecektir.
-              </p>
-              <div className="flex gap-3">
-                <button onClick={onClose} disabled={loading}
-                  className="flex-1 h-10 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50">
-                  Vazgeç
-                </button>
-                <button onClick={onConfirm} disabled={loading}
-                  className="flex-1 h-10 rounded-xl bg-brand-pink text-white text-sm font-medium hover:bg-rose-700 transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2">
-                  {loading ? (
-                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>Kaydol</>
-                  )}
-                </button>
-              </div>
-            </Dialog.Panel>
-          </Transition.Child>
+  needsGender: boolean;
+  needsPhone: boolean;
+}> = ({ isOpen, onClose, onConfirm, course, loading, needsGender, needsPhone }) => {
+  const [gender, setGender] = useState('');
+  const [phone, setPhone] = useState('');
+  const needsProfile = needsGender || needsPhone;
+  const canSubmit = (!needsGender || gender !== '') && (!needsPhone || phone.trim() !== '');
+
+  return (
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0"
+          enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+        </Transition.Child>
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child as={Fragment} enter="ease-out duration-200"
+              enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
+              leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+              <Dialog.Panel className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 shadow-2xl p-6">
+                <Dialog.Title className="text-base font-bold text-slate-900 dark:text-white mb-1">
+                  Kursa Kaydol
+                </Dialog.Title>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                  <span className="font-medium text-slate-800 dark:text-white">{course.name}</span> kursuna kaydolmak istediğinizi onaylıyor musunuz?
+                </p>
+
+                {needsProfile && (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 mb-4 space-y-3">
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      Profilinizi Tamamlayın
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-500">Kayıt için aşağıdaki bilgileri tamamlayın.</p>
+
+                    {needsGender && (
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Cinsiyet <span className="text-brand-pink">*</span></label>
+                        <div className="flex gap-2">
+                          {['male', 'female', 'other'].map((g) => (
+                            <button
+                              key={g}
+                              type="button"
+                              onClick={() => setGender(g)}
+                              className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all cursor-pointer border-2 ${gender === g
+                                  ? 'bg-brand-pink border-brand-pink text-white'
+                                  : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-brand-pink'
+                                }`}
+                            >
+                              {g === 'male' ? 'Erkek' : g === 'female' ? 'Kadın' : 'Diğer'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {needsPhone && (
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Telefon Numarası <span className="text-brand-pink">*</span></label>
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="+90 5xx xxx xx xx"
+                          className="w-full h-9 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm px-3 focus:outline-none focus:ring-2 focus:ring-brand-pink placeholder:text-slate-400"
+                        />
+                        <p className="text-xs text-slate-400 mt-1">Eğitmen sizinle iletişim kurmak için kullanabilir.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">
+                  Kaydolduktan sonra ödeme bilgisi için okul ile iletişime geçmeniz gerekecektir.
+                </p>
+
+                <div className="flex gap-3">
+                  <button onClick={onClose} disabled={loading}
+                    className="flex-1 h-10 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50">
+                    Vazgeç
+                  </button>
+                  <button
+                    onClick={() => onConfirm(gender, phone)}
+                    disabled={loading || !canSubmit}
+                    className="flex-1 h-10 rounded-xl bg-brand-pink text-white text-sm font-medium hover:bg-rose-700 transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2">
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    ) : 'Kaydol'}
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
         </div>
-      </div>
-    </Dialog>
-  </Transition>
-);
+      </Dialog>
+    </Transition>
+  );
+};
 
 // ─── Gender Distribution Bar ──────────────────────────────────────────────────
 const GenderBar: React.FC<{ male: number; female: number; other: number }> = ({ male, female, other }) => {
@@ -350,6 +390,12 @@ const CourseDetailPage: React.FC = () => {
   const [enrollOpen, setEnrollOpen] = useState(false);
   const [enrollLoading, setEnrollLoading] = useState(false);
   const [enrolled, setEnrolled] = useState(false);
+  const [needsGender, setNeedsGender] = useState(false);
+  const [needsPhone, setNeedsPhone] = useState(false);
+  // Chat
+  const [chatTarget, setChatTarget] = useState<{
+    id: string; displayName: string; photoURL?: string; role: 'student' | 'instructor' | 'school' | 'partner';
+  } | null>(null);
 
   // Fetch course + school
   useEffect(() => {
@@ -367,6 +413,18 @@ const CourseDetailPage: React.FC = () => {
         // Check enrollment
         if (currentUser?.uid && c.studentIds?.includes(currentUser.uid)) {
           setEnrolled(true);
+        }
+
+        // Check profile completeness for enroll
+        if (currentUser?.uid) {
+          try {
+            const uSnap = await getDoc(doc(db, 'users', currentUser.uid));
+            if (uSnap.exists()) {
+              const ud = uSnap.data();
+              setNeedsGender(!ud.gender);
+              setNeedsPhone(!ud.phoneNumber);
+            }
+          } catch { /* not critical */ }
         }
 
         // School — resolve schoolId from course or location
@@ -388,13 +446,34 @@ const CourseDetailPage: React.FC = () => {
     fetchData();
   }, [id, currentUser?.uid]);
 
-  // Enroll handler
-  const handleEnroll = async () => {
-    if (!currentUser) { navigate('/signin', { state: { returnUrl: `/courses/${id}` } }); return; }
+  // Enroll handler — receives gender & phone collected from modal
+  const handleEnroll = async (gender: string, phone: string) => {
+    if (!currentUser || !id) { navigate('/signin', { state: { returnUrl: `/courses/${id}` } }); return; }
     setEnrollLoading(true);
     try {
-      // TODO: real Firestore write — placeholder alert for now
-      await new Promise(r => setTimeout(r, 800));
+      // 1. Update user profile if needed
+      if ((needsGender && gender) || (needsPhone && phone)) {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const profileUpdate: Record<string, string> = {};
+        if (needsGender && gender) profileUpdate.gender = gender;
+        if (needsPhone && phone) profileUpdate.phoneNumber = phone;
+        await updateDoc(userRef, profileUpdate);
+        if (needsGender && gender) setNeedsGender(false);
+        if (needsPhone && phone) setNeedsPhone(false);
+      }
+
+      // 2. Add student to course
+      const courseRef = doc(db, 'courses', id);
+      await updateDoc(courseRef, {
+        studentIds: arrayUnion(currentUser.uid),
+        currentParticipants: increment(1),
+        // Update gender stats
+        ...(gender || !needsGender ? {
+          [`participantStats.${gender || 'other'}`]: increment(1),
+          'participantStats.total': increment(1),
+        } : {}),
+      });
+
       setEnrolled(true);
       setEnrollOpen(false);
     } catch (e) {
@@ -616,7 +695,7 @@ const CourseDetailPage: React.FC = () => {
                           İletişime Geç
                         </button>
 
-                        {/* Derse Kaydol */}
+                        {/* Kursa Kaydol */}
                         {enrolled ? (
                           <div className="w-full h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 text-sm font-semibold flex items-center justify-center gap-2">
                             <Ic.Check /> Kayıtlısınız
@@ -634,7 +713,7 @@ const CourseDetailPage: React.FC = () => {
                               : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                               }`}
                           >
-                            {isOwner ? 'Kendi Kursunuz' : isFull ? 'Kontenjan Dolu' : 'Derse Kaydol'}
+                            {isOwner ? 'Kendi Kursunuz' : isFull ? 'Kontenjan Dolu' : 'Kursa Kaydol'}
                           </button>
                         )}
                       </div>
@@ -795,11 +874,15 @@ const CourseDetailPage: React.FC = () => {
       {/* Modals */}
       {course && (
         <>
-          <ContactModal
+          <ChatPickerModal
             isOpen={contactOpen}
             onClose={() => setContactOpen(false)}
             course={course}
             school={school}
+            onSelect={(target) => {
+              setContactOpen(false);
+              setChatTarget({ ...target, role: target.role as 'instructor' | 'school' | 'student' | 'partner' });
+            }}
           />
           <EnrollModal
             isOpen={enrollOpen}
@@ -807,8 +890,19 @@ const CourseDetailPage: React.FC = () => {
             onConfirm={handleEnroll}
             course={course}
             loading={enrollLoading}
+            needsGender={needsGender}
+            needsPhone={needsPhone}
           />
         </>
+      )}
+      {/* Chat Dialog */}
+      {chatTarget && (
+        <ChatDialog
+          open={!!chatTarget}
+          onClose={() => setChatTarget(null)}
+          partner={chatTarget}
+          chatType={chatTarget.role === 'school' ? 'student-school' : 'student-instructor'}
+        />
       )}
     </div>
   );
