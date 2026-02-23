@@ -33,13 +33,15 @@ interface ChatDialogProps {
   onClose: () => void;
   partner: ChatPartner;
   chatType?: 'student-instructor' | 'student-school' | 'instructor-school' | 'partner-partner';
+  inline?: boolean;
 }
 
 export const ChatDialog: React.FC<ChatDialogProps> = ({
   open,
   onClose,
   partner,
-  chatType = 'student-instructor'
+  chatType = 'student-instructor',
+  inline = false
 }) => {
   const { currentUser } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -115,11 +117,9 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
   useEffect(() => {
     if (!open || !currentUser || !partner.id) return;
 
-    // Tek bir sorgu ile tüm mesajları al
     const q = query(
       collection(db, 'messages'),
-      where('participants', 'array-contains', currentUser.uid),
-      orderBy('timestamp', 'asc')
+      where('participants', 'array-contains', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -230,17 +230,9 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
     }
   };
 
-  return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        className: 'dark:bg-slate-800 dark:ring-1 dark:ring-white/10'
-      }}
-    >
-      <DialogTitle className="flex justify-between items-center bg-rose-50 dark:bg-slate-800 border-b border-rose-100 dark:border-slate-700">
+  const innerContent = (
+    <>
+      <div className={`flex justify-between items-center px-4 py-3 bg-rose-50 dark:bg-slate-800 border-b border-rose-100 dark:border-slate-700 ${!inline ? 'MuiDialogTitle-root' : ''}`}>
         <div className="flex items-center">
           <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
             <img
@@ -250,20 +242,20 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
             />
           </div>
           <div>
-            <span className="font-semibold block text-slate-900 dark:text-white">{partner.displayName}</span>
+            <span className="font-semibold block text-slate-900 dark:text-white capitalize">{partner.displayName}</span>
             {partner.role && (
-              <span className="text-xs text-gray-600 dark:text-gray-400">{getRoleLabel(partner.role)}</span>
+              <span className="text-xs text-brand-pink block">{getRoleLabel(partner.role)}</span>
             )}
           </div>
         </div>
         <IconButton onClick={handleClose} size="small" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={inline ? "M15 19l-7-7 7-7" : "M6 18L18 6M6 6l12 12"} />
           </svg>
         </IconButton>
-      </DialogTitle>
+      </div>
 
-      <DialogContent className="flex flex-col h-[500px] p-0">
+      <div className={`flex flex-col flex-1 p-0 ${inline ? 'h-[calc(100%-64px)]' : 'h-[500px]'}`}>
         {/* Messages Container */}
         <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-900">
           {messages.map((message) => (
@@ -282,15 +274,15 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
               )}
               <div
                 className={`relative max-w-[70%] rounded-2xl px-4 py-2 ${message.senderId === currentUser?.uid
-                    ? 'bg-brand-pink text-white rounded-tr-none'
-                    : 'bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 rounded-tl-none shadow-sm'
+                  ? 'bg-brand-pink text-white rounded-tr-none'
+                  : 'bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 rounded-tl-none shadow-sm border border-slate-100 dark:border-slate-700'
                   }`}
               >
                 <p className="text-sm break-words">{message.content}</p>
                 <span
                   className={`text-[11px] block mt-1 ${message.senderId === currentUser?.uid
-                      ? 'text-rose-100'
-                      : 'text-gray-500 dark:text-gray-400'
+                    ? 'text-rose-100'
+                    : 'text-gray-500 dark:text-gray-400'
                     }`}
                 >
                   {message.timestamp instanceof Date
@@ -310,32 +302,48 @@ export const ChatDialog: React.FC<ChatDialogProps> = ({
         </div>
 
         {/* Message Input */}
-        <form onSubmit={handleSendMessage} className="border-t border-gray-200 dark:border-slate-700 p-3 bg-white dark:bg-slate-800">
-          <div className="flex gap-1">
+        <form onSubmit={handleSendMessage} className="border-t border-gray-200 dark:border-slate-700 p-3 bg-white dark:bg-slate-800 shrink-0">
+          <div className="flex gap-2">
             <input
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Mesajınızı yazın..."
-              className="flex-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded-full px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-pink text-sm"
+              className="flex-1 min-w-0 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-pink text-sm"
               disabled={loading}
               ref={inputRef}
             />
             <button
               type="submit"
-              className="min-w-[40px] h-[34px] whitespace-nowrap bg-brand-pink text-white px-2 sm:px-4 rounded-full hover:bg-rose-700 transition-colors disabled:opacity-50 text-sm flex items-center justify-center"
+              className="w-10 h-10 flex-shrink-0 bg-brand-pink text-white rounded-full hover:bg-rose-700 transition-colors disabled:opacity-50 text-sm flex items-center justify-center cursor-pointer"
               disabled={loading || !newMessage.trim()}
             >
-              <span className="hidden sm:inline">Gönder</span>
-              <span className="sm:hidden">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
             </button>
           </div>
         </form>
-      </DialogContent>
+      </div>
+    </>
+  );
+
+  if (inline) {
+    if (!open) return null;
+    return <div className="flex flex-col h-full w-full bg-white dark:bg-slate-900 absolute inset-0 z-10 animate-fade-in">{innerContent}</div>;
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        className: 'dark:bg-slate-800 dark:ring-1 dark:ring-white/10 overflow-hidden'
+      }}
+    >
+      {innerContent}
     </Dialog>
   );
 }; 

@@ -23,9 +23,10 @@ interface Chat {
 
 interface ChatListProps {
   onClose?: () => void;
+  onChatSelect?: (chat: { id: string; displayName: string; photoURL?: string; role?: 'student' | 'instructor' | 'school' | 'partner' }) => void;
 }
 
-export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
+export const ChatList: React.FC<ChatListProps> = ({ onClose, onChatSelect }) => {
   const { currentUser } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<{
@@ -46,8 +47,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
 
     const q = query(
       collection(db, 'messages'),
-      where('participants', 'array-contains', currentUser.uid),
-      orderBy('timestamp', 'desc')
+      where('participants', 'array-contains', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -60,7 +60,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
       for (const docSnap of snapshot.docs) {
         const message = docSnap.data();
         const partnerId = message.senderId === currentUser.uid ? message.receiverId : message.senderId;
-        
+
         console.log('İşlenen mesaj:', {
           messageId: docSnap.id,
           content: message.content,
@@ -71,29 +71,76 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
 
         if (!processedPartners.has(partnerId)) {
           processedPartners.add(partnerId);
-          
+
           try {
-            // Partner bilgilerini direkt döküman ID'si ile al
+            let userData: Partial<UserData> = {};
+            let partnerRoleFromDb: string = 'student';
+            let exists = false;
+
+            // 1. users koleksiyonunda ara
             const userDocRef = doc(db, 'users', partnerId);
             const userDocSnap = await getDoc(userDocRef);
-            
-            console.log('Partner bilgileri:', {
-              partnerId,
-              exists: userDocSnap.exists(),
-              userData: userDocSnap.data()
-            });
-            
+
             if (userDocSnap.exists()) {
-              const userData = userDocSnap.data() as UserData;
-              const userRole = Array.isArray(userData.role) ? userData.role[0] : userData.role;
+              userData = userDocSnap.data() as UserData;
+              partnerRoleFromDb = (Array.isArray(userData.role) ? userData.role[0] : userData.role) || 'student';
+              exists = true;
+            } else {
+              // 2. instructors koleksiyonunda ara
+              const instructorDocRef = doc(db, 'instructors', partnerId);
+              const instructorDocSnap = await getDoc(instructorDocRef);
+              if (instructorDocSnap.exists()) {
+                const instrData = instructorDocSnap.data() as any;
+                partnerRoleFromDb = 'instructor';
+                exists = true;
+                if (instrData.userId) {
+                  const trueUserSnap = await getDoc(doc(db, 'users', instrData.userId));
+                  if (trueUserSnap.exists()) {
+                    userData = trueUserSnap.data() as UserData;
+                  } else {
+                    userData = { displayName: instrData.displayName || instrData.name };
+                  }
+                } else {
+                  userData = { displayName: instrData.displayName || instrData.name };
+                }
+              } else {
+                // 3. schools koleksiyonunda ara
+                const schoolDocRef = doc(db, 'schools', partnerId);
+                const schoolDocSnap = await getDoc(schoolDocRef);
+                if (schoolDocSnap.exists()) {
+                  const schData = schoolDocSnap.data() as any;
+                  partnerRoleFromDb = 'school';
+                  exists = true;
+                  userData = {
+                    displayName: schData.displayName || schData.schoolName || schData.name,
+                    photoURL: schData.photoURL || schData.logo
+                  };
+                }
+              }
+            }
+
+            // 4. Metadata Fallback (Eğer hiçbir dökümanda bulunamazsa chat meta verisinden adı çözmeye çalış)
+            const isSender = message.senderId === currentUser.uid;
+            const fallbackName = isSender ? message.metadata?.receiverName : message.metadata?.senderName;
+
+            if (exists || fallbackName) {
               const validRole = (role?: string): role is Chat['partnerRole'] => {
                 return role === 'student' || role === 'instructor' || role === 'school' || role === 'partner';
               };
 
+              // Eğer role database'den alınamadıysa ama mevcutsa (metadata kontrolü via chatType)
+              if (!exists && message.metadata?.chatType) {
+                if (message.metadata.chatType === 'student-instructor') {
+                  partnerRoleFromDb = isSender ? 'instructor' : 'student';
+                } else if (message.metadata.chatType === 'student-school') {
+                  partnerRoleFromDb = isSender ? 'school' : 'student';
+                }
+              }
+
               chatMap.set(partnerId, {
                 partnerId,
-                partnerName: userData.displayName || 'İsimsiz Kullanıcı',
-                partnerRole: validRole(userRole) ? userRole : 'student',
+                partnerName: userData.displayName || fallbackName || 'İsimsiz Kullanıcı',
+                partnerRole: validRole(partnerRoleFromDb) ? partnerRoleFromDb : 'student',
                 partnerPhotoURL: userData.photoURL || '/assets/images/default-avatar.png',
                 lastMessage: message.content,
                 timestamp: message.timestamp?.toDate() || new Date(),
@@ -104,9 +151,9 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
               const unreadMessages = snapshot.docs.filter(msgDoc => {
                 const msgData = msgDoc.data();
                 // Gönderen partner ise ve mesaj görüntülenmemişse
-                return msgData.senderId === partnerId && 
-                       msgData.receiverId === currentUser.uid && 
-                       !msgData.viewed;
+                return msgData.senderId === partnerId &&
+                  msgData.receiverId === currentUser.uid &&
+                  !msgData.viewed;
               });
 
               if (chatMap.has(partnerId)) {
@@ -129,7 +176,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
 
       const sortedChats = Array.from(chatMap.values()).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       console.log('İşlenmiş sohbet listesi:', sortedChats);
-      
+
       setChats(sortedChats);
       setLoading(false);
     }, (error) => {
@@ -155,6 +202,21 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
     }
   };
 
+  const getRoleBadgeStyle = (role: Chat['partnerRole']) => {
+    switch (role) {
+      case 'instructor':
+        return 'bg-[#005f73]/10 text-[#005f73] border-[#005f73]/30 dark:bg-[#005f73]/20 dark:text-[#005f73] dark:border-[#005f73]/40';
+      case 'school':
+        return 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/30 dark:bg-[#f59e0b]/20 dark:text-[#f59e0b] dark:border-[#f59e0b]/40';
+      case 'student':
+        return 'bg-[#ED3D81]/10 text-[#ED3D81] border-[#ED3D81]/30 dark:bg-[#ED3D81]/20 dark:text-[#ED3D81] dark:border-[#ED3D81]/40';
+      case 'partner':
+        return 'bg-rose-50 text-brand-pink border-brand-pink/20 dark:bg-rose-900/20 dark:text-brand-pink dark:border-brand-pink/20';
+      default:
+        return 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-slate-800 dark:text-gray-400 dark:border-gray-700';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -171,7 +233,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
           {chats.length} sohbet
         </span>
       </div> */}
-      
+
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow divide-y">
         {chats.length === 0 ? (
           <div className="p-4 sm:p-6 text-center text-gray-500 dark:text-gray-400">
@@ -187,12 +249,19 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
               <div
                 key={chat.partnerId}
                 className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-colors duration-150"
-                onClick={() => setSelectedChat({
-                  id: chat.partnerId,
-                  displayName: chat.partnerName,
-                  photoURL: chat.partnerPhotoURL,
-                  role: chat.partnerRole
-                })}
+                onClick={() => {
+                  const sel = {
+                    id: chat.partnerId,
+                    displayName: chat.partnerName,
+                    photoURL: chat.partnerPhotoURL,
+                    role: chat.partnerRole
+                  };
+                  if (onChatSelect) {
+                    onChatSelect(sel);
+                  } else {
+                    setSelectedChat(sel);
+                  }
+                }}
               >
                 <div className="flex items-center gap-2 sm:gap-4">
                   <div className="relative flex-shrink-0">
@@ -211,12 +280,18 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <div className="flex justify-between items-start">
                       <div className="min-w-0">
-                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate pr-2">{chat.partnerName}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{getRoleLabel(chat.partnerRole)}</p>
+                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">
+                          {chat.partnerName}
+                        </h3>
+                        <div className="mt-0.5">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-semibold border ${getRoleBadgeStyle(chat.partnerRole)}`}>
+                            {getRoleLabel(chat.partnerRole)}
+                          </span>
+                        </div>
                       </div>
                       <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap flex-shrink-0">
                         {chat.timestamp.toLocaleDateString('tr-TR', {
@@ -225,7 +300,7 @@ export const ChatList: React.FC<ChatListProps> = ({ onClose }) => {
                         })}
                       </span>
                     </div>
-                    
+
                     <p className={`text-xs sm:text-sm ${chat.unreadCount > 0 ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'} truncate`}>
                       {chat.lastMessage}
                     </p>
