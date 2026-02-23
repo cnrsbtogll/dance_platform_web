@@ -556,11 +556,6 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       loadingInstructors
     });
 
-    if (instructorId) {
-      console.log('Instructor ID mevcut, eğitmenler getirilmeyecek');
-      return;
-    }
-
     if (!auth.currentUser?.uid) {
       console.error('Oturum açmış kullanıcı bilgisi bulunamadı');
       return;
@@ -1160,6 +1155,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
     if (!instructorId || !courseId) return;
 
+    if (auth.currentUser?.uid === instructorId) {
+      setError('Kendinizi kurstan çıkaramazsınız.');
+      setInstructorToRemove(null);
+      return;
+    }
+
     setInstructorToRemove(null);
     try {
       setLoading(true);
@@ -1722,13 +1723,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         }
 
         try {
-          // isAdmin kontrolünü kaldıralım, schoolId varsa da çağıralım
-          if (schoolId || isAdmin) {
-            console.log('Eğitmenler yüklenecek çünkü:', { schoolId, isAdmin });
-            await fetchInstructors();
-          } else {
-            console.log('Eğitmenler yüklenmeyecek çünkü:', { schoolId, isAdmin });
-          }
+          console.log('Eğitmenler yüklenecek');
+          await fetchInstructors();
         } catch (e) {
           console.error('Eğitmenler yüklenirken hata:', e);
         }
@@ -2875,15 +2871,17 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                       <div className="text-xs text-gray-500 dark:text-gray-400">ID: {id.substring(0, 8)}...</div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setInstructorToRemove({ id, name, courseId: selectedCourseForInstructors!.id })}
-                    className="p-1.5 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                    title="Kurstan Çıkar"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  {auth.currentUser?.uid !== id && (
+                    <button
+                      onClick={() => setInstructorToRemove({ id, name, courseId: selectedCourseForInstructors!.id })}
+                      className="p-1.5 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                      title="Kurstan Çıkar"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               );
             })}
