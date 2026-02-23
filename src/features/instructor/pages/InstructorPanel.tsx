@@ -16,6 +16,7 @@ import AttendanceManagement from '../../../features/shared/components/attendance
 import ProgressTracking from '../../../features/shared/components/progress/ProgressTracking';
 import BadgeSystem from '../../../features/shared/components/badges/BadgeSystem';
 import EarningsManagement from '../../../features/shared/components/earnings/EarningsManagement';
+import DeleteAccountModal from '../../../features/shared/components/profile/DeleteAccountModal';
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 type TabType =
@@ -407,6 +408,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
   const instructorTheme = createInstructorTheme(isDark ? 'dark' : 'light');
 
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [stats, setStats] = useState<StatsState>({ courses: 0, students: 0, upcomingLessons: 0, earnings: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
@@ -545,223 +547,269 @@ function InstructorPanel({ user }: InstructorPanelProps) {
   };
 
   return (
-    <ThemeProvider theme={instructorTheme}>
-      <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-900 overflow-hidden font-sans text-slate-900 dark:text-slate-100 antialiased">
+    <>
+      <ThemeProvider theme={instructorTheme}>
+        <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-900 overflow-hidden font-sans text-slate-900 dark:text-slate-100 antialiased">
 
-        {/* ── Desktop Sidebar ─────────────────────────────────────────────── */}
-        <aside
-          className={`hidden lg:flex flex-col h-screen z-20 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${isSidebarCollapsed ? 'w-16' : 'w-72'
-            }`}
-        >
-          {/* Logo / brand */}
-          <div className={`flex items-center border-b border-slate-100 dark:border-slate-700 shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'px-3 py-6 justify-center' : 'px-6 py-6 gap-3'
-            }`}>
-            <div
-              className="bg-gradient-to-br from-instructor to-instructor-light text-white rounded-lg size-10 flex shrink-0 items-center justify-center cursor-pointer shadow-sm font-bold text-lg"
-              onClick={toggleSidebar}
-              title={isSidebarCollapsed ? 'Genişlet' : 'Eğitmen Paneli'}
-            >
-              {user?.displayName?.[0]?.toUpperCase() ?? 'E'}
-            </div>
-            {!isSidebarCollapsed && (
-              <div className="flex flex-col flex-1 min-w-0">
-                <h1 className="text-slate-900 dark:text-white text-sm font-bold leading-tight line-clamp-1">
-                  {user?.displayName ?? 'Eğitmen'}
-                </h1>
-                <p className="text-instructor dark:text-teal-400 text-xs font-medium flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                  Eğitmen
-                </p>
+          {/* ── Desktop Sidebar ─────────────────────────────────────────────── */}
+          <aside
+            className={`hidden lg:flex flex-col h-screen z-20 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${isSidebarCollapsed ? 'w-16' : 'w-72'
+              }`}
+          >
+            {/* Logo / brand */}
+            <div className={`flex items-center border-b border-slate-100 dark:border-slate-700 shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'px-3 py-6 justify-center' : 'px-6 py-6 gap-3'
+              }`}>
+              <div
+                className="bg-gradient-to-br from-instructor to-instructor-light text-white rounded-lg size-10 flex shrink-0 items-center justify-center cursor-pointer shadow-sm font-bold text-lg"
+                onClick={toggleSidebar}
+                title={isSidebarCollapsed ? 'Genişlet' : 'Eğitmen Paneli'}
+              >
+                {user?.displayName?.[0]?.toUpperCase() ?? 'E'}
               </div>
-            )}
-            <button
-              onClick={toggleSidebar}
-              className={`shrink-0 rounded-lg p-1 text-slate-400 hover:text-instructor hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${isSidebarCollapsed ? 'hidden' : ''
-                }`}
-              title="Daralt"
-            >
-              <Icons.ChevronLeft />
-            </button>
-          </div>
-
-          {/* Nav */}
-          <nav className="flex flex-col flex-1 px-2 py-4 gap-1 overflow-y-auto overflow-x-hidden">
-            {isSidebarCollapsed && (
+              {!isSidebarCollapsed && (
+                <div className="flex flex-col flex-1 min-w-0">
+                  <h1 className="text-slate-900 dark:text-white text-sm font-bold leading-tight line-clamp-1">
+                    {user?.displayName ?? 'Eğitmen'}
+                  </h1>
+                  <p className="text-instructor dark:text-teal-400 text-xs font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                    Eğitmen
+                  </p>
+                </div>
+              )}
               <button
                 onClick={toggleSidebar}
-                className="flex items-center justify-center w-full p-2.5 rounded-lg text-slate-400 hover:text-instructor hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors mb-2"
-                title="Genişlet"
+                className={`shrink-0 rounded-lg p-1 text-slate-400 hover:text-instructor hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${isSidebarCollapsed ? 'hidden' : ''
+                  }`}
+                title="Daralt"
               >
-                <Icons.ChevronRight />
+                <Icons.ChevronLeft />
               </button>
-            )}
-            {navItems.map(item => renderNavItem(item))}
-          </nav>
+            </div>
 
-          {/* Logout */}
-          <div className={`py-4 border-t border-slate-100 dark:border-slate-700 shrink-0 ${isSidebarCollapsed ? 'px-2' : 'px-4'}`}>
-            {isSidebarCollapsed ? (
-              <div className="relative group">
+            {/* Nav */}
+            <nav className="flex flex-col flex-1 px-2 py-4 gap-1 overflow-y-auto overflow-x-hidden">
+              {isSidebarCollapsed && (
                 <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center justify-center p-2.5 rounded-lg bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-all cursor-pointer"
-                  title="Çıkış Yap"
+                  onClick={toggleSidebar}
+                  className="flex items-center justify-center w-full p-2.5 rounded-lg text-slate-400 hover:text-instructor hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors mb-2"
+                  title="Genişlet"
                 >
-                  <Icons.Logout />
+                  <Icons.ChevronRight />
                 </button>
-                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-slate-800 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
-                  Çıkış Yap
-                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-800" />
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center justify-center gap-2 rounded-lg h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-800/50 text-sm font-medium shadow-sm transition-all cursor-pointer"
-              >
-                <Icons.Logout />
-                <span>Çıkış Yap</span>
-              </button>
-            )}
-          </div>
-        </aside>
+              )}
+              {navItems.map(item => renderNavItem(item))}
+            </nav>
 
-        {/* ── Mobile Drawer ─────────────────────────────────────────────────── */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-                onClick={() => setIsMobileMenuOpen(false)}
-              />
-              <motion.aside
-                initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
-                transition={{ type: 'tween', duration: 0.25 }}
-                className="fixed inset-y-0 left-0 w-72 h-full bg-white dark:bg-slate-800 z-50 flex flex-col shadow-xl"
-              >
-                <div className="flex items-center justify-between px-6 py-6 border-b border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-instructor to-instructor-light text-white rounded-lg size-10 flex shrink-0 items-center justify-center font-bold text-lg shadow-sm">
-                      {user?.displayName?.[0]?.toUpperCase() ?? 'E'}
-                    </div>
-                    <div>
-                      <p className="text-slate-900 dark:text-white text-sm font-bold">{user?.displayName ?? 'Eğitmen'}</p>
-                      <p className="text-instructor dark:text-teal-400 text-xs flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                        Eğitmen
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-slate-500 dark:text-slate-400 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer"
-                  >
-                    <Icons.Close />
-                  </button>
-                </div>
-
-                <nav className="flex flex-col flex-1 px-4 py-6 gap-1 overflow-y-auto">
-                  {navItems.map(item => {
-                    const isActive = activeTab === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left cursor-pointer ${isActive
-                          ? 'bg-teal-50 text-instructor dark:bg-teal-900/30 dark:text-teal-400 font-medium'
-                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-instructor dark:hover:text-teal-400'
-                          }`}
-                      >
-                        {item.icon}
-                        <span className="text-sm">{item.label}</span>
-                      </button>
-                    );
-                  })}
-
-                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+            {/* Logout + Delete */}
+            <div className={`py-4 border-t border-slate-100 dark:border-slate-700 shrink-0 ${isSidebarCollapsed ? 'px-2' : 'px-4'}`}>
+              {isSidebarCollapsed ? (
+                <div className="space-y-1">
+                  <div className="relative group">
                     <button
                       onClick={handleLogout}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-800/50 text-sm font-medium shadow-sm transition-all cursor-pointer"
+                      className="flex w-full items-center justify-center p-2.5 rounded-lg bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-all cursor-pointer"
+                      title="Çıkış Yap"
                     >
                       <Icons.Logout />
-                      <span>Çıkış Yap</span>
+                    </button>
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-slate-800 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
+                      Çıkış Yap
+                      <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-800" />
+                    </div>
+                  </div>
+                  <div className="relative group">
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="flex w-full items-center justify-center p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-red-500 transition-all cursor-pointer"
+                      title="Hesabı Sil"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-slate-800 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
+                      Hesabı Sil
+                      <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-800" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-800/50 text-sm font-medium shadow-sm transition-all cursor-pointer"
+                  >
+                    <Icons.Logout />
+                    <span>Çıkış Yap</span>
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg h-9 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 text-xs font-medium transition-all cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Hesabı Sil</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* ── Mobile Drawer ─────────────────────────────────────────────────── */}
+          <AnimatePresence>
+            {isMobileMenuOpen && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                />
+                <motion.aside
+                  initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
+                  transition={{ type: 'tween', duration: 0.25 }}
+                  className="fixed inset-y-0 left-0 w-72 h-full bg-white dark:bg-slate-800 z-50 flex flex-col shadow-xl"
+                >
+                  <div className="flex items-center justify-between px-6 py-6 border-b border-slate-100 dark:border-slate-700">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-instructor to-instructor-light text-white rounded-lg size-10 flex shrink-0 items-center justify-center font-bold text-lg shadow-sm">
+                        {user?.displayName?.[0]?.toUpperCase() ?? 'E'}
+                      </div>
+                      <div>
+                        <p className="text-slate-900 dark:text-white text-sm font-bold">{user?.displayName ?? 'Eğitmen'}</p>
+                        <p className="text-instructor dark:text-teal-400 text-xs flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                          Eğitmen
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="text-slate-500 dark:text-slate-400 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer"
+                    >
+                      <Icons.Close />
                     </button>
                   </div>
-                </nav>
-              </motion.aside>
-            </>
-          )}
-        </AnimatePresence>
 
-        {/* ── Main Content ──────────────────────────────────────────────────── */}
-        <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
-          {/* Mobile header */}
-          <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shrink-0 sticky top-0 z-30">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsMobileMenuOpen(true)}
-                className="p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
-                aria-label="Menüyü Aç"
-              >
-                <Icons.Menu />
-              </button>
-              <h2 className="text-slate-900 dark:text-white text-sm font-bold leading-tight">
-                {currentLabel}
-              </h2>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-instructor to-instructor-light flex items-center justify-center text-white font-bold text-sm shadow-sm">
-              {user?.displayName?.[0]?.toUpperCase() ?? 'E'}
-            </div>
-          </header>
+                  <nav className="flex flex-col flex-1 px-4 py-6 gap-1 overflow-y-auto">
+                    {navItems.map(item => {
+                      const isActive = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left cursor-pointer ${isActive
+                            ? 'bg-teal-50 text-instructor dark:bg-teal-900/30 dark:text-teal-400 font-medium'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-instructor dark:hover:text-teal-400'
+                            }`}
+                        >
+                          {item.icon}
+                          <span className="text-sm">{item.label}</span>
+                        </button>
+                      );
+                    })}
 
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 w-full">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.22 }}
-              >
-                {activeTab === 'dashboard' && (
-                  <DashboardOverview
-                    user={user}
-                    stats={stats}
-                    courses={courses}
-                    loadingStats={loadingStats}
-                    onNavigate={setActiveTab}
-                  />
-                )}
-                {activeTab === 'profile' && <InstructorProfileForm user={user} />}
-                {activeTab === 'courses' && <CourseManagement instructorId={user.id} />}
-                {activeTab === 'students' && <StudentManagement isAdmin={false} />}
-                {activeTab === 'schedule' && (
-                  <ScheduleManagement
-                    courses={courses}
-                    onAddCourse={() => setActiveTab('courses')}
-                    isAdmin={false}
-                  />
-                )}
-                {activeTab === 'attendance' && (
-                  <AttendanceManagement instructorId={user.id} isAdmin={false} />
-                )}
-                {activeTab === 'progress' && (
-                  <ProgressTracking instructorId={user.id} isAdmin={false} />
-                )}
-                {activeTab === 'badges' && (
-                  <BadgeSystem instructorId={user.id} isAdmin={false} />
-                )}
-                {activeTab === 'earnings' && (
-                  <EarningsManagement userId={user.id} role="instructor" colorVariant="instructor" />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </main>
-      </div>
-    </ThemeProvider>
+                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                      <button
+                        onClick={handleLogout}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-800/50 text-sm font-medium shadow-sm transition-all cursor-pointer"
+                      >
+                        <Icons.Logout />
+                        <span>Çıkış Yap</span>
+                      </button>
+                      <button
+                        onClick={() => { setShowDeleteModal(true); setIsMobileMenuOpen(false); }}
+                        className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg h-9 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 text-xs font-medium transition-all cursor-pointer"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>Hesabı Sil</span>
+                      </button>
+                    </div>
+                  </nav>
+                </motion.aside>
+              </>
+            )}
+          </AnimatePresence>
+
+          {/* ── Main Content ──────────────────────────────────────────────────── */}
+          <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+            {/* Mobile header */}
+            <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shrink-0 sticky top-0 z-30">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+                  aria-label="Menüyü Aç"
+                >
+                  <Icons.Menu />
+                </button>
+                <h2 className="text-slate-900 dark:text-white text-sm font-bold leading-tight">
+                  {currentLabel}
+                </h2>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-instructor to-instructor-light flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                {user?.displayName?.[0]?.toUpperCase() ?? 'E'}
+              </div>
+            </header>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 w-full">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.22 }}
+                >
+                  {activeTab === 'dashboard' && (
+                    <DashboardOverview
+                      user={user}
+                      stats={stats}
+                      courses={courses}
+                      loadingStats={loadingStats}
+                      onNavigate={setActiveTab}
+                    />
+                  )}
+                  {activeTab === 'profile' && <InstructorProfileForm user={user} />}
+                  {activeTab === 'courses' && <CourseManagement instructorId={user.id} />}
+                  {activeTab === 'students' && <StudentManagement isAdmin={false} />}
+                  {activeTab === 'schedule' && (
+                    <ScheduleManagement
+                      courses={courses}
+                      onAddCourse={() => setActiveTab('courses')}
+                      isAdmin={false}
+                    />
+                  )}
+                  {activeTab === 'attendance' && (
+                    <AttendanceManagement instructorId={user.id} isAdmin={false} />
+                  )}
+                  {activeTab === 'progress' && (
+                    <ProgressTracking instructorId={user.id} isAdmin={false} />
+                  )}
+                  {activeTab === 'badges' && (
+                    <BadgeSystem instructorId={user.id} isAdmin={false} />
+                  )}
+                  {activeTab === 'earnings' && (
+                    <EarningsManagement userId={user.id} role="instructor" colorVariant="instructor" />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </main>
+        </div>
+
+        <DeleteAccountModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          role="instructor"
+          colorVariant="instructor"
+        />
+      </ThemeProvider>
+    </>
   );
 }
 
