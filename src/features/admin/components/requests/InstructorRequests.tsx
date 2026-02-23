@@ -128,7 +128,7 @@ function InstructorRequests() {
             city: 'Belirtilmemiş',
             level: 'beginner',
             danceStyles: requestData.danceStyles || [],
-            photoURL: requestData.photoURL || "/assets/images/dance/egitmen_default.jpg"
+            photoURL: requestData.photoURL || ""
           };
 
           await setDoc(userDocRef, newUserData);
@@ -155,7 +155,7 @@ function InstructorRequests() {
         userId: userId,
         displayName: `${requestData.firstName} ${requestData.lastName}`.trim(),
         email: userData.email || requestData.userEmail,
-        photoURL: requestData.photoURL || userData.photoURL || "/assets/images/dance/egitmen_default.jpg",
+        photoURL: requestData.photoURL || userData.photoURL || "",
         phoneNumber: userData.phoneNumber || requestData.contactNumber,
         role: 'instructor' as UserRole,
         specialties: requestData.danceStyles || [],
@@ -250,7 +250,7 @@ function InstructorRequests() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
         <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
@@ -273,22 +273,23 @@ function InstructorRequests() {
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col gap-3 mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200">Eğitmen Başvuruları</h2>
-        <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden text-sm">
+        {/* Scrollable filter chips */}
+        <div className="flex overflow-x-auto pb-1 gap-2 scrollbar-hide">
           {(['all', 'pending', 'approved', 'rejected'] as const).map((s) => {
             const labels = { all: 'Tümü', pending: 'Bekleyen', approved: 'Onaylandı', rejected: 'Reddedildi' };
             const colors = {
-              all: statusFilter === s ? 'bg-gray-700 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
-              pending: statusFilter === s ? 'bg-yellow-500 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
-              approved: statusFilter === s ? 'bg-green-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
-              rejected: statusFilter === s ? 'bg-red-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
+              all: statusFilter === s ? 'bg-gray-700 text-white border-gray-700' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700',
+              pending: statusFilter === s ? 'bg-yellow-500 text-white border-yellow-500' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20',
+              approved: statusFilter === s ? 'bg-green-600 text-white border-green-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-green-50 dark:hover:bg-green-900/20',
+              rejected: statusFilter === s ? 'bg-red-600 text-white border-red-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/20',
             };
             return (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 font-medium transition-colors ${colors[s]}`}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${colors[s]}`}
               >
                 {labels[s]}
               </button>
@@ -335,7 +336,8 @@ function InstructorRequests() {
                           <Avatar
                             src={request.photoURL || ''}
                             alt={`${request.firstName} ${request.lastName}`}
-                            className="h-10 w-10 rounded-full"
+                            className="h-10 w-10"
+                            userType="instructor"
                           />
                         </div>
                         <div>
@@ -428,7 +430,7 @@ function InstructorRequests() {
               </button>
             </div>
             <div className="flex items-center space-x-3 mb-4">
-              <Avatar src={contactRequest.photoURL || ''} alt={`${contactRequest.firstName} ${contactRequest.lastName}`} className="h-12 w-12 rounded-full" />
+              <Avatar src={contactRequest.photoURL || ''} alt={`${contactRequest.firstName} ${contactRequest.lastName}`} className="h-12 w-12" userType="instructor" />
               <div>
                 <p className="font-semibold text-gray-900 dark:text-white">{contactRequest.firstName} {contactRequest.lastName}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Eğitmen Adayı</p>
@@ -502,7 +504,8 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                   <Avatar
                     src={request.photoURL || ''}
                     alt={`${request.firstName} ${request.lastName}`}
-                    className="h-16 w-16 rounded-full"
+                    className="h-16 w-16"
+                    userType="instructor"
                   />
                   <h3 className="text-xl leading-6 font-bold text-gray-900 dark:text-white">
                     {`${request.firstName} ${request.lastName}`}
@@ -512,7 +515,7 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                 <div className="mt-4 space-y-6">
                   {/* İletişim Bilgileri */}
                   <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
-                    <h4 className="text-sm font-semibold text-violet-600 uppercase tracking-wider mb-3">İletişim Bilgileri</h4>
+                    <h4 className="text-sm font-semibold text-indigo-600 uppercase tracking-wider mb-3">İletişim Bilgileri</h4>
                     <div className="space-y-2">
                       <div className="flex items-center text-sm">
                         <span className="text-gray-500 dark:text-gray-400 w-24">E-posta:</span>
@@ -554,7 +557,7 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                         <span className="block text-xs text-gray-500 dark:text-gray-400">Dans Stilleri</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {(request.danceStyles || []).map((style, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-rose-100 text-violet-600 rounded text-xs">
+                            <span key={idx} className="px-2 py-0.5 bg-rose-100 text-indigo-600 rounded text-xs">
                               {style}
                             </span>
                           ))}

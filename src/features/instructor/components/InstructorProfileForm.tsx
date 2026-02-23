@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { doc, updateDoc, getDoc, setDoc, writeBatch, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db, auth, storage } from '../../../api/firebase/firebase';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
@@ -11,19 +11,18 @@ import CustomPhoneInput from '../../../common/components/ui/CustomPhoneInput';
 import { useNavigate } from 'react-router-dom';
 import { updateProfile } from 'firebase/auth';
 import CustomInput from '../../../common/components/ui/CustomInput';
+import ChangePasswordForm from '../../shared/components/profile/ChangePasswordForm';
 
 interface InstructorProfileFormProps {
   user: User;
 }
 
-// Dans stilleri için tip tanımı
 interface DanceStyleOption {
   id: string;
   label: string;
   value: string;
 }
 
-// Form verisi için tip tanımı
 interface InstructorProfileFormData {
   displayName: string;
   bio: string;
@@ -33,7 +32,6 @@ interface InstructorProfileFormData {
   countryCode: string;
   location: string;
   photoURL: string;
-  // User table fields
   gender: string;
   age: number | undefined;
   level: DanceLevel;
@@ -42,26 +40,21 @@ interface InstructorProfileFormData {
   weight?: number;
   danceStyles: string[];
   availableTimes: string[];
-  // Additional fields
+  instagram?: string;
+  youtube?: string;
+  twitter?: string;
   createdAt?: string;
   updatedAt?: string;
   isActive?: boolean;
+  isPartnerSearchActive?: boolean;
   role?: string;
   userId?: string;
 }
 
-interface DanceStyle {
-  id: string;
-  label: string;
-  value: string;
-}
-
 const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'user' | 'instructor'>('user');
   const [danceStyles, setDanceStyles] = useState<DanceStyleOption[]>([]);
   const [loadingStyles, setLoadingStyles] = useState(true);
-  console.log('🔵 Component rendered with user:', user);
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -69,8 +62,8 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
   const [profilePhotoURL, setProfilePhotoURL] = useState<string>(user.photoURL || '');
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [resetImageUploader, setResetImageUploader] = useState(false);
-  const { register, handleSubmit, setValue, watch, reset, getValues } = useForm<InstructorProfileFormData>({
+
+  const { register, handleSubmit, setValue, watch, reset, getValues, formState: { isDirty } } = useForm<InstructorProfileFormData>({
     defaultValues: {
       displayName: '',
       bio: '',
@@ -87,65 +80,86 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
       height: undefined,
       weight: undefined,
       danceStyles: [],
-      availableTimes: []
+      availableTimes: [],
+      instagram: '',
+      youtube: '',
+      twitter: '',
+      isPartnerSearchActive: false
     }
   });
 
-  // Kullanıcı kontrolü
+  const watchDisplayName = watch('displayName');
+  const watchRole = watch('specialties');
+
   useEffect(() => {
     if (!user?.id) {
-      console.error('❌ Invalid user state:', user);
       toast.error('Geçersiz kullanıcı bilgisi');
-      navigate('/'); // Ana sayfaya yönlendir
-      return;
+      navigate('/');
     }
   }, [user, navigate]);
 
-  // Dans stilleri bilgilerini getiren fonksiyon
   const fetchDanceStyles = useCallback(async () => {
-    if (danceStyles.length > 0) {
-      console.log("Dans stilleri zaten yüklenmiş, tekrar yüklenmiyor");
-      return;
-    }
-
-    setLoadingStyles(true);
+    if (danceStyles.length > 0) return;
     try {
-      const danceStylesRef = collection(db, 'danceStyles');
-      const q = query(danceStylesRef, orderBy('label'));
+      setLoadingStyles(true);
+      const stylesRef = collection(db, 'danceStyles');
+      const q = query(stylesRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
-
-      const styles: DanceStyleOption[] = [];
-
+      const stylesData: DanceStyleOption[] = [];
       querySnapshot.forEach((doc) => {
-        const styleData = doc.data() as Omit<DanceStyleOption, 'id'>;
-        styles.push({
+        const data = doc.data();
+        stylesData.push({
           id: doc.id,
-          label: styleData.label,
-          value: styleData.value
+          label: data.name,
+          value: doc.id
         });
       });
-
-      if (styles.length === 0) {
-        // Firestore'da stil yoksa varsayılan stiller
-        const defaultStyles = [
-          { id: 'salsa', label: 'Salsa', value: 'salsa' },
-          { id: 'bachata', label: 'Bachata', value: 'bachata' },
-          { id: 'kizomba', label: 'Kizomba', value: 'kizomba' },
-          { id: 'tango', label: 'Tango', value: 'tango' },
-          { id: 'vals', label: 'Vals', value: 'vals' }
-        ];
-        setDanceStyles(defaultStyles);
-      } else {
-        setDanceStyles(styles);
-      }
+      setDanceStyles(stylesData.sort((a, b) => a.label.localeCompare(b.label)));
     } catch (error) {
-      console.error('Dans stilleri yüklenirken hata:', error);
-      // Hata durumunda varsayılan stiller
+      console.error('Dance styles fetch error fallback to defaults', error);
       const defaultStyles = [
         { id: 'salsa', label: 'Salsa', value: 'salsa' },
         { id: 'bachata', label: 'Bachata', value: 'bachata' },
         { id: 'kizomba', label: 'Kizomba', value: 'kizomba' },
         { id: 'tango', label: 'Tango', value: 'tango' },
+        { id: 'hiphop', label: 'Hip Hop', value: 'hiphop' },
+        { id: 'contemporary', label: 'Contemporary', value: 'contemporary' },
+        { id: 'zumba', label: 'Zumba', value: 'zumba' },
+        { id: 'heels', label: 'High Heels', value: 'heels' },
+        { id: 'reggaeton', label: 'Reggaeton', value: 'reggaeton' },
+        { id: 'afro', label: 'Afro Dance', value: 'afro' },
+        { id: 'bellydance', label: 'Oryantal', value: 'bellydance' },
+        { id: 'ballet', label: 'Bale', value: 'ballet' },
+        { id: 'jazz', label: 'Jazz Dance', value: 'jazz' },
+        { id: 'flamenco', label: 'Flamenko', value: 'flamenco' },
+        { id: 'samba', label: 'Samba', value: 'samba' },
+        { id: 'rumba', label: 'Rumba', value: 'rumba' },
+        { id: 'cha-cha', label: 'Cha Cha', value: 'cha-cha' },
+        { id: 'pasodoble', label: 'Paso Doble', value: 'pasodoble' },
+        { id: 'jive', label: 'Jive', value: 'jive' },
+        { id: 'swing', label: 'Swing', value: 'swing' },
+        { id: 'lindyhop', label: 'Lindy Hop', value: 'lindyhop' },
+        { id: 'breakdance', label: 'Breakdance', value: 'breakdance' },
+        { id: 'popping', label: 'Popping', value: 'popping' },
+        { id: 'locking', label: 'Locking', value: 'locking' },
+        { id: 'krump', label: 'Krump', value: 'krump' },
+        { id: 'dancehall', label: 'Dancehall', value: 'dancehall' },
+        { id: 'vogue', label: 'Vogue', value: 'vogue' },
+        { id: 'waacking', label: 'Waacking', value: 'waacking' },
+        { id: 'commercial', label: 'Commercial Dance', value: 'commercial' },
+        { id: 'kpop', label: 'K-Pop', value: 'kpop' },
+        { id: 'bollywood', label: 'Bollywood', value: 'bollywood' },
+        { id: 'folk', label: 'Halk Oyunları', value: 'folk' },
+        { id: 'sirtaki', label: 'Sirtaki', value: 'sirtaki' },
+        { id: 'zeybek', label: 'Zeybek', value: 'zeybek' },
+        { id: 'horon', label: 'Horon', value: 'horon' },
+        { id: 'halay', label: 'Halay', value: 'halay' },
+        { id: 'roman', label: 'Roman Havası', value: 'roman' },
+        { id: 'pole', label: 'Pole Dance', value: 'pole' },
+        { id: 'aerial', label: 'Aerial Dance', value: 'aerial' },
+        { id: 'tap', label: 'Tap Dance', value: 'tap' },
+        { id: 'irish', label: 'Irish Dance', value: 'irish' },
+        { id: 'flamenco', label: 'Flamenco', value: 'flamenco' },
         { id: 'vals', label: 'Vals', value: 'vals' }
       ];
       setDanceStyles(defaultStyles);
@@ -154,23 +168,13 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
     }
   }, [danceStyles.length]);
 
-  // Dans stillerini component mount olduğunda yükle
   useEffect(() => {
     fetchDanceStyles();
   }, [fetchDanceStyles]);
 
-  // Form değerlerini izle ve logla
-  useEffect(() => {
-    const subscription = watch((value, { name, type }) => {
-      console.log('🔄 Form field changed:', { field: name, value, type });
-    });
-    return () => subscription.unsubscribe();
-  }, [watch]);
-
   useEffect(() => {
     const fetchInstructorProfile = async () => {
       if (!user?.id) {
-        console.error('❌ User ID not found');
         setInitialLoading(false);
         setFetchError('Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapın.');
         navigate('/');
@@ -180,14 +184,11 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
       try {
         setInitialLoading(true);
         setFetchError(null);
-        console.log('🔍 Fetching instructor profile for user:', user.id);
 
-        // Önce users koleksiyonunda kullanıcıyı kontrol et
         const userRef = doc(db, 'users', user.id);
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-          console.error('❌ User document not found in users collection');
           setFetchError('Kullanıcı bulunamadı. Lütfen tekrar giriş yapın.');
           navigate('/');
           return;
@@ -199,12 +200,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
 
         if (instructorSnap.exists()) {
           const instructorData = instructorSnap.data();
-          console.log('✅ Instructor profile found:', instructorData);
-          console.log('✅ User data found:', userData);
-
-          // Her iki koleksiyondan gelen verileri birleştir
           const formData = {
-            // Instructor koleksiyonundan gelen veriler
             displayName: instructorData.displayName || userData.displayName || '',
             bio: instructorData.bio || '',
             specialties: instructorData.specialties || [],
@@ -213,8 +209,6 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             countryCode: instructorData.countryCode || '+90',
             location: instructorData.location || '',
             photoURL: instructorData.photoURL || userData.photoURL || '',
-
-            // User koleksiyonundan gelen veriler
             gender: userData.gender || '',
             age: userData.age,
             level: userData.level || 'beginner',
@@ -223,8 +217,10 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             weight: userData.weight,
             danceStyles: userData.danceStyles || [],
             availableTimes: userData.availableTimes || [],
-
-            // Diğer alanlar
+            instagram: instructorData.instagram || '',
+            youtube: instructorData.youtube || '',
+            twitter: instructorData.twitter || '',
+            isPartnerSearchActive: userData.isPartnerSearchActive === true,
             createdAt: instructorData.createdAt || '',
             updatedAt: instructorData.updatedAt || '',
             isActive: instructorData.isActive || true,
@@ -232,15 +228,10 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             userId: user.id
           };
 
-          console.log('📝 Setting form data:', formData);
           reset(formData);
           setSelectedSpecialties(formData.specialties);
           setProfilePhotoURL(formData.photoURL);
-          toast.success('Profil bilgileri yüklendi');
         } else {
-          console.log('ℹ️ No instructor profile found, creating new instructor profile');
-
-          // Yeni eğitmen profili oluştur
           const newInstructorData: Partial<InstructorProfileFormData> = {
             displayName: userData.displayName || '',
             bio: '',
@@ -251,13 +242,17 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             location: '',
             photoURL: userData.photoURL || '',
             gender: userData.gender || '',
-            age: userData.age || null,
+            age: userData.age || undefined,
             level: userData.level || 'beginner' as DanceLevel,
             city: userData.city || '',
-            height: userData.height || null,
-            weight: userData.weight || null,
+            height: userData.height || undefined,
+            weight: userData.weight || undefined,
             danceStyles: userData.danceStyles || [],
             availableTimes: userData.availableTimes || [],
+            instagram: '',
+            youtube: '',
+            twitter: '',
+            isPartnerSearchActive: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             isActive: true,
@@ -267,26 +262,19 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
 
           try {
             await setDoc(instructorRef, newInstructorData);
-            console.log('✅ New instructor profile created:', newInstructorData);
-
             reset(newInstructorData as InstructorProfileFormData);
             setSelectedSpecialties([]);
             setProfilePhotoURL(userData.photoURL || '');
-            toast.success('Yeni eğitmen profili oluşturuldu');
-
-            // User dokümanını da güncelle
             await updateDoc(userRef, {
               role: 'instructor',
               updatedAt: new Date().toISOString()
             });
           } catch (error) {
-            console.error('❌ Error creating instructor profile:', error);
             toast.error('Eğitmen profili oluşturulurken bir hata oluştu');
             throw error;
           }
         }
       } catch (error) {
-        console.error('❌ Error fetching/creating profile:', error);
         setFetchError('Profil bilgileri yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
         toast.error('Profil bilgileri yüklenirken bir hata oluştu');
       } finally {
@@ -295,17 +283,13 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
     };
 
     fetchInstructorProfile();
-  }, [user, reset, setValue, getValues, navigate]);
+  }, [user, reset, setValue, navigate]);
 
   const onSubmit = async (data: InstructorProfileFormData) => {
     if (!user?.id) {
-      console.error('❌ Cannot submit: User ID not found');
       toast.error('Kullanıcı bilgisi bulunamadı');
       return;
     }
-
-    console.log('📤 Form verileri:', data);
-    console.log('📍 Seçilen dans stilleri:', data.danceStyles);
 
     setLoading(true);
     setSaveSuccess(false);
@@ -313,7 +297,6 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
     try {
       const updateTimestamp = new Date().toISOString();
 
-      // Instructor'a özel alanlar
       const instructorUpdates = {
         displayName: data.displayName.trim(),
         bio: data.bio.trim(),
@@ -322,12 +305,14 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
         phoneNumber: data.phoneNumber.replace(/\s/g, ''),
         countryCode: data.countryCode,
         location: data.location.trim(),
+        instagram: data.instagram?.trim() || '',
+        youtube: data.youtube?.trim() || '',
+        twitter: data.twitter?.trim() || '',
         updatedAt: updateTimestamp,
         isActive: true,
         role: 'instructor'
       };
 
-      // Users koleksiyonu için alanlar - boş değerleri kontrol et
       const userUpdates = {
         displayName: data.displayName.trim(),
         gender: data.gender || 'Belirtilmemiş',
@@ -338,61 +323,39 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
         weight: typeof data.weight === 'number' ? data.weight : 0,
         danceStyles: data.danceStyles || [],
         availableTimes: data.availableTimes || [],
+        isPartnerSearchActive: data.isPartnerSearchActive === true,
         role: 'instructor',
         updatedAt: updateTimestamp
       };
 
-      console.log('📝 Güncellenecek instructor verileri:', instructorUpdates);
-      console.log('📝 Güncellenecek user verileri:', userUpdates);
-
-      // Firestore referansları
       const instructorRef = doc(db, 'instructors', user.id);
       const userRef = doc(db, 'users', user.id);
 
-      // Batch write kullanarak her iki tabloyu da güncelle
       const batch = writeBatch(db);
       batch.update(instructorRef, instructorUpdates);
       batch.update(userRef, userUpdates);
 
-      // Batch'i commit et
       await batch.commit();
-      console.log('✅ Tüm güncellemeler tamamlandı');
 
       setSaveSuccess(true);
       toast.success('Profil başarıyla güncellendi');
 
-      // Form verilerini yeniden yükle
       const [instructorSnap, userSnap] = await Promise.all([
         getDoc(instructorRef),
         getDoc(userRef)
       ]);
 
       if (instructorSnap.exists() && userSnap.exists()) {
-        const instructorData = instructorSnap.data();
-        const userData = userSnap.data();
         const updatedData = {
-          ...instructorData,
-          ...userData
+          ...instructorSnap.data(),
+          ...userSnap.data()
         };
-        console.log('📥 Güncel veriler:', updatedData);
-        reset({
-          ...data,
-          ...updatedData
-        });
+        reset({ ...data, ...updatedData });
       }
 
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 2000);
+      setTimeout(() => setSaveSuccess(false), 2000);
 
     } catch (error: any) {
-      console.error('❌ Güncelleme hatası:', error);
-      console.error('Hata detayları:', {
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
-
       if (error.code === 'permission-denied') {
         toast.error('Bu işlem için yetkiniz bulunmuyor');
       } else if (error.code === 'invalid-argument') {
@@ -408,390 +371,393 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
   };
 
   const handleImageUploadComplete = async (base64Image: string | null) => {
-    if (!user?.id) {
-      console.error('❌ Cannot update photo: User ID not found');
-      toast.error('Kullanıcı bilgisi bulunamadı');
-      return;
-    }
-
-    if (!base64Image) {
-      console.error('❌ No image data provided');
-      toast.error('Fotoğraf verisi bulunamadı');
-      return;
-    }
-
-    console.log('🖼️ Starting profile photo update:', { userId: user.id, hasImage: !!base64Image });
+    if (!user?.id || !base64Image) return;
 
     try {
-      // Önce UI state'ini güncelle
       setProfilePhotoURL(base64Image);
       setValue('photoURL', base64Image);
 
-      // Batch write oluştur
       const batch = writeBatch(db);
       const instructorRef = doc(db, 'instructors', user.id);
       const userRef = doc(db, 'users', user.id);
 
       const updateTimestamp = new Date().toISOString();
-      const sharedUpdates = {
-        photoURL: base64Image,
-        updatedAt: updateTimestamp
-      };
+      const sharedUpdates = { photoURL: base64Image, updatedAt: updateTimestamp };
 
-      // Batch'e güncellemeleri ekle
       batch.update(instructorRef, sharedUpdates);
       batch.update(userRef, sharedUpdates);
-
-      // Batch'i commit et
       await batch.commit();
-      console.log('✅ Batch write completed successfully');
-
-      // ImageUploader'ı sıfırla
-      setResetImageUploader(true);
-      setTimeout(() => setResetImageUploader(false), 100);
 
       toast.success('Profil fotoğrafı güncellendi');
     } catch (error: any) {
-      // Hata durumunda UI'ı eski haline getir
       setProfilePhotoURL(user.photoURL || '');
       setValue('photoURL', user.photoURL || '');
-      console.error('❌ Error updating profile photo:', error);
-
-      if (error.code === 'resource-exhausted') {
-        toast.error('Çok fazla istek gönderildi. Lütfen birkaç saniye bekleyip tekrar deneyin.');
-        // Otomatik yeniden deneme için timeout ekle
-        setTimeout(() => {
-          toast.success('Şimdi tekrar deneyebilirsiniz');
-        }, 5000);
-      } else {
-        toast.error('Profil fotoğrafı güncellenirken bir hata oluştu');
-      }
+      toast.error('Profil fotoğrafı güncellenirken bir hata oluştu');
     }
   };
 
-  // Dans stilleri değişikliğini handle eden fonksiyon
   const handleDanceStylesChange = (value: string | string[]) => {
-    console.log('🎭 Dans stilleri değişikliği - gelen değer:', value);
     const styles = Array.isArray(value) ? value : [value];
     const filteredStyles = value === '' ? [] : styles.filter(style => style !== '');
-    console.log('🎭 Filtrelenmiş dans stilleri:', filteredStyles);
     setValue('danceStyles', filteredStyles);
     setSelectedSpecialties(filteredStyles);
   };
 
-  // Dans stilleri seçimi için loading durumu
-  const renderDanceStylesSelect = () => {
-    if (loadingStyles) {
-      return (
-        <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
-          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span>Dans stilleri yükleniyor...</span>
-        </div>
-      );
-    }
-
-    return (
-      <CustomSelect
-        name="danceStyles"
-        label="Dans Stilleri ve Uzmanlık Alanları"
-        value={watch('danceStyles')}
-        onChange={handleDanceStylesChange}
-        options={danceStyles}
-        multiple={true}
-        required
-      />
-    );
-  };
-
-  const renderTabs = () => (
-    <div className="mb-8 border-b border-gray-200 dark:border-slate-700">
-      <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-        <button
-          onClick={() => setActiveTab('user')}
-          className={`${activeTab === 'user'
-              ? 'border-instructor text-instructor'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-        >
-          Kullanıcı Bilgileri
-        </button>
-        <button
-          onClick={() => setActiveTab('instructor')}
-          className={`${activeTab === 'instructor'
-              ? 'border-instructor text-instructor'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-slate-600'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-        >
-          Eğitmen Bilgileri
-        </button>
-      </nav>
-    </div>
-  );
-
-  const renderUserInfoForm = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Temel Bilgiler</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          Bu bilgiler profilinizde görüntülenecek ve öğrencilerinizle eşleşmeniz için kullanılacaktır.
-        </p>
-      </div>
-
-      <ImageUploader
-        currentPhotoURL={profilePhotoURL}
-        onImageChange={handleImageUploadComplete}
-        displayName={watch('displayName') || ''}
-        userType="instructor"
-        shape="circle"
-        width={150}
-        height={150}
-      />
-
-      <div>
-        <CustomInput
-          name="displayName"
-          label="Adınız Soyadınız"
-          value={watch('displayName')}
-          onChange={(e) => setValue('displayName', e.target.value)}
-          required
-        />
-      </div>
-
-      <div>
-        <CustomSelect
-          name="gender"
-          label="Cinsiyet"
-          value={watch('gender')}
-          onChange={(value: string | string[]) => setValue('gender', value as string)}
-          options={[
-            { value: 'male', label: 'Erkek' },
-            { value: 'female', label: 'Kadın' },
-            { value: 'other', label: 'Diğer' }
-          ]}
-          required
-        />
-      </div>
-
-      <div>
-        <CustomInput
-          type="text"
-          name="age"
-          label="Yaş"
-          value={watch('age')?.toString() || ''}
-          onChange={(e) => {
-            const value = e.target.value ? parseInt(e.target.value) : undefined;
-            setValue('age', value);
-          }}
-          required
-        />
-      </div>
-
-      <div>
-        <CustomSelect
-          name="level"
-          label="Dans Seviyesi"
-          value={watch('level')}
-          onChange={(value: string | string[]) => setValue('level', value as DanceLevel)}
-          options={[
-            { value: 'beginner', label: 'Başlangıç' },
-            { value: 'intermediate', label: 'Orta Seviye' },
-            { value: 'advanced', label: 'İleri Seviye' },
-            { value: 'professional', label: 'Profesyonel' }
-          ]}
-          required
-        />
-      </div>
-
-      <div>
-        <CustomInput
-          name="city"
-          label="Şehir"
-          value={watch('city')}
-          onChange={(e) => setValue('city', e.target.value)}
-          required
-          placeholder="Örn: İstanbul, Ankara"
-        />
-      </div>
-
-      <div>
-        <CustomInput
-          type="text"
-          name="height"
-          label="Boy (cm)"
-          value={watch('height')?.toString() || ''}
-          onChange={(e) => {
-            const value = e.target.value ? parseInt(e.target.value) : undefined;
-            setValue('height', value);
-          }}
-          placeholder="Örn: 175"
-        />
-      </div>
-
-      <div>
-        <CustomInput
-          type="text"
-          name="weight"
-          label="Kilo (kg)"
-          value={watch('weight')?.toString() || ''}
-          onChange={(e) => {
-            const value = e.target.value ? parseInt(e.target.value) : undefined;
-            setValue('weight', value);
-          }}
-          placeholder="Örn: 70"
-        />
-      </div>
-    </div>
-  );
-
-  const renderInstructorInfoForm = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Eğitmen Bilgileri</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          Bu bilgiler eğitmenlik profilinizde görüntülenecek ve öğrencilerinizle eşleşmeniz için kullanılacaktır.
-        </p>
-      </div>
-
-      <div>
-        {renderDanceStylesSelect()}
-        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Seçtiğiniz dans stilleri hem uzmanlık alanlarınız hem de dans stilleriniz olarak kaydedilecektir.
-        </p>
-      </div>
-
-      <div>
-        <CustomInput
-          name="bio"
-          label="Biyografi"
-          value={watch('bio')}
-          onChange={(e) => setValue('bio', e.target.value)}
-          multiline
-          rows={4}
-          placeholder="Kendinizi ve dans deneyiminizi anlatın..."
-        />
-      </div>
-
-      <div>
-        <CustomInput
-          name="experience"
-          label="Deneyim"
-          value={watch('experience')}
-          onChange={(e) => setValue('experience', e.target.value)}
-          placeholder="Örn: 5 yıl profesyonel dans eğitmenliği"
-        />
-      </div>
-
-      <div>
-        <CustomPhoneInput
-          name="phoneNumber"
-          label="Telefon Numarası"
-          countryCode={watch('countryCode')}
-          phoneNumber={watch('phoneNumber')}
-          onCountryCodeChange={(value) => setValue('countryCode', value)}
-          onPhoneNumberChange={(value) => setValue('phoneNumber', value)}
-        />
-      </div>
-
-      <div>
-        <CustomInput
-          name="location"
-          label="Ders Verdiğiniz Lokasyon"
-          value={watch('location')}
-          onChange={(e) => setValue('location', e.target.value)}
-          placeholder="Örn: Kadıköy, İstanbul"
-        />
-      </div>
-    </div>
-  );
-
   if (initialLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-instructor"></div>
-        <p className="mt-4 text-gray-600 dark:text-gray-400">Profil bilgileri yükleniyor...</p>
+        <p className="mt-4 text-gray-500 dark:text-gray-400">Yükleniyor...</p>
       </div>
     );
   }
 
   if (fetchError) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-        <div className="text-center">
-          <div className="text-red-500 mb-4">
-            <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Hata Oluştu</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{fetchError}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-instructor hover:bg-instructor-dark dark:bg-instructor-light dark:text-instructor-dark dark:hover:bg-instructor-lighter focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-instructor dark:focus:ring-instructor-light"
-          >
-            Yeniden Dene
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="text-red-500 mb-4">⚠️</div>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">{fetchError}</p>
+        <button onClick={() => window.location.reload()} className="px-4 py-2 border rounded-md text-instructor border-instructor hover:bg-instructor/5">
+          Yeniden Dene
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      {renderTabs()}
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        {activeTab === 'user' ? renderUserInfoForm() : renderInstructorInfoForm()}
-
-        <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-slate-700">
+    <div className="relative min-h-screen pb-24">
+      {/* Sticky Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-gray-200 dark:border-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">Eğitmen Profili</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{isDirty ? 'Kaydedilmemiş değişiklikleriniz var.' : 'Tüm değişiklikler güncel.'}</p>
+          </div>
           <button
-            type="button"
-            onClick={() => setActiveTab(activeTab === 'user' ? 'instructor' : 'user')}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-instructor dark:focus:ring-instructor-light"
-          >
-            {activeTab === 'user' ? 'Eğitmen Bilgilerine Geç' : 'Kullanıcı Bilgilerine Dön'}
-          </button>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-instructor hover:bg-instructor-dark dark:bg-instructor-light dark:text-instructor-dark dark:hover:bg-instructor-lighter focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-instructor dark:focus:ring-instructor-light disabled:opacity-50"
+            onClick={handleSubmit(onSubmit)}
+            disabled={loading || !isDirty}
+            className={`inline-flex items-center px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm
+              ${loading || !isDirty
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500'
+                : 'bg-instructor text-white hover:bg-instructor-dark hover:shadow-md active:scale-95'}`}
           >
             {loading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
                 Kaydediliyor...
               </>
             ) : (
-              'Kaydet'
+              'Değişiklikleri Kaydet'
             )}
           </button>
         </div>
-      </form>
+      </div>
 
-      {saveSuccess && (
-        <div className="mt-4 p-4 bg-green-50 rounded-md">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+          {/* LEFT COLUMN */}
+          <div className="lg:col-span-4 space-y-6">
+
+            {/* Profile Avatar & Quick Info Card */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 p-6 flex flex-col items-center relative overflow-hidden">
+              {/* Decorative background element */}
+              <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-br from-instructor/20 to-instructor/5 dark:from-instructor/10 dark:to-transparent"></div>
+
+              <div className="relative z-10 w-full flex flex-col items-center pt-4">
+                <ImageUploader
+                  currentPhotoURL={profilePhotoURL}
+                  onImageChange={handleImageUploadComplete}
+                  displayName={watchDisplayName || 'Eğitmen'}
+                  userType="instructor"
+                  shape="circle"
+                  width={140}
+                  height={140}
+                />
+
+                <div className="mt-4 text-center">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {watchDisplayName || 'İsimsiz Eğitmen'}
+                  </h2>
+                  <p className="text-sm font-medium text-instructor mt-1">
+                    Dans Eğitmeni
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-green-800">
-                Profiliniz başarıyla güncellendi!
-              </p>
+
+            {/* Password Change Card */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 p-6">
+              <ChangePasswordForm colorVariant="instructor" />
             </div>
+
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div className="lg:col-span-8 space-y-6">
+            <form className="space-y-6">
+
+              {/* General Basics Settings */}
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 p-6 lg:p-8">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg className="w-5 h-5 text-instructor" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Genel Kimlik
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Kullanıcıların göreceği temel kişisel ve iletişim bilgileriniz.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <CustomInput
+                      name="displayName"
+                      label="Adınız Soyadınız"
+                      value={watch('displayName')}
+                      onChange={(e) => setValue('displayName', e.target.value)}
+                      required
+                      colorVariant="instructor"
+                    />
+                  </div>
+                  <CustomSelect
+                    name="gender"
+                    label="Cinsiyet"
+                    value={watch('gender')}
+                    onChange={(value: string | string[]) => setValue('gender', value as string)}
+                    options={[
+                      { value: 'male', label: 'Erkek' },
+                      { value: 'female', label: 'Kadın' },
+                      { value: 'other', label: 'Diğer' }
+                    ]}
+                    required
+                    colorVariant="instructor"
+                  />
+                  <CustomInput
+                    type="number"
+                    name="age"
+                    label="Yaş"
+                    value={watch('age')?.toString() || ''}
+                    onChange={(e) => {
+                      const value = e.target.value ? parseInt(e.target.value) : undefined;
+                      setValue('age', value);
+                    }}
+                    colorVariant="instructor"
+                  />
+                  <CustomInput
+                    name="city"
+                    label="Şehir"
+                    value={watch('city')}
+                    onChange={(e) => setValue('city', e.target.value)}
+                    required
+                    placeholder="Örn: İstanbul, Ankara"
+                    colorVariant="instructor"
+                  />
+                  <CustomPhoneInput
+                    name="phoneNumber"
+                    label="Telefon Numarası"
+                    countryCode={watch('countryCode')}
+                    phoneNumber={watch('phoneNumber')}
+                    onCountryCodeChange={(value) => setValue('countryCode', value)}
+                    onPhoneNumberChange={(value) => setValue('phoneNumber', value)}
+                  />
+                </div>
+              </div>
+
+              {/* Instructor Career & Dance Info */}
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 p-6 lg:p-8">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg className="w-5 h-5 text-instructor" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                    Eğitmen & Dans Bilgileri
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Branşınız, deneyiminiz ve dans pratiklerinizi tanıtan alan.
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    {loadingStyles ? (
+                      <div className="animate-pulse h-12 bg-gray-100 dark:bg-slate-700 rounded-xl"></div>
+                    ) : (
+                      <CustomSelect
+                        name="danceStyles"
+                        label="Dans Stilleri ve Uzmanlık Alanları"
+                        value={watch('danceStyles')}
+                        onChange={handleDanceStylesChange}
+                        options={danceStyles}
+                        multiple={true}
+                        required
+                        colorVariant="instructor"
+                      />
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <CustomSelect
+                      name="level"
+                      label="Dans Seviyesi"
+                      value={watch('level')}
+                      onChange={(value: string | string[]) => setValue('level', value as DanceLevel)}
+                      options={[
+                        { value: 'beginner', label: 'Başlangıç' },
+                        { value: 'intermediate', label: 'Orta Seviye' },
+                        { value: 'advanced', label: 'İleri Seviye' },
+                        { value: 'professional', label: 'Profesyonel' }
+                      ]}
+                      required
+                      colorVariant="instructor"
+                    />
+                    <CustomInput
+                      name="experience"
+                      label="Beden Eğitimi / Dans Deneyimi"
+                      value={watch('experience')}
+                      onChange={(e) => setValue('experience', e.target.value)}
+                      placeholder="Örn: 5 yıl profesyonel sahne"
+                      colorVariant="instructor"
+                    />
+                  </div>
+
+                  <CustomInput
+                    name="bio"
+                    label="Biyografi / Hakkında"
+                    value={watch('bio')}
+                    onChange={(e) => setValue('bio', e.target.value)}
+                    multiline
+                    rows={4}
+                    placeholder="Öğrencileriniz için kısa bir tanıtım yazısı..."
+                    colorVariant="instructor"
+                  />
+
+                  <CustomInput
+                    name="location"
+                    label="Ağırlıklı Ders Lokasyonu"
+                    value={watch('location')}
+                    onChange={(e) => setValue('location', e.target.value)}
+                    placeholder="Örn: Mecidiyeköy Mah., Şişli"
+                    colorVariant="instructor"
+                  />
+
+                </div>
+              </div>
+
+              {/* Social Media Information */}
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 p-6 lg:p-8">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg className="w-5 h-5 text-instructor" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Sosyal Medya Bağlantıları
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Öğrencilerin daha fazla içerik ve referans görebilmesi için ağlarınızı paylaşın.
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <CustomInput
+                    name="instagram"
+                    label="Instagram Kullanıcı Adı"
+                    value={watch('instagram') || ''}
+                    onChange={(e) => setValue('instagram', e.target.value)}
+                    placeholder="Örn: john_doe"
+                    colorVariant="instructor"
+                    startIcon={
+                      <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.88z" />
+                      </svg>
+                    }
+                  />
+                  <CustomInput
+                    name="youtube"
+                    label="YouTube Kanal Linki"
+                    value={watch('youtube') || ''}
+                    onChange={(e) => setValue('youtube', e.target.value)}
+                    placeholder="https://youtube.com/@kanaliniz"
+                    colorVariant="instructor"
+                    startIcon={
+                      <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                      </svg>
+                    }
+                  />
+                  <CustomInput
+                    name="twitter"
+                    label="Twitter / X Kullanıcı Adı"
+                    value={watch('twitter') || ''}
+                    onChange={(e) => setValue('twitter', e.target.value)}
+                    placeholder="Örn: john_doe"
+                    colorVariant="instructor"
+                    startIcon={
+                      <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                      </svg>
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Partner Search Visibility Toggle */}
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 p-6 lg:p-8">
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <svg className="w-5 h-5 text-instructor" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Dans Partneri Arama
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Bu seçeneği açtığınızda, diğer eğitmenler sizi <strong>&ldquo;Partner Bul&rdquo;</strong> bölümünde partner adayı olarak görebilir.
+                      Kapalıyken listelerden gizlenirsiniz.
+                    </p>
+                    {watch('isPartnerSearchActive') ? (
+                      <span className="inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                        Partner listesinde görünüyorsunuz
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400 text-xs font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                        Partner listesinde gizlisiniz
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Animated Toggle Switch */}
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={!!watch('isPartnerSearchActive')}
+                    onClick={() => setValue('isPartnerSearchActive', !watch('isPartnerSearchActive'), { shouldDirty: true })}
+                    className={`relative inline-flex h-7 w-14 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-instructor focus:ring-offset-2 dark:focus:ring-offset-slate-800 ${watch('isPartnerSearchActive')
+                        ? 'bg-instructor'
+                        : 'bg-gray-200 dark:bg-slate-600'
+                      }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-200 ease-in-out ${watch('isPartnerSearchActive') ? 'translate-x-7' : 'translate-x-0.5'
+                        }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+            </form>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default InstructorProfileForm; 
+export default InstructorProfileForm;

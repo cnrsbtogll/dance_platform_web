@@ -11,7 +11,9 @@ import {
   orderBy,
   serverTimestamp,
   where,
-  Timestamp
+  Timestamp,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import {
   createUserWithEmailAndPassword,
@@ -21,7 +23,7 @@ import {
   getAuth,
   signInWithEmailAndPassword
 } from 'firebase/auth';
-import { db, auth } from '../../../../api/firebase/firebase';
+import { db, auth, secondaryAuth } from '../../../../api/firebase/firebase';
 import { motion } from 'framer-motion';
 import { User, UserRole, DanceLevel, DanceStyle } from '../../../../types';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -31,8 +33,10 @@ import ImageUploader from '../../../../common/components/ui/ImageUploader';
 import CustomInput from '../../../../common/components/ui/CustomInput';
 import CustomSelect from '../../../../common/components/ui/CustomSelect';
 import CustomPhoneInput from '../../../../common/components/ui/CustomPhoneInput';
-import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, TextField } from '@mui/material';
+import Button from '../../../../common/components/ui/Button';
+import { IconButton } from '@mui/material';
 import { SchoolProfile } from '../../../school/components/SchoolProfile/SchoolProfile';
+import SimpleModal from '../../../../common/components/ui/SimpleModal';
 
 // Default placeholder image for students
 const DEFAULT_STUDENT_IMAGE = '/assets/placeholders/default-student.png';
@@ -58,6 +62,7 @@ interface FormData {
   displayName: string;
   email: string;
   phone: string;
+  password?: string; // New field
   level: DanceLevel;
   photoURL: string;
   instructorId: string;
@@ -82,6 +87,7 @@ interface FirebaseUser {
   courseIds?: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  rating?: number;
 }
 
 // Instructor type
@@ -138,6 +144,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ isOpen, onClose, photoURL, stud
     </div>
   );
 };
+
+const StarIcon = ({ filled = true }: { filled?: boolean }) => (
+  <svg className={`w-4 h-4 ${filled ? 'text-school-yellow fill-school-yellow' : 'text-gray-300 fill-gray-300'}`} viewBox="0 0 20 20">
+    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+  </svg>
+);
 
 // Student Photo Uploader Component
 interface StudentPhotoUploaderProps {
@@ -320,6 +332,7 @@ const StudentPhotoUploader: React.FC<StudentPhotoUploaderProps> = ({
 
 interface StudentManagementProps {
   isAdmin?: boolean;
+  schoolId?: string;
   colorVariant?: 'instructor' | 'school';
 }
 
@@ -331,7 +344,7 @@ interface Course {
   instructorId: string;
 }
 
-export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = false, colorVariant = 'instructor' }) => {
+export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = false, schoolId, colorVariant = 'instructor' }) => {
   const { currentUser } = useAuth();
   const [students, setStudents] = useState<FirebaseUser[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<FirebaseUser[]>([]);
@@ -351,6 +364,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     displayName: '',
     email: '',
     phone: '',
+    password: '', // Initialize password
     level: 'beginner',
     photoURL: '',
     instructorId: '',
@@ -359,6 +373,20 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   });
   const [courses, setCourses] = useState<Course[]>([]);
   const [userRole, setUserRole] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // --- NEW Quick Assign State ---
+  const [quickAssignModalOpen, setQuickAssignModalOpen] = useState(false);
+  const [studentToAssign, setStudentToAssign] = useState<FirebaseUser | null>(null);
+  const [quickAssignCourseIds, setQuickAssignCourseIds] = useState<string[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  // Existing user warning state
+  const [existingUserModalOpen, setExistingUserModalOpen] = useState(false);
+  const [existingUserToLink, setExistingUserToLink] = useState<any>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [studentToDeleteId, setStudentToDeleteId] = useState<string | null>(null);
+  // ------------------------------
 
   // Check if current user is super admin
   useEffect(() => {
@@ -406,42 +434,57 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       const userRef = doc(db, 'users', currentUser?.uid || '');
       const userDoc = await getDoc(userRef);
       const userData = userDoc.data();
-      const userRole = userData?.role || '';
+      const userRoleRaw = userData?.role || '';
+      const userRole = typeof userRoleRaw === 'string' ? userRoleRaw : (Array.isArray(userRoleRaw) ? userRoleRaw[0] : '');
+      const isSchoolUser = typeof userRoleRaw === 'string' ? userRoleRaw === 'school' : Array.isArray(userRoleRaw) && userRoleRaw.includes('school');
 
       if (isAdmin) {
         console.log('Admin mode: fetching all students');
         studentsQuery = query(
           usersRef,
-          where('role', '==', 'student'),
-          orderBy('createdAt', 'desc')
+          where('role', 'array-contains', 'student')
         );
-      } else if (userRole === 'school') {
-        console.log('School mode: fetching students for school', currentUser?.uid);
+      } else if (isSchoolUser) {
+        const effectiveSchoolId = schoolId || userData?.schoolId || currentUser?.uid;
+        console.log('School mode: fetching students for school', effectiveSchoolId);
         studentsQuery = query(
           usersRef,
-          where('schoolId', '==', currentUser?.uid),
-          where('role', '==', 'student')
+          where('schoolIds', 'array-contains', effectiveSchoolId)
         );
       } else if (userRole === 'instructor') {
         console.log('Instructor mode: fetching students for instructor', currentUser?.uid);
         studentsQuery = query(
           usersRef,
-          where('instructorId', '==', currentUser?.uid),
-          where('role', '==', 'student')
+          where('instructorIds', 'array-contains', currentUser?.uid)
         );
       }
 
-      const studentsSnapshot = await getDocs(studentsQuery);
-      const studentsData: FirebaseUser[] = studentsSnapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as FirebaseUser))
-        .filter(student => student.role === 'student');
+      // Listen to students in real-time
+      import('firebase/firestore').then(({ onSnapshot }) => {
+        const unsubscribe = onSnapshot(studentsQuery, (snapshot) => {
+          try {
+            const studentsData: FirebaseUser[] = snapshot.docs
+              .map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              } as FirebaseUser))
+              .filter(student => student.role === 'student' || (Array.isArray(student.role) && student.role.includes('student')));
 
-      console.log('Students data:', studentsData);
-      setStudents(studentsData);
-      setFilteredStudents(studentsData);
+            console.log('Realtime students data:', studentsData);
+            setStudents(studentsData);
+            // Search update is handled by the other useEffect
+          } catch (err) {
+            console.error('Realtime students error:', err);
+          }
+        }, (error) => {
+          console.error('Students listener failed:', error);
+        });
+
+        // Attach unsubscribe to component somehow or let it leak gently since we don't have trivial cleanup
+        // Note: For a proper fix, fetchAllUsers should be completely inside useEffect. 
+        // For now this will do the trick for real-time updates.
+        (window as any)._studentListenerUnsubscribe = unsubscribe;
+      });
 
       // Fetch instructors separately
       await fetchInstructors();
@@ -476,6 +519,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       console.log('Fetching users with currentUser:', currentUser.uid);
       fetchAllUsers();
     }
+
+    // Cleanup subscription on unmount
+    return () => {
+      const unsub = (window as any)._studentListenerUnsubscribe;
+      if (typeof unsub === 'function') {
+        unsub();
+        delete (window as any)._studentListenerUnsubscribe;
+      }
+    };
   }, [currentUser]);
 
   // Update filtered students when search term changes
@@ -506,6 +558,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       displayName: student.displayName,
       email: student.email,
       phone: student.phoneNumber || '',
+      password: '', // Reset password when editing
       level: student.level || 'beginner',
       photoURL: student.photoURL || '',
       instructorId: student.instructorId || '',
@@ -518,14 +571,17 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   // Add new student
   const addNewStudent = (): void => {
     setSelectedStudent(null);
+    const effectiveSchoolId = schoolId || (userRole === 'school' ? (currentUser as any)?.schoolId : '');
+
     setFormData({
       displayName: '',
       email: '',
       phone: '',
+      password: 'feriha123', // Initialize password fixed as requested
       level: 'beginner',
       photoURL: generateInitialsAvatar('?', 'student'),
       instructorId: isAdmin ? '' : currentUser?.uid || '',
-      schoolId: '',
+      schoolId: effectiveSchoolId || '',
       courseIds: []
     });
     setEditMode(true);
@@ -587,11 +643,12 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     }
   };
 
-  // Davetiye e-postası gönderme fonksiyonu
-  const sendInvitationEmail = async (email: string, invitationData: {
+  // Öğrenci kullanıcı hesabını oluşturma (Davet yerine direkt oluşturma)
+  const createStudentUser = async (email: string, studentData: {
     displayName: string;
     level?: DanceLevel;
     phoneNumber?: string;
+    password?: string;
     instructorId?: string;
     instructorName?: string;
     schoolId?: string;
@@ -600,61 +657,64 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     courseIds: string[];
   }) => {
     try {
-      // Benzersiz bir davet kodu oluştur
-      const invitationId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (!studentData.password) {
+        throw new Error('Şifre zorunludur');
+      }
 
-      // Remove undefined values from invitationData
-      const cleanedInvitationData = Object.fromEntries(
-        Object.entries({
-          email,
-          ...invitationData,
-          status: 'pending',
-          type: 'student',
-          createdAt: serverTimestamp(),
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 gün geçerli
-        }).filter(([_, value]) => value !== undefined)
+      // Create Firebase Auth user using secondaryAuth so current admin user won't be logged out
+      const userCredential = await createUserWithEmailAndPassword(
+        secondaryAuth,
+        email,
+        studentData.password
       );
+      const user = userCredential.user;
 
-      // Davet bilgilerini Firestore'a kaydet
-      await setDoc(doc(db, 'pendingUsers', invitationId), cleanedInvitationData);
+      await updateProfile(user, {
+        displayName: studentData.displayName
+      });
 
-      // Kullanıcıyı users koleksiyonuna ekle
-      const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const now = Timestamp.now();
+      const userId = user.uid;
 
       const userData = {
         id: userId,
         email,
-        displayName: invitationData.displayName,
+        displayName: studentData.displayName,
         role: 'student',
-        level: invitationData.level || 'beginner',
-        photoURL: invitationData.photoURL || DEFAULT_STUDENT_IMAGE,
-        phoneNumber: invitationData.phoneNumber || '',
-        instructorId: invitationData.instructorId || null,
-        instructorName: invitationData.instructorName || null,
-        schoolId: invitationData.schoolId || null,
-        schoolName: invitationData.schoolName || null,
-        courseIds: invitationData.courseIds || [],
+        level: studentData.level || 'beginner',
+        photoURL: studentData.photoURL || DEFAULT_STUDENT_IMAGE,
+        phoneNumber: studentData.phoneNumber || '',
+        instructorId: studentData.instructorId || null,
+        instructorName: studentData.instructorName || null,
+        instructorIds: studentData.instructorId ? [studentData.instructorId] : [],
+        schoolId: studentData.schoolId || null, // Legacy map
+        schoolIds: studentData.schoolId ? [studentData.schoolId] : [], // Course-Centric M:N map
+        schoolName: studentData.schoolName || null,
+        courseIds: studentData.courseIds || [],
         createdAt: now,
         updatedAt: now,
-        status: 'pending'
+        status: 'active'
       };
 
       await setDoc(doc(db, 'users', userId), {
         ...userData,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        emailVerified: false,
+        password: studentData.password // login için saklanır
       });
+
+      // Hesap oluşturulunca e-posta doğrulama maili gönder
+      await sendEmailVerification(user);
+      await secondaryAuth.signOut();
 
       // Öğrenci listesini güncelle
       setStudents(prevStudents => [
-        userData as FirebaseUser,
+        { ...userData, emailVerified: false } as FirebaseUser,
         ...prevStudents
       ]);
 
       return true;
     } catch (error) {
-      console.error('Davet gönderilirken hata oluştu:', error);
+      console.error('Öğrenci hesabı oluşturulurken hata oluştu:', error);
       throw error;
     }
   };
@@ -696,27 +756,27 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       const userRole = userData?.role || '';
       console.log('Current user role:', userRole);
 
+      const effectiveSchoolId = schoolId || (userRole === 'school' || (Array.isArray(userRole) && userRole.includes('school')) ? userData?.schoolId || currentUser.uid : '');
+
       // Query oluştur
       let q = query(coursesRef, orderBy('createdAt', 'desc')); // Default query for admin
 
-      if (!isAdmin) {
-        if (userRole === 'school') {
-          console.log('School: Okula ait kurslar getiriliyor -', currentUser.uid);
-          q = query(
-            coursesRef,
-            where('schoolId', '==', currentUser.uid),
-            orderBy('createdAt', 'desc')
-          );
-        } else if (userRole === 'instructor') {
-          console.log('Instructor: Eğitmene ait kurslar getiriliyor -', currentUser.uid);
-          q = query(
-            coursesRef,
-            where('instructorId', '==', currentUser.uid),
-            orderBy('createdAt', 'desc')
-          );
-        }
+      if (effectiveSchoolId) {
+        console.log('School: Okul ID\'ye ait kurslar getiriliyor -', effectiveSchoolId);
+        q = query(
+          coursesRef,
+          where('schoolId', '==', effectiveSchoolId),
+          orderBy('createdAt', 'desc')
+        );
+      } else if (!isAdmin && (userRole === 'instructor' || (Array.isArray(userRole) && userRole.includes('instructor')))) {
+        console.log('Instructor: Eğitmene ait kurslar getiriliyor -', currentUser.uid);
+        q = query(
+          coursesRef,
+          where('instructorId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc')
+        );
       } else {
-        console.log('Admin: Tüm kurslar getiriliyor');
+        console.log('Admin: Tüm kurslar getiriliyor veya auth schoolId bulunamadı');
       }
 
       console.log('Ana query oluşturuldu:', q);
@@ -765,9 +825,17 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
     setSuccess(null);
 
     try {
-      console.log('Form submission - Current user role:', userRole);
-      console.log('Form data:', formData);
-      console.log('Selected courses:', courses.filter(c => formData.courseIds.includes(c.id)));
+      // Define effectiveSchoolId here to be used throughout the function
+      // Custom destructuring to avoid shadowing the prop schoolId
+      const managedSchoolId = schoolId || (userRole.includes('school') ? (currentUser as any)?.schoolId : formData.schoolId);
+      console.log('Form submission - Using managedSchoolId:', managedSchoolId);
+
+      // Get school name for both update and create
+      let schoolNameText = '';
+      if (managedSchoolId) {
+        const selectedSchool = schools.find(s => s.id === managedSchoolId);
+        schoolNameText = selectedSchool?.displayName || '';
+      }
 
       if (selectedStudent) {
         // Update existing student
@@ -780,29 +848,26 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           instructorName = selectedInstructor?.displayName || '';
         }
 
-        // Use current user's ID as schoolId for school users
-        const schoolId = userRole.includes('school') ? currentUser?.uid : formData.schoolId;
-        console.log('Using schoolId:', schoolId);
-
-        // Get school name
-        let schoolName = '';
-        if (schoolId) {
-          const selectedSchool = schools.find(s => s.id === schoolId);
-          schoolName = selectedSchool?.displayName || '';
-        }
-
-        const updateData = {
+        const updateData: any = {
           displayName: formData.displayName,
           phone: formData.phone,
           level: formData.level,
           instructorId: formData.instructorId || null,
           instructorName: instructorName || null,
-          schoolId: schoolId || null,
-          schoolName: schoolName || null,
+          schoolId: managedSchoolId || null,
+          schoolName: schoolNameText || null,
           photoURL: formData.photoURL || DEFAULT_STUDENT_IMAGE,
           courseIds: formData.courseIds || [],
           updatedAt: serverTimestamp()
         };
+
+        if (formData.instructorId) {
+          updateData.instructorIds = arrayUnion(formData.instructorId);
+        }
+
+        if (formData.password) {
+          updateData.password = formData.password;
+        }
 
         console.log('Updating student with data:', updateData);
         await updateDoc(userRef, updateData);
@@ -818,8 +883,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               level: formData.level,
               instructorId: formData.instructorId || null,
               instructorName: instructorName || null,
-              schoolId: formData.schoolId || null,
-              schoolName: schoolName || null,
+              schoolId: managedSchoolId || null,
+              schoolName: schoolNameText || null,
               photoURL: formData.photoURL || DEFAULT_STUDENT_IMAGE,
               courseIds: formData.courseIds || [],
               updatedAt: serverTimestamp() as Timestamp
@@ -843,7 +908,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         const emailCheckSnapshot = await getDocs(emailQuery);
 
         if (!emailCheckSnapshot.empty) {
-          throw new Error('Bu e-posta adresi zaten kullanılıyor.');
+          const existingUser = emailCheckSnapshot.docs[0];
+          const userData = { id: existingUser.id, ...existingUser.data() };
+
+          setExistingUserToLink(userData);
+          setExistingUserModalOpen(true);
+          setLoading(false);
+          return;
         }
 
         // Get instructor name if an instructor is selected
@@ -853,27 +924,21 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           instructorName = selectedInstructor?.displayName || '';
         }
 
-        // Get school name if a school is selected
-        let schoolName = '';
-        if (formData.schoolId) {
-          const selectedSchool = schools.find(s => s.id === formData.schoolId);
-          schoolName = selectedSchool?.displayName || '';
-        }
-
-        // Davet gönder
-        await sendInvitationEmail(formData.email, {
+        // Hesabı oluştur
+        await createStudentUser(formData.email, {
           displayName: formData.displayName,
           level: formData.level,
           phoneNumber: formData.phone,
           instructorId: formData.instructorId,
           instructorName: instructorName,
-          schoolId: userRole.includes('school') ? currentUser?.uid : formData.schoolId,
-          schoolName: schoolName,
+          schoolId: managedSchoolId,
+          schoolName: schoolNameText,
           photoURL: formData.photoURL,
-          courseIds: formData.courseIds
+          courseIds: formData.courseIds,
+          password: formData.password
         });
 
-        setSuccess('Öğrenci başarıyla eklendi ve davet e-postası gönderildi.');
+        setSuccess('Öğrenci hesabı başarıyla oluşturuldu.');
       }
 
       // Close the form
@@ -882,39 +947,215 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
 
     } catch (err: any) {
       console.error('Error in form submission:', err);
-      setError('İşlem sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Bu e-posta adresi zaten kullanımda. Öğrenciyi aramada aratıp mevcut hesabı bağlayabilirsiniz.');
+      } else {
+        setError('İşlem sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Delete student
-  const deleteStudentHandler = async (studentId: string): Promise<void> => {
-    if (!window.confirm('Bu öğrenciyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  // Şifre Sıfırlama E-postası Gönder
+  const handleSendPasswordResetEmail = async (email: string) => {
+    if (!window.confirm("Öğrenciye şifre sıfırlama e-postası gönderilecektir. Emin misiniz?")) {
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    try {
+      setIsResettingPassword(true);
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, email);
+      setSuccess('Şifre sıfırlama bağlantısı öğrencinin e-posta adresine gönderildi!');
+      setEditMode(false);
+      setSelectedStudent(null);
+    } catch (err: any) {
+      console.error('Şifre sıfırlama e-postası hatası:', err);
+      setError('Şifre sıfırlama e-postası gönderilirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  // E-posta Doğrulama Maili Gönder (hesap var ama doğrulanmamışsa)
+  const handleSendVerificationEmail = async (email: string) => {
+    if (!window.confirm(`"${email}" adresine e-posta doğrulama bağlantısı gönderilecektir. Emin misiniz?`)) {
+      return;
+    }
 
     try {
-      // Delete from Firestore
-      await deleteDoc(doc(db, 'users', studentId));
-
-      // Remove from state
-      const updatedStudents = students.filter(student => student.id !== studentId);
-      setStudents(updatedStudents);
-      setSuccess('Öğrenci başarıyla silindi.');
-
-      // Note: Deleting the auth user would require admin SDK or reauthentication,
-      // so we're only deleting the Firestore document here.
-    } catch (err) {
-      console.error('Öğrenci silinirken hata oluştu:', err);
-      setError('Öğrenci silinirken bir hata oluştu. Lütfen tekrar deneyin.');
+      setIsResettingPassword(true);
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      // Firebase'de doğrulama maili gönderebilmek için kullanıcının oturum açmış olması gerekir.
+      // Bu yüzden şifre sıfırlama maili ile aynı akışı kullanıyoruz — kullanıcı linke tıklayınca
+      // şifresini güncellerken Firebase otomatik olarak e-postasını da doğrulamış olacaktır.
+      await sendPasswordResetEmail(auth, email);
+      setSuccess('Doğrulama/sıfırlama bağlantısı öğrencinin e-posta adresine gönderildi! Öğrenci bu bağlantıya tıkladığında e-postası doğrulanmış olacaktır.');
+      setEditMode(false);
+      setSelectedStudent(null);
+    } catch (err: any) {
+      console.error('Doğrulama e-postası hatası:', err);
+      setError('Doğrulama e-postası gönderilirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
     } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+
+  const handleConfirmLink = async () => {
+    if (!existingUserToLink) return;
+    const managedSchoolId = schoolId || (currentUser as any)?.schoolId || (userRole === 'school' ? currentUser?.uid : null);
+
+    try {
+      setLoading(true);
+      const existingUserId = existingUserToLink.id;
+      const userData = existingUserToLink;
+
+      // Check if already assigned to this school
+      const schoolIds = Array.isArray(userData.schoolIds) ? userData.schoolIds : (userData.schoolId ? [userData.schoolId] : []);
+      if (managedSchoolId && schoolIds.includes(managedSchoolId)) {
+        setError('Bu öğrenci zaten okulunuza kayıtlı.');
+        setLoading(false);
+        setExistingUserModalOpen(false);
+        return;
+      }
+
+      let newRole = userData.role;
+      if (typeof newRole === 'string' && newRole !== 'student') {
+        newRole = [newRole, 'student'];
+      } else if (Array.isArray(newRole) && !newRole.includes('student')) {
+        newRole = [...newRole, 'student'];
+      } else if (!newRole) {
+        newRole = 'student';
+      }
+
+      const updatePayload: any = {
+        role: newRole,
+        updatedAt: serverTimestamp()
+      };
+
+      if (managedSchoolId) {
+        updatePayload.schoolId = managedSchoolId;
+        updatePayload.schoolIds = arrayUnion(managedSchoolId);
+      }
+
+      // Append array values if any were selected in formData
+      if (formData.courseIds && formData.courseIds.length > 0) {
+        updatePayload.courseIds = arrayUnion(...formData.courseIds);
+      }
+
+      await updateDoc(doc(db, 'users', existingUserId), updatePayload);
+
+      const updatedDoc = await getDoc(doc(db, 'users', existingUserId));
+      setStudents([{ ...updatedDoc.data(), id: existingUserId } as FirebaseUser, ...students.filter(s => s.id !== existingUserId)]);
+      setSuccess('Mevcut kullanıcı öğrenci olarak okulunuza bağlandı.');
+
+      setExistingUserModalOpen(false);
+      setExistingUserToLink(null);
+      setEditMode(false);
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Öğrenci bağlanırken hata:', err);
+      setError('Öğrenci bağlanırken bir hata oluştu.');
       setLoading(false);
     }
   };
+
+  // Delete/Unlink student
+  const deleteStudentHandler = async (studentId: string): Promise<void> => {
+    setLoading(true);
+    setError(null);
+    setDeleteConfirmOpen(false);
+
+    try {
+      const studentRef = doc(db, 'users', studentId);
+      const isInstructorMode = userRole === 'instructor' && !isAdmin;
+
+      if (isInstructorMode) {
+        // Just unlink the instructor
+        await updateDoc(studentRef, {
+          instructorIds: arrayRemove(currentUser?.uid || ''), // if it's an array
+          instructorId: '', // legacy string field map
+          updatedAt: serverTimestamp()
+        });
+        setSuccess('Öğrenci başarıyla listenizden çıkarıldı.');
+      } else {
+        // School / Admin Mode: unlink from school
+        const userRef = doc(db, 'users', currentUser?.uid || '');
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data();
+        const effectiveSchoolId = schoolId || userData?.schoolId || currentUser?.uid;
+
+        if (!effectiveSchoolId) {
+          throw new Error('Okul bilgisi bulunamadı.');
+        }
+
+        await updateDoc(studentRef, {
+          schoolId: null, // Legacy
+          schoolIds: arrayRemove(effectiveSchoolId), // M:N
+          updatedAt: serverTimestamp()
+        });
+        setSuccess('Öğrenci başarıyla okuldan ayrıldı.');
+      }
+
+      // Remove from UI state
+      const updatedStudents = students.filter(student => student.id !== studentId);
+      setStudents(updatedStudents);
+    } catch (err) {
+      console.error('Öğrenci ayrılırken/kaldırılırken hata oluştu:', err);
+      setError('İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      setLoading(false);
+      setStudentToDeleteId(null);
+    }
+  };
+
+  // --- NEW Quick Assign Handlers ---
+  const handleOpenQuickAssign = (student: FirebaseUser) => {
+    setStudentToAssign(student);
+    setQuickAssignCourseIds(student.courseIds || []);
+    setQuickAssignModalOpen(true);
+  };
+
+  const handleCloseQuickAssign = () => {
+    setQuickAssignModalOpen(false);
+    setStudentToAssign(null);
+    setQuickAssignCourseIds([]);
+  };
+
+  const handleSaveQuickAssign = async () => {
+    if (!studentToAssign) return;
+    setIsAssigning(true);
+    let errorMessage = '';
+
+    try {
+      const studentRef = doc(db, 'users', studentToAssign.id);
+
+      const payload: any = {
+        courseIds: quickAssignCourseIds,
+        updatedAt: serverTimestamp()
+      };
+
+      await updateDoc(studentRef, payload);
+
+      setStudents(prev =>
+        prev.map(s => s.id === studentToAssign.id ? { ...s, courseIds: quickAssignCourseIds } : s)
+      );
+
+      setSuccessMessage('Öğrencinin kursları başarıyla güncellendi.');
+      handleCloseQuickAssign();
+    } catch (err) {
+      console.error('Hızlı atama sırasında hata:', err);
+      errorMessage = 'Kurs atama işlemi başarısız oldu.';
+      setError(errorMessage);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+  // ----------------------------------
 
   // Render student row
   const renderStudent = (student: FirebaseUser) => {
@@ -924,11 +1165,16 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="hover:bg-gray-50 dark:hover:bg-slate-800"
+        className={`transition-colors ${isAdmin
+          ? 'hover:bg-gray-50 dark:hover:bg-slate-800'
+          : colorVariant === 'school'
+            ? 'hover:bg-school/5 dark:hover:bg-school/10'
+            : 'hover:bg-instructor/5 dark:hover:bg-instructor/10'
+          }`}
       >
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="flex items-center">
-            <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
+        <td className="px-4 py-4 whitespace-nowrap max-w-[180px]">
+          <div className="flex items-center min-w-0">
+            <div className="flex-shrink-0 h-9 w-9 relative bg-green-100 rounded-full overflow-hidden">
               {student.photoURL ? (
                 <img
                   className="h-10 w-10 rounded-full object-cover absolute inset-0"
@@ -948,20 +1194,18 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 />
               )}
             </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-900 dark:text-white">{student.displayName}</div>
+            <div className="ml-3 min-w-0">
+              <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{student.displayName}</div>
               {student.phoneNumber && (
                 <div className="text-sm text-gray-500 dark:text-gray-400">{student.phoneNumber}</div>
               )}
             </div>
           </div>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900 dark:text-white max-w-[200px] truncate" title={student.email}>
-            {student.email}
-          </div>
+        <td className="hidden lg:table-cell px-4 py-4">
+          <div className="text-sm text-gray-900 dark:text-white truncate max-w-[180px]" title={student.email}>{student.email}</div>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap">
+        <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap">
           <div className="text-sm text-gray-900 dark:text-white">
             {student.level === 'beginner' && 'Başlangıç'}
             {student.level === 'intermediate' && 'Orta'}
@@ -970,15 +1214,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             {!student.level && '-'}
           </div>
         </td>
-        {userRole !== 'instructor' && (
-          <td className="px-6 py-4 whitespace-nowrap">
-            <div className="text-sm text-gray-900 dark:text-white">
-              {student.instructorName || '-'}
-            </div>
-          </td>
-        )}
-        {userRole !== 'school' && (
-          <td className="px-6 py-4 whitespace-nowrap">
+        {isAdmin && (
+          <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap">
             <SchoolProfile
               school={{
                 id: student.schoolId || '',
@@ -988,7 +1225,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             />
           </td>
         )}
-        <td className="px-6 py-4 whitespace-nowrap">
+        <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap">
+          <div className="flex items-center gap-1">
+            <StarIcon filled={true} />
+            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+              {student.rating ? student.rating.toFixed(1) : '0.0'}
+            </span>
+          </div>
+        </td>
+        <td className="hidden xl:table-cell px-4 py-4 whitespace-nowrap">
           <div className="text-sm text-gray-900 dark:text-white">
             {student.courseIds && student.courseIds.length > 0 ? (
               <div className="flex flex-wrap gap-1">
@@ -1006,17 +1251,31 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             )}
           </div>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium min-w-[140px]">
-          <div className="flex justify-end space-x-2">
+        <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => handleOpenQuickAssign(student)}
+              className="inline-flex items-center px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 rounded-md text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all shadow-sm active:scale-95"
+            >
+              Kursa Ata
+            </button>
             <button
               onClick={() => editStudent(student)}
-              className={colorVariant === 'school' ? 'text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter' : 'text-instructor hover:text-instructor-dark dark:text-instructor-light dark:hover:text-instructor-lighter'}
+              className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm active:scale-95 ${isAdmin
+                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                : colorVariant === 'school'
+                  ? 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30 hover:bg-school/20 dark:hover:bg-school/30'
+                  : 'bg-instructor/10 dark:bg-instructor/20 text-instructor dark:text-instructor-light border border-instructor/20 dark:border-instructor/30 hover:bg-instructor/20 dark:hover:bg-instructor/30'
+                }`}
             >
               Düzenle
             </button>
             <button
-              onClick={() => deleteStudentHandler(student.id)}
-              className="text-red-600 hover:text-red-900"
+              onClick={() => {
+                setStudentToDeleteId(student.id);
+                setDeleteConfirmOpen(true);
+              }}
+              className="inline-flex items-center px-3 py-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-md text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/20 transition-all shadow-sm active:scale-95"
             >
               Sil
             </button>
@@ -1060,10 +1319,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           orderBy('displayName', 'asc')
         );
       } else if (currentUserRole === 'school') {
-        console.log('School: fetching instructors for school', currentUser?.uid);
+        const effectiveSchoolId = schoolId || userData?.schoolId || currentUser?.uid;
+        console.log('School: fetching instructors for school', effectiveSchoolId);
         q = query(
           instructorsRef,
-          where('schoolId', '==', currentUser?.uid),
+          where('schoolId', '==', effectiveSchoolId),
           where('status', '==', 'active'),
           orderBy('displayName', 'asc')
         );
@@ -1133,34 +1393,39 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Öğrenci Yönetimi</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Öğrencilerinizi ekleyin, düzenleyin ve yönetin</p>
         </div>
-        <div className="flex flex-col gap-2 w-full sm:w-64">
-          <div className="relative w-full">
-            <input
-              type="text"
-              placeholder="Ad veya e-posta ile ara..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 ${colorVariant === 'school' ? 'focus:ring-school dark:focus:ring-school-light' : 'focus:ring-instructor dark:focus:ring-instructor-light'} focus:border-transparent`}
-            />
-            <span className="absolute right-3 top-2.5 text-gray-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
-          </div>
-          {!editMode && (
-            <button
+
+        {/* Toolbar: search left, add button right */}
+        {!editMode && (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="flex-1 sm:max-w-xs">
+              <CustomInput
+                name="search"
+                label=""
+                placeholder="Ad veya e-posta ile ara..."
+                value={searchTerm}
+                onChange={(e: { target: { name: string; value: any } }) => setSearchTerm(e.target.value)}
+                fullWidth
+                colorVariant={colorVariant as 'school' | 'instructor'}
+                startIcon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                }
+              />
+            </div>
+            <Button
+              variant={colorVariant as 'school' | 'instructor'}
               onClick={addNewStudent}
-              className={`w-full px-4 py-2 text-white rounded-md transition-colors flex items-center justify-center gap-2 ${colorVariant === 'school' ? 'bg-school hover:bg-school-dark dark:bg-school-light dark:text-school-dark dark:hover:bg-school-lighter' : 'bg-instructor hover:bg-instructor-dark dark:bg-instructor-light dark:text-instructor-dark dark:hover:bg-instructor-lighter'}`}
               disabled={loading}
+              className="flex items-center justify-center gap-2 whitespace-nowrap"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               {loading ? 'Yükleniyor...' : 'Yeni Öğrenci'}
-            </button>
-          )}
-        </div>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Photo Modal */}
@@ -1174,69 +1439,127 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         />
       )}
 
-      {editMode ? (
-        <div className="bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 rounded-lg">
-          <h3 className="text-lg font-semibold mb-4">
-            {selectedStudent ? 'Öğrenci Düzenle' : 'Yeni Öğrenci Ekle'}
-          </h3>
+      {/* Edit/Add Modal */}
+      <SimpleModal
+        open={editMode}
+        onClose={() => setEditMode(false)}
+        title={selectedStudent ? 'Öğrenciyi Düzenle' : 'Yeni Öğrenci Ekle'}
+        colorVariant={colorVariant as 'school' | 'instructor'}
+        bodyClassName={
+          isAdmin
+            ? 'bg-indigo-50/50 dark:bg-slate-900/80'
+            : colorVariant === 'school'
+              ? 'bg-orange-50/30 dark:bg-[#1a120b]'
+              : 'bg-instructor-bg/90 dark:bg-slate-900/80'
+        }
+      >
+        <form id="student-form" onSubmit={handleSubmit}>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Profil Fotoğrafı - Hide for new student in school mode */}
+              {(!userRole.includes('school') || !!selectedStudent) && (
+                <div className="md:col-span-2 flex justify-center mb-2">
+                  <ImageUploader
+                    currentPhotoURL={formData.photoURL}
+                    onImageChange={handlePhotoChange}
+                    displayName={formData.displayName || '?'}
+                    userType="student"
+                    shape="circle"
+                    width={96}
+                    height={96}
+                    maxSizeKB={5120}
+                  />
+                </div>
+              )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              {/* Profil Fotoğrafı */}
-              <div className="md:col-span-2">
-                <ImageUploader
-                  currentPhotoURL={formData.photoURL}
-                  onImageChange={handlePhotoChange}
-                  displayName={formData.displayName || '?'}
-                  userType="student"
-                  shape="circle"
-                  width={96}
-                  height={96}
-                  maxSizeKB={5120}
-                />
+              <CustomInput
+                name="displayName"
+                label="Ad Soyad"
+                type="text"
+                required
+                value={formData.displayName}
+                onChange={handleInputChange}
+                fullWidth
+                colorVariant={colorVariant as "school" | "instructor"}
+              />
+
+              <CustomInput
+                type="email"
+                name="email"
+                label="E-posta"
+                required
+                value={formData.email}
+                onChange={handleInputChange}
+                error={false}
+                fullWidth
+                helperText={selectedStudent ? "Mevcut öğrencilerin e-posta adresleri değiştirilemez." : ""}
+                disabled={!!selectedStudent}
+                colorVariant={colorVariant as "school" | "instructor"}
+                autoComplete="new-password"
+              />
+
+              <CustomPhoneInput
+                name="phone"
+                label="Telefon"
+                required
+                countryCode="+90"
+                phoneNumber={formData.phone}
+                onCountryCodeChange={() => { }}
+                onPhoneNumberChange={(value: string) => setFormData(prev => ({ ...prev, phone: value }))}
+                fullWidth
+                autoComplete="new-password"
+              />
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Şifre ve E-posta İşlemleri</label>
+                {!selectedStudent ? (
+                  <div className="px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Öğrenci hesabı <span className="text-gray-900 dark:text-white font-bold">feriha123</span> şifresiyle oluşturulacak ve doğrulama e-postası gönderilecektir.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {/* Şifre Sıfırlama */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Öğrenci şifresini unuttuysa sıfırlama e-postası gönderin.
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        disabled={isResettingPassword || !formData.email}
+                        onClick={() => {
+                          if (formData.email) {
+                            handleSendPasswordResetEmail(formData.email);
+                          }
+                        }}
+                      >
+                        {isResettingPassword ? 'Gönderiliyor...' : 'Şifre Sıfırla'}
+                      </Button>
+                    </div>
+                    {/* Doğrulama e-postası */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <span className="text-sm text-amber-700 dark:text-amber-400">
+                        E-posta doğrulama bağlantısı gönder.
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        disabled={isResettingPassword || !formData.email}
+                        onClick={() => {
+                          if (formData.email) {
+                            handleSendVerificationEmail(formData.email);
+                          }
+                        }}
+                      >
+                        {isResettingPassword ? 'Gönderiliyor...' : 'Doğrulama Gönder'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div>
-                <CustomInput
-                  name="displayName"
-                  label="Ad Soyad"
-                  type="text"
-                  required
-                  value={formData.displayName}
-                  onChange={handleInputChange}
-                  fullWidth
-                />
-              </div>
 
-              <div>
-                <CustomInput
-                  type="email"
-                  name="email"
-                  label="E-posta"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  error={false}
-                  fullWidth
-                  helperText={selectedStudent ? "Mevcut öğrencilerin e-posta adresleri değiştirilemez." : ""}
-                  disabled={!!selectedStudent}
-                />
-              </div>
-
-              <div>
-                <CustomPhoneInput
-                  name="phone"
-                  label="Telefon"
-                  required
-                  countryCode="+90"
-                  phoneNumber={formData.phone}
-                  onCountryCodeChange={() => { }}
-                  onPhoneNumberChange={(value: string) => setFormData(prev => ({ ...prev, phone: value }))}
-                  fullWidth
-                />
-              </div>
-
-              <div>
+              {(!userRole.includes('school') || !!selectedStudent) && (
                 <CustomSelect
                   name="level"
                   label="Dans Seviyesi"
@@ -1254,99 +1577,87 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   ]}
                   fullWidth
                   required
+                  colorVariant={colorVariant as "school" | "instructor"}
                 />
-              </div>
+              )}
 
               {isAdmin && (
-                <div>
-                  <CustomSelect
-                    name="instructorId"
-                    label="Eğitmen"
-                    value={formData.instructorId}
-                    onChange={(value: string | string[]) => {
-                      if (typeof value === 'string') {
-                        handleSelectChange(value, 'instructorId');
-                      }
-                    }}
-                    options={[
-                      { value: '', label: 'Eğitmen Seç...' },
-                      ...instructors.map(instructor => ({
-                        value: instructor.id,
-                        label: instructor.displayName
-                      }))
-                    ]}
-                    fullWidth
-                    required
-                  />
-                </div>
-              )}
-
-              {/* School selection - only show for admin */}
-              {isAdmin ? (
-                <div>
-                  <CustomSelect
-                    name="schoolId"
-                    label="Okul"
-                    value={formData.schoolId}
-                    onChange={(value: string | string[]) => {
-                      if (typeof value === 'string') {
-                        console.log('School selection changed to:', value);
-                        handleSelectChange(value, 'schoolId');
-                      }
-                    }}
-                    options={schools.map(school => ({
-                      value: school.id,
-                      label: school.displayName
-                    }))}
-                    fullWidth
-                    required
-                  />
-                </div>
-              ) : userRole.includes('school') && (
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Okul:</span>
-                  <SchoolProfile
-                    school={{
-                      id: currentUser?.uid || '',
-                      displayName: schools.find(s => s.id === currentUser?.uid)?.displayName || '',
-                      email: schools.find(s => s.id === currentUser?.uid)?.email || ''
-                    }}
-                    variant="card"
-                  />
-                </div>
-              )}
-
-              {/* Course selection */}
-              <div>
                 <CustomSelect
-                  name="courseIds"
-                  label="Kurslar"
-                  value={formData.courseIds}
+                  name="instructorId"
+                  label="Eğitmen"
+                  value={formData.instructorId}
                   onChange={(value: string | string[]) => {
-                    if (Array.isArray(value)) {
-                      console.log('Course selection changed to:', value);
-                      console.log('Selected courses:', courses.filter(c => value.includes(c.id)));
-                      setFormData(prev => ({
-                        ...prev,
-                        courseIds: value
-                      }));
+                    if (typeof value === 'string') {
+                      handleSelectChange(value, 'instructorId');
                     }
                   }}
-                  options={courses.map(course => ({
-                    value: course.id,
-                    label: course.name
+                  options={[
+                    { value: '', label: 'Eğitmen Seç...' },
+                    ...instructors.map(instructor => ({
+                      value: instructor.id,
+                      label: instructor.displayName
+                    }))
+                  ]}
+                  fullWidth
+                  required
+                  colorVariant={colorVariant as "school" | "instructor"}
+                />
+              )}
+
+              {/* School selection - Hide for new student in school mode */}
+              {isAdmin && (
+                <CustomSelect
+                  name="schoolId"
+                  label="Okul"
+                  value={formData.schoolId}
+                  onChange={(value: string | string[]) => {
+                    if (typeof value === 'string') {
+                      handleSelectChange(value, 'schoolId');
+                    }
+                  }}
+                  options={schools.map(school => ({
+                    value: school.id,
+                    label: school.displayName
                   }))}
                   fullWidth
-                  multiple
                   required
+                  colorVariant={colorVariant as "school" | "instructor"}
                 />
-              </div>
+              )}
+
+              {/* School profile removed as per request */}
+
+              {/* Course selection - Show for school admin adding or editing */}
+              {(userRole.includes('school') || isAdmin) && (
+                <div className="md:col-span-2">
+                  <CustomSelect
+                    name="courseIds"
+                    label="Kurslar"
+                    value={formData.courseIds}
+                    onChange={(value: string | string[]) => {
+                      if (Array.isArray(value)) {
+                        setFormData(prev => ({
+                          ...prev,
+                          courseIds: value
+                        }));
+                      }
+                    }}
+                    options={courses.map(course => ({
+                      value: course.id,
+                      label: course.name
+                    }))}
+                    fullWidth
+                    multiple
+                    required
+                    colorVariant={colorVariant as "school" | "instructor"}
+                  />
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-100 dark:border-slate-800">
               <Button
                 variant="outlined"
-                color="secondary"
                 onClick={() => setEditMode(false)}
                 disabled={loading}
               >
@@ -1354,61 +1665,184 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               </Button>
               <Button
                 type="submit"
-                variant="contained"
-                color="primary"
+                variant={colorVariant as 'school' | 'instructor'}
                 disabled={loading}
               >
                 {loading ? 'Kaydediliyor...' : (selectedStudent ? 'Güncelle' : 'Ekle')}
               </Button>
             </div>
-          </form>
-        </div>
-      ) : (
-        <>
-          {loading && (
-            <div className="flex justify-center my-4">
-              <div className={`animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 ${colorVariant === 'school' ? 'border-school' : 'border-instructor'}`}></div>
-            </div>
-          )}
+          </div>
+        </form>
+      </SimpleModal>
 
-          {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
+      <SimpleModal
+        open={quickAssignModalOpen}
+        onClose={handleCloseQuickAssign}
+        title="Kursa Ata"
+        colorVariant={colorVariant as 'school' | 'instructor'}
+      >
+        <div className="p-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <strong className="text-gray-900 dark:text-white">{studentToAssign?.displayName}</strong> adlı öğrenciyi aşağıdaki kurslara atayabilirsiniz:
+          </p>
+          <div className="mt-4">
+            <CustomSelect
+              name="quickCourseIds"
+              label="Kurslar"
+              value={quickAssignCourseIds}
+              onChange={(value: string | string[]) => {
+                if (Array.isArray(value)) {
+                  setQuickAssignCourseIds(value);
+                }
+              }}
+              options={courses.map(course => ({
+                value: course.id,
+                label: course.name
+              }))}
+              fullWidth
+              multiple
+              required
+              colorVariant={colorVariant as "school" | "instructor"}
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-100 dark:border-slate-800">
+            <Button
+              variant="outlined"
+              onClick={handleCloseQuickAssign}
+              disabled={isAssigning}
+            >
+              İptal
+            </Button>
+            <Button
+              onClick={handleSaveQuickAssign}
+              variant={colorVariant as 'school' | 'instructor'}
+              disabled={isAssigning}
+            >
+              {isAssigning ? 'Kaydediliyor...' : 'Atamayı Kaydet'}
+            </Button>
+          </div>
+        </div>
+      </SimpleModal>
+
+      <SimpleModal
+        open={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setStudentToDeleteId(null);
+        }}
+        title={userRole === 'instructor' && !isAdmin ? "Öğrenciyi Listeden Çıkar" : "Öğrenciyi Kaldır"}
+        colorVariant={colorVariant as 'school' | 'instructor'}
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => {
+              setDeleteConfirmOpen(false);
+              setStudentToDeleteId(null);
+            }}>İptal</Button>
+            <Button variant="danger" onClick={() => studentToDeleteId && deleteStudentHandler(studentToDeleteId)}>
+              {userRole === 'instructor' && !isAdmin ? "Çıkar" : "Kaldır"}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+          {userRole === 'instructor' && !isAdmin
+            ? "Bu öğrenciyi kendi öğrencilerim listesinden çıkarmak istediğinize emin misiniz? Bu işlem öğrencinin platformdaki asıl hesabını veya kurslarındaki kaydını silmez, yalnızca sizin listenizden çıkarır."
+            : "Bu öğrenciyi okulunuzun listesinden kaldırmak istediğinize emin misiniz? Bu işlem öğrencinin hesabını tamamen silmez, yalnızca okulunuzla bağlantısını kaldırır. Kayıtlı olduğu kurslardaki geçmiş verileri korunacaktır."}
+        </p>
+      </SimpleModal>
+
+      {/* Existing User Warning Modal */}
+      <SimpleModal
+        open={existingUserModalOpen}
+        onClose={() => setExistingUserModalOpen(false)}
+        title="Kullanıcı Zaten Mevcut"
+        colorVariant={colorVariant as "school" | "instructor"}
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800/50 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-800/50 flex items-center justify-center flex-shrink-0 text-orange-600 dark:text-orange-400">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-gray-900 dark:text-white font-medium">Bu e-posta adresiyle bir kullanıcı zaten kayıtlı.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <strong>{existingUserToLink?.displayName}</strong> ({existingUserToLink?.email})
+                {existingUserToLink?.role?.includes('student')
+                  ? ' zaten bir öğrenci.'
+                  : ' şu an bir ' + existingUserToLink?.role + '.'}
+              </p>
+            </div>
+          </div>
+          <p className="text-gray-700 dark:text-gray-300">
+            Bu kullanıcıyı okulunuza öğrenci olarak bağlamak istiyor musunuz?
+            {existingUserToLink?.role !== 'student' && ' Kullanıcının rolü otomatik olarak öğrenci rolünü de içerecek şekilde güncellenecektir.'}
+          </p>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              onClick={() => setExistingUserModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              Vazgeç
+            </button>
+            <button
+              onClick={handleConfirmLink}
+              className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${colorVariant === 'school' ? 'bg-school hover:bg-school-dark' : 'bg-instructor hover:bg-instructor-dark'
+                }`}
+            >
+              Evet, Bağla
+            </button>
+          </div>
+        </div>
+      </SimpleModal>
+
+      <>
+        {loading && (
+          <div className="flex justify-center my-4">
+            <div className={`animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 ${colorVariant === 'school' ? 'border-school' : 'border-instructor'}`}></div>
+          </div>
+        )}
+
+        {/* Desktop Table View */}
+        <div className={`rounded-lg shadow overflow-hidden border ${isAdmin
+          ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+          : colorVariant === 'school'
+            ? 'bg-school-bg border-school/40 dark:border-school/30 dark:bg-[#1a120b]'
+            : 'bg-instructor-bg/50 dark:bg-[#0f172a] border-instructor/30 dark:border-instructor/20'
+          }`}>
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50 dark:bg-slate-900">
+              <thead className={isAdmin
+                ? 'bg-gray-50 dark:bg-slate-900'
+                : colorVariant === 'school'
+                  ? 'bg-school-bg dark:bg-school/20'
+                  : 'bg-instructor-bg/80 dark:bg-instructor/10'
+              }>
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Öğrenci
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    E-posta
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Dans Seviyesi
-                  </th>
-                  {userRole !== 'instructor' && (
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Eğitmen
-                    </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Öğrenci</th>
+                  <th scope="col" className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">E-posta</th>
+                  <th scope="col" className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dans Seviyesi</th>
+                  {isAdmin && (
+                    <th scope="col" className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Okul</th>
                   )}
-                  {userRole !== 'school' && (
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Okul
-                    </th>
-                  )}
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Kurslar
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    İşlemler
-                  </th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
+                  <th scope="col" className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kurslar</th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
+              <tbody className={`divide-y ${isAdmin
+                ? 'bg-white dark:bg-slate-800 divide-gray-200 dark:divide-slate-700'
+                : colorVariant === 'school'
+                  ? 'bg-school-bg dark:bg-[#1a120b] divide-school/20 dark:divide-[#493322]'
+                  : 'bg-instructor-bg/30 dark:bg-slate-900/40 divide-instructor/20 dark:divide-slate-800'
+                }`}>
                 {filteredStudents.length > 0 ? (
                   filteredStudents.map((student) => renderStudent(student))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                       {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
                     </td>
                   </tr>
@@ -1416,17 +1850,25 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
               </tbody>
             </table>
           </div>
+        </div>
 
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-4">
-            {filteredStudents.length > 0 ? (
-              filteredStudents.map((student) => (
-                <div key={student.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-3 mt-4">
+          {filteredStudents.length > 0 ? (
+            filteredStudents.map((student) => (
+              <div
+                key={student.id}
+                className={`rounded-xl border shadow-sm overflow-hidden ${colorVariant === 'school'
+                  ? 'bg-white dark:bg-[#231810] border-school/20 dark:border-[#493322]'
+                  : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+                  }`}
+              >
+                <div className="p-4">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center max-w-[60%]">
-                      <div className="flex-shrink-0 h-10 w-10 relative bg-green-100 rounded-full overflow-hidden">
+                    <div className="flex items-center min-w-0">
+                      <div className="flex-shrink-0 h-11 w-11 relative bg-green-100 rounded-full overflow-hidden ring-2 ring-school/10">
                         <img
-                          className="h-10 w-10 rounded-full object-cover absolute inset-0"
+                          className="h-11 w-11 rounded-full object-cover absolute inset-0"
                           src={student.photoURL || generateInitialsAvatar(student.displayName, 'student')}
                           alt={student.displayName}
                           onError={(e) => {
@@ -1437,93 +1879,116 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                         />
                       </div>
                       <div className="ml-3 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{student.displayName}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate" title={student.email}>{student.email}</div>
+                        <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{student.displayName}</div>
+                        <div className="text-xs text-gray-500 dark:text-[#cba990] truncate" title={student.email}>{student.email}</div>
                       </div>
                     </div>
-                    <div className="flex space-x-2 flex-shrink-0">
-                      <button
-                        onClick={() => editStudent(student)}
-                        className={colorVariant === 'school' ? 'text-school hover:text-school-dark dark:text-school-light dark:hover:text-school-lighter' : 'text-instructor hover:text-instructor-dark dark:text-instructor-light dark:hover:text-instructor-lighter'}
-                      >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => deleteStudentHandler(student.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <StarIcon filled={true} />
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {student.rating ? student.rating.toFixed(1) : '0.0'}
+                      </span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Dans Seviyesi:</span>
-                      <p className="font-medium">
-                        {student.level === 'beginner' && 'Başlangıç'}
-                        {student.level === 'intermediate' && 'Orta'}
-                        {student.level === 'advanced' && 'İleri'}
-                        {student.level === 'professional' && 'Profesyonel'}
-                        {!student.level && '-'}
-                      </p>
+
+                  <div className="space-y-3 text-sm">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Seviye</span>
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          {student.level === 'beginner' && 'Başlangıç'}
+                          {student.level === 'intermediate' && 'Orta'}
+                          {student.level === 'advanced' && 'İleri'}
+                          {student.level === 'professional' && 'Profesyonel'}
+                          {!student.level && '-'}
+                        </p>
+                      </div>
+                      {student.phoneNumber && (
+                        <div>
+                          <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Telefon</span>
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{student.phoneNumber}</p>
+                        </div>
+                      )}
                     </div>
-                    {student.phoneNumber && (
+
+                    {isAdmin && (
                       <div>
-                        <span className="text-gray-500 dark:text-gray-400">Telefon:</span>
-                        <p className="font-medium">{student.phoneNumber}</p>
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Okul</span>
+                        <div className="mt-1">
+                          <SchoolProfile
+                            school={{
+                              id: student.schoolId || '',
+                              displayName: student.schoolName || '',
+                              email: ''
+                            }}
+                            variant="card"
+                          />
+                        </div>
                       </div>
                     )}
-                    {userRole !== 'instructor' && (
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Eğitmen:</span>
-                        <p className="font-medium">{student.instructorName || '-'}</p>
-                      </div>
-                    )}
-                    {userRole !== 'school' && (
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Okul:</span>
-                        <SchoolProfile
-                          school={{
-                            id: student.schoolId || '',
-                            displayName: student.schoolName || '',
-                            email: ''
-                          }}
-                          variant="card"
-                        />
-                      </div>
-                    )}
-                    <div className="col-span-2">
-                      <span className="text-gray-500 dark:text-gray-400">Kurslar:</span>
+
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Kurslar</span>
                       {student.courseIds && student.courseIds.length > 0 ? (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {student.courseIds.map(courseId => {
                             const course = courses.find(c => c.id === courseId);
                             return course ? (
-                              <span key={courseId} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-indigo-800">
+                              <span key={courseId} className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-900/20 text-[10px] font-semibold text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30">
                                 {course.name}
                               </span>
                             ) : null;
                           })}
                         </div>
                       ) : (
-                        <p className="font-medium">-</p>
+                        <p className="text-gray-400 text-xs italic mt-1">Kurs kaydı yok</p>
                       )}
                     </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
-                {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
+
+                <div className={`flex items-center justify-end gap-2 px-4 py-2.5 border-t ${colorVariant === 'school'
+                  ? 'bg-school/5 dark:bg-[#1a120b] border-school/10 dark:border-[#493322]'
+                  : 'bg-gray-50 dark:bg-slate-900/40 border-gray-100 dark:border-slate-700'
+                  }`}>
+                  <button
+                    onClick={() => handleOpenQuickAssign(student)}
+                    className="inline-flex items-center px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-all active:scale-95"
+                  >
+                    Kursa Ata
+                  </button>
+                  <button
+                    onClick={() => editStudent(student)}
+                    className={`inline-flex items-center p-2 rounded-lg text-xs font-medium transition-all active:scale-95 ${colorVariant === 'school'
+                      ? 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30'
+                      : 'bg-instructor/10 dark:bg-instructor/20 text-instructor dark:text-instructor-light border border-instructor/20 dark:border-instructor/30'
+                      }`}
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStudentToDeleteId(student.id);
+                      setDeleteConfirmOpen(true);
+                    }}
+                    className="inline-flex items-center p-2 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-lg text-xs font-medium hover:bg-red-100 transition-all active:scale-95"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
-        </>
-      )}
+            ))
+          ) : (
+            <div className={`text-center py-4 text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
+              {searchTerm ? 'Aramanıza uygun öğrenci bulunamadı.' : 'Henüz hiç öğrenci kaydı bulunmuyor.'}
+            </div>
+          )}
+        </div>
+      </>
     </div>
   );
-} 
+}

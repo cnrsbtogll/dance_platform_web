@@ -208,7 +208,7 @@ function SchoolRequests(): JSX.Element {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
         <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
       </div>
     );
@@ -228,33 +228,26 @@ function SchoolRequests(): JSX.Element {
     );
   }
 
-  if (requests.length === 0) {
-    return (
-      <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Okul Başvuruları</h2>
-        <p className="text-gray-600 dark:text-gray-400">Şu anda bekleyen okul başvurusu bulunmamaktadır.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col gap-3 mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200">Okul Başvuruları</h2>
-        <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden text-sm">
+        {/* Scrollable filter bar — stays one line on all screen sizes */}
+        <div className="flex overflow-x-auto pb-1 gap-2 scrollbar-hide">
           {(['all', 'pending', 'approved', 'rejected'] as const).map((s) => {
             const labels = { all: 'Tümü', pending: 'Bekleyen', approved: 'Onaylandı', rejected: 'Reddedildi' };
             const colors = {
-              all: statusFilter === s ? 'bg-gray-700 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
-              pending: statusFilter === s ? 'bg-yellow-500 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
-              approved: statusFilter === s ? 'bg-green-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
-              rejected: statusFilter === s ? 'bg-red-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700',
+              all: statusFilter === s ? 'bg-gray-700 text-white border-gray-700' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700',
+              pending: statusFilter === s ? 'bg-yellow-500 text-white border-yellow-500' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20',
+              approved: statusFilter === s ? 'bg-green-600 text-white border-green-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-green-50 dark:hover:bg-green-900/20',
+              rejected: statusFilter === s ? 'bg-red-600 text-white border-red-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/20',
             };
             return (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 font-medium transition-colors ${colors[s]}`}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${colors[s]}`}
               >
                 {labels[s]}
               </button>
@@ -440,14 +433,14 @@ function SchoolRequests(): JSX.Element {
               </a>
               {contactRequest.website && (
                 <a href={contactRequest.website} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 transition">
-                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                    <svg className="h-4 w-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                    <svg className="h-4 w-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                     </svg>
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Web Sitesi</p>
-                    <p className="text-sm font-medium text-purple-600 dark:text-purple-400 truncate">{contactRequest.website}</p>
+                    <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 truncate">{contactRequest.website}</p>
                   </div>
                 </a>
               )}
@@ -505,7 +498,7 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
 
                 <div className="mt-2 space-y-4">
                   <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg space-y-3">
-                    <h4 className="text-sm font-semibold text-violet-600 uppercase tracking-wider">İletişim Bilgileri</h4>
+                    <h4 className="text-sm font-semibold text-indigo-600 uppercase tracking-wider">İletişim Bilgileri</h4>
                     {(request.contactPerson || request.firstName) && (
                       <div>
                         <span className="block text-xs text-gray-500 dark:text-gray-400">Yetkili Kişi</span>
@@ -554,7 +547,7 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
                       <span className="block text-xs text-gray-500 dark:text-gray-400">Dans Stilleri</span>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {(request.danceStyles || []).map((style, index) => (
-                          <span key={index} className="px-2 py-0.5 bg-rose-100 text-violet-600 rounded text-xs">
+                          <span key={index} className="px-2 py-0.5 bg-rose-100 text-indigo-600 rounded text-xs">
                             {style}
                           </span>
                         ))}
