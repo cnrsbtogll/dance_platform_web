@@ -427,45 +427,80 @@ function InstructorPanel({ user }: InstructorPanelProps) {
     try { await logout(); navigate('/login'); } catch (e) { console.error(e); }
   };
 
-  // Fetch courses + stats
+  // Fetch courses + stats (Realtime)
   useEffect(() => {
     if (!user?.id) return;
+    setLoadingStats(true);
 
-    const fetchData = async () => {
-      setLoadingStats(true);
-      try {
-        const ref = collection(db, 'courses');
-        const q = query(ref, where('instructorId', '==', user.id));
-        const snap = await getDocs(q);
+    const ref = collection(db, 'courses');
+    const q = query(ref, where('instructorId', '==', user.id));
 
-        const coursesData: Course[] = snap.docs.map(d => ({
-          id: d.id,
-          name: d.data().name,
-          schedule: d.data().schedule || [],
-          studentCount: d.data().studentIds?.length ?? 0,
-          status: d.data().status ?? 'active',
-        }));
+    import('firebase/firestore').then(({ onSnapshot }) => {
+      const unsubscribe = onSnapshot(q, (snap) => {
+        try {
+          const coursesData: Course[] = snap.docs.map(d => ({
+            id: d.id,
+            name: d.data().name,
+            schedule: d.data().schedule || [],
+            studentCount: d.data().instructorIds
+              ? (d.data().studentIds?.length || 0)
+              : 0, // Fallback if missing
+            status: d.data().status ?? 'active',
+            ...d.data(), // get additional student count dynamically
+          }));
 
-        setCourses(coursesData);
+          // Firestore'dan donen datada "currentParticipants" alanı da olabilir, bunu kontrol edelim
+          const processedCoursesData = snap.docs.map(d => {
+            const data = d.data();
+            return {
+              id: d.id,
+              name: data.name,
+              schedule: data.schedule || [],
+              studentCount: data.currentParticipants || data.participantStats?.total || data.studentIds?.length || 0,
+              status: data.status ?? 'active',
+            };
+          });
 
-        const activeCourses = coursesData.filter(c => c.status !== 'inactive');
-        const totalStudents = coursesData.reduce((acc, c) => acc + (c.studentCount ?? 0), 0);
-        const upcomingLessons = coursesData.reduce((acc, c) => acc + (c.schedule?.length ?? 0), 0);
+          setCourses(processedCoursesData);
 
-        setStats({
-          courses: activeCourses.length,
-          students: totalStudents,
-          upcomingLessons,
-          earnings: 0, // EarningsManagement handles this separately
-        });
-      } catch (err) {
-        console.error('Stats fetch error:', err);
-      } finally {
+          const activeCourses = processedCoursesData.filter(c => c.status !== 'inactive');
+          const upcomingLessons = processedCoursesData.reduce((acc, c) => acc + (c.schedule?.length ?? 0), 0);
+
+          setStats(prev => ({
+            ...prev,
+            courses: activeCourses.length,
+            upcomingLessons,
+          }));
+        } catch (err) {
+          console.error('Stats update error:', err);
+        } finally {
+          setLoadingStats(false);
+        }
+      }, (error) => {
+        console.error('Realtime listener failed:', error);
         setLoadingStats(false);
-      }
-    };
+      });
 
-    fetchData();
+      // Öğrenciler için ikinci bir snapshot
+      const studentsRef = collection(db, 'users');
+      const studentsQ = query(studentsRef, where('instructorIds', 'array-contains', user.id));
+      const unsubStudents = onSnapshot(studentsQ, (snap) => {
+        const validStudentsCount = snap.docs.filter(doc => {
+          const role = doc.data().role;
+          return role === 'student' || (Array.isArray(role) && role.includes('student'));
+        }).length;
+
+        setStats(prev => ({
+          ...prev,
+          students: validStudentsCount,
+        }));
+      });
+
+      return () => {
+        unsubscribe();
+        unsubStudents();
+      };
+    });
   }, [user?.id]);
 
   if (!user) {
@@ -634,8 +669,8 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                         key={item.id}
                         onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left cursor-pointer ${isActive
-                            ? 'bg-teal-50 text-instructor dark:bg-teal-900/30 dark:text-teal-400 font-medium'
-                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-instructor dark:hover:text-teal-400'
+                          ? 'bg-teal-50 text-instructor dark:bg-teal-900/30 dark:text-teal-400 font-medium'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-instructor dark:hover:text-teal-400'
                           }`}
                       >
                         {item.icon}

@@ -325,11 +325,11 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const [studentSearchInModal, setStudentSearchInModal] = useState<string>('');
   const [instructorSearchInModal, setInstructorSearchInModal] = useState<string>('');
   const [showQuickAddStudent, setShowQuickAddStudent] = useState<boolean>(false);
-  const [quickAddStudentData, setQuickAddStudentData] = useState({ displayName: '', email: '', password: '', phoneNumber: '' });
+  const [quickAddStudentData, setQuickAddStudentData] = useState({ displayName: '', email: '', password: 'feriha123', phoneNumber: '' });
   const [isQuickAdding, setIsQuickAdding] = useState(false);
 
   const [showQuickAddInstructor, setShowQuickAddInstructor] = useState<boolean>(false);
-  const [quickAddInstructorData, setQuickAddInstructorData] = useState({ displayName: '', email: '', password: '', phoneNumber: '' });
+  const [quickAddInstructorData, setQuickAddInstructorData] = useState({ displayName: '', email: '', password: 'feriha123', phoneNumber: '' });
   const [isQuickAddingInstructor, setIsQuickAddingInstructor] = useState(false);
   const [instructorToRemove, setInstructorToRemove] = useState<{ id: string, name: string, courseId: string } | null>(null);
 
@@ -759,21 +759,35 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as string[]).includes('school') : false;
       const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
 
-      await updateDoc(doc(db, 'users', studentId), {
+      const courseRef = doc(db, 'courses', courseId);
+      const courseSnap = await getDoc(courseRef);
+      const courseData = courseSnap.exists() ? courseSnap.data() : null;
+      const courseInstructorIds = courseData?.instructorIds || (courseData?.instructorId ? [courseData.instructorId] : []);
+
+      const updatePayload: any = {
         courseIds: arrayUnion(courseId),
-        // Eğer bir okul bağlamındaysak, öğrenciyi o okulun listesine de ekleyelim
         ...(effectiveSchoolId ? { schoolIds: arrayUnion(effectiveSchoolId) } : {}),
         updatedAt: serverTimestamp()
-      });
+      };
+
+      if (courseInstructorIds.length > 0) {
+        updatePayload.instructorIds = arrayUnion(...courseInstructorIds);
+      }
+
+      await updateDoc(doc(db, 'users', studentId), updatePayload);
+
       // State'i güncelle
       setStudents(prev => prev.map(s => {
         if (s.id === studentId) {
           const currentCourseIds = s.courseIds || [];
           const currentSchoolIds = s.schoolIds || [];
+          const currentInstructorIds = s.instructorIds || [];
+
           return {
             ...s,
             courseIds: currentCourseIds.includes(courseId) ? currentCourseIds : [...currentCourseIds, courseId],
-            schoolIds: effectiveSchoolId && !currentSchoolIds.includes(effectiveSchoolId) ? [...currentSchoolIds, effectiveSchoolId] : currentSchoolIds
+            schoolIds: effectiveSchoolId && !currentSchoolIds.includes(effectiveSchoolId) ? [...currentSchoolIds, effectiveSchoolId] : currentSchoolIds,
+            instructorIds: [...new Set([...currentInstructorIds, ...courseInstructorIds])]
           };
         }
         return s;
@@ -799,9 +813,21 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       setError(null);
 
       const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as any as string[]).includes('school') : false;
-      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+      const isInstructorUser = typeof userRole === 'string' ? userRole === 'instructor' : Array.isArray(userRole) ? (userRole as any as string[]).includes('instructor') : false;
 
-      if (!effectiveSchoolId && !isAdmin) {
+      // Önce prop'tan al, yoksa Firestore'dan çek
+      let effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
+      if (!effectiveSchoolId && auth.currentUser?.uid) {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          effectiveSchoolId = userDoc.data().schoolId || userDoc.data().schoolIds?.[0] || null;
+        }
+      }
+
+      // Eğitmen okuldan bağımsız öğrenci ekleyebilir — okul zorunlu değil
+      if (!effectiveSchoolId && !isAdmin && !isInstructorUser) {
         throw new Error("Okul bilgisi bulunamadı");
       }
 
@@ -813,9 +839,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         return;
       }
 
-      // We need to use dynamic import for firebase auth methods to avoid top level issues or use existing imports
-      // Firebase auth module is imported at top
-      const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+      const { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } = await import('firebase/auth');
       const { secondaryAuth } = await import('../../../../api/firebase/firebase');
 
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, quickAddStudentData.email, quickAddStudentData.password);
@@ -825,9 +849,17 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         displayName: quickAddStudentData.displayName
       });
 
-      const schoolRef = doc(db, 'users', effectiveSchoolId);
-      const schoolDoc = await getDoc(schoolRef);
-      const schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : 'Bilinmeyen Okul';
+      // E-posta doğrulama maili gönder
+      await sendEmailVerification(newUser);
+
+      let schoolNameData = '';
+      if (effectiveSchoolId) {
+        const schoolRef = doc(db, 'users', effectiveSchoolId);
+        const schoolDoc = await getDoc(schoolRef);
+        schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : '';
+      }
+
+      const courseInstructorIds = selectedCourseForStudents?.instructorIds || (auth.currentUser?.uid ? [auth.currentUser.uid] : []);
 
       // Assign to user collection
       const newStudentData = {
@@ -837,9 +869,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         phoneNumber: quickAddStudentData.phoneNumber || '',
         role: ['student'],
         level: 'beginner',
-        schoolId: effectiveSchoolId,
-        schoolIds: [effectiveSchoolId],
-        schoolName: schoolNameData,
+        schoolId: effectiveSchoolId || null,
+        schoolIds: effectiveSchoolId ? [effectiveSchoolId] : [],
+        instructorIds: courseInstructorIds,
+        schoolName: schoolNameData || null,
+        emailVerified: false,
+        password: quickAddStudentData.password,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         photoURL: '',
@@ -848,12 +883,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
       await setDoc(doc(db, 'users', newUser.uid), newStudentData);
 
+      // secondary auth session kapat
+      await secondaryAuth.signOut();
+
       // Update local state
       setStudents(prev => [{ ...newStudentData } as any, ...prev]);
 
       setSuccess('Yeni öğrenci oluşturuldu ve kursa eklendi.');
       setShowQuickAddStudent(false);
-      setQuickAddStudentData({ displayName: '', email: '', password: '', phoneNumber: '' });
+      setQuickAddStudentData({ displayName: '', email: '', password: 'feriha123', phoneNumber: '' });
 
       // Sign out from the secondary auth so it doesn't affect main session
       await secondaryAuth.signOut();
@@ -878,9 +916,21 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       setError(null);
 
       const isSchoolUser = typeof userRole === 'string' ? userRole === 'school' : Array.isArray(userRole) ? (userRole as any as string[]).includes('school') : false;
-      const effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+      const isInstructorUser = typeof userRole === 'string' ? userRole === 'instructor' : Array.isArray(userRole) ? (userRole as any as string[]).includes('instructor') : false;
 
-      if (!effectiveSchoolId && !isAdmin) {
+      // Önce prop'tan al, yoksa Firestore'dan çek
+      let effectiveSchoolId = schoolId || (auth.currentUser as any)?.schoolId || (isSchoolUser ? auth.currentUser?.uid : null);
+
+      if (!effectiveSchoolId && auth.currentUser?.uid) {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          effectiveSchoolId = userDoc.data().schoolId || userDoc.data().schoolIds?.[0] || null;
+        }
+      }
+
+      // Eğitmen okuldan bağımsız ekleyebilir
+      if (!effectiveSchoolId && !isAdmin && !isInstructorUser) {
         throw new Error("Okul bilgisi bulunamadı");
       }
 
@@ -891,7 +941,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         return;
       }
 
-      const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+      const { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } = await import('firebase/auth');
       const { secondaryAuth } = await import('../../../../api/firebase/firebase');
 
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, quickAddInstructorData.email, quickAddInstructorData.password);
@@ -901,9 +951,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         displayName: quickAddInstructorData.displayName
       });
 
-      const schoolRef = doc(db, 'users', effectiveSchoolId);
-      const schoolDoc = await getDoc(schoolRef);
-      const schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : 'Bilinmeyen Okul';
+      // E-posta doğrulama maili gönder
+      await sendEmailVerification(newUser);
+
+      let schoolNameData = '';
+      if (effectiveSchoolId) {
+        const schoolRef = doc(db, 'users', effectiveSchoolId);
+        const schoolDoc = await getDoc(schoolRef);
+        schoolNameData = schoolDoc.exists() ? schoolDoc.data().displayName : '';
+      }
 
       const newInstructorData = {
         id: newUser.uid,
@@ -913,15 +969,16 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         role: isSchoolUser ? ['instructor'] : ['draft-instructor'],
         isInstructor: true,
         status: 'active',
-        schoolId: effectiveSchoolId,
-        schoolIds: [effectiveSchoolId], // Liste olarak da ekleyelim
-        schoolName: schoolNameData,
+        schoolId: effectiveSchoolId || null,
+        schoolIds: effectiveSchoolId ? [effectiveSchoolId] : [],
+        schoolName: schoolNameData || null,
+        emailVerified: false,
+        password: quickAddInstructorData.password,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         photoURL: '',
         danceStyles: [],
         experience: 0,
-        // Eğer course içindeysek ve modal ile ekliyorsak o kursa ata
         courseIds: selectedCourseForInstructors?.id ? [selectedCourseForInstructors.id] : []
       };
 
@@ -936,10 +993,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         displayName: quickAddInstructorData.displayName,
         email: quickAddInstructorData.email,
         phoneNumber: quickAddInstructorData.phoneNumber || '',
-        okul_id: effectiveSchoolId,
-        schoolId: effectiveSchoolId,
-        schoolName: schoolNameData,
-        status: isSchoolUser ? 'active' : 'pending', // Okul eklerse aktif, admin eklerse onay bekliyor
+        okul_id: effectiveSchoolId || null,
+        schoolId: effectiveSchoolId || null,
+        schoolName: schoolNameData || null,
+        status: isSchoolUser ? 'active' : 'pending',
         role: ['instructor'],
         uzmanlık: [],
         tecrube: 0,
@@ -997,7 +1054,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
       setSuccess('Yeni eğitmen oluşturuldu ve kursa eklendi.');
       setShowQuickAddInstructor(false);
-      setQuickAddInstructorData({ displayName: '', email: '', password: '', phoneNumber: '' });
+      setQuickAddInstructorData({ displayName: '', email: '', password: 'feriha123', phoneNumber: '' });
 
       await secondaryAuth.signOut();
     } catch (err: any) {
@@ -1533,16 +1590,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                         onFocus={(e) => e.target.removeAttribute('readonly')}
                         className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                       />
-                      <input
-                        type="password"
-                        placeholder="Giriş Şifresi Belirle"
-                        value={quickAddInstructorData.password}
-                        onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, password: e.target.value }))}
-                        autoComplete="new-password-no-fill"
-                        readOnly
-                        onFocus={(e) => e.target.removeAttribute('readonly')}
-                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
-                      />
+                      <div className="w-full px-3 py-2 text-xs rounded-lg border bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400">
+                        Eğitmen şifresi varsayılan olarak <span className="font-bold text-gray-900 dark:text-white">feriha123</span> yapılacaktır.
+                      </div>
                       <div className="flex justify-end gap-2 pt-2">
                         <button
                           type="button"
@@ -2524,16 +2574,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                     onFocus={(e) => e.target.removeAttribute('readonly')}
                     className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                   />
-                  <input
-                    type="password"
-                    placeholder="Giriş Şifresi Belirle"
-                    value={quickAddStudentData.password}
-                    onChange={(e) => setQuickAddStudentData(prev => ({ ...prev, password: e.target.value }))}
-                    autoComplete="new-password-no-fill"
-                    readOnly
-                    onFocus={(e) => e.target.removeAttribute('readonly')}
-                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
-                  />
+                  <div className="w-full px-3 py-2 text-xs rounded-lg border bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400">
+                    Öğrenci şifresi varsayılan olarak <span className="font-bold text-gray-900 dark:text-white">feriha123</span> yapılacaktır.
+                  </div>
                   <div className="flex justify-end gap-2 pt-2">
                     <button
                       type="button"
@@ -2775,16 +2818,9 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                     onFocus={(e) => e.target.removeAttribute('readonly')}
                     className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
                   />
-                  <input
-                    type="password"
-                    placeholder="Giriş Şifresi Belirle"
-                    value={quickAddInstructorData.password}
-                    onChange={(e) => setQuickAddInstructorData(prev => ({ ...prev, password: e.target.value }))}
-                    autoComplete="new-password-no-fill"
-                    readOnly
-                    onFocus={(e) => e.target.removeAttribute('readonly')}
-                    className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-[#231810] border-gray-200 dark:border-school/20 focus:ring-1 focus:ring-school outline-none dark:text-white transition-all"
-                  />
+                  <div className="w-full px-3 py-2 text-xs rounded-lg border bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400">
+                    Eğitmen şifresi varsayılan olarak <span className="font-bold text-gray-900 dark:text-white">feriha123</span> yapılacaktır.
+                  </div>
                   <div className="flex justify-end gap-2 pt-2">
                     <button
                       type="button"

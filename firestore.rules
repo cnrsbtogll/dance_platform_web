@@ -144,7 +144,14 @@ service cloud.firestore {
       allow read: if true;
       
       // Kendi profili, okul veya admin tarafından yönetilebilir
-      allow create, update: if isAuthenticated() && (userId == request.auth.uid || isSchool() || isAdmin());
+      // Eğitmenler hızlı öğrenci ekleyebilmeli ve mevcut bir öğrencinin kurslarını listeleyebilmeli/güncelleyebilmeli
+      allow create: if isAuthenticated() && (userId == request.auth.uid || isSchool() || isAdmin() || isInstructor());
+      allow update: if isAuthenticated() && (
+        userId == request.auth.uid || 
+        isSchool() || 
+        isAdmin() || 
+        (isInstructor() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['courseIds', 'schoolIds', 'instructorIds', 'updatedAt', 'password', 'displayName', 'phone', 'level', 'instructorId', 'instructorName', 'schoolId', 'schoolName', 'photoURL']))
+      );
       
       // Sadece admin silebilir
       allow delete: if isAdmin();

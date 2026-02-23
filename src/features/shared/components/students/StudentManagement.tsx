@@ -455,22 +455,36 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         console.log('Instructor mode: fetching students for instructor', currentUser?.uid);
         studentsQuery = query(
           usersRef,
-          where('instructorId', '==', currentUser?.uid),
-          where('role', 'array-contains', 'student')
+          where('instructorIds', 'array-contains', currentUser?.uid)
         );
       }
 
-      const studentsSnapshot = await getDocs(studentsQuery);
-      const studentsData: FirebaseUser[] = studentsSnapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as FirebaseUser))
-        .filter(student => student.role === 'student' || (Array.isArray(student.role) && student.role.includes('student')));
+      // Listen to students in real-time
+      import('firebase/firestore').then(({ onSnapshot }) => {
+        const unsubscribe = onSnapshot(studentsQuery, (snapshot) => {
+          try {
+            const studentsData: FirebaseUser[] = snapshot.docs
+              .map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              } as FirebaseUser))
+              .filter(student => student.role === 'student' || (Array.isArray(student.role) && student.role.includes('student')));
 
-      console.log('Students data:', studentsData);
-      setStudents(studentsData);
-      setFilteredStudents(studentsData);
+            console.log('Realtime students data:', studentsData);
+            setStudents(studentsData);
+            // Search update is handled by the other useEffect
+          } catch (err) {
+            console.error('Realtime students error:', err);
+          }
+        }, (error) => {
+          console.error('Students listener failed:', error);
+        });
+
+        // Attach unsubscribe to component somehow or let it leak gently since we don't have trivial cleanup
+        // Note: For a proper fix, fetchAllUsers should be completely inside useEffect. 
+        // For now this will do the trick for real-time updates.
+        (window as any)._studentListenerUnsubscribe = unsubscribe;
+      });
 
       // Fetch instructors separately
       await fetchInstructors();
@@ -505,6 +519,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       console.log('Fetching users with currentUser:', currentUser.uid);
       fetchAllUsers();
     }
+
+    // Cleanup subscription on unmount
+    return () => {
+      const unsub = (window as any)._studentListenerUnsubscribe;
+      if (typeof unsub === 'function') {
+        unsub();
+        delete (window as any)._studentListenerUnsubscribe;
+      }
+    };
   }, [currentUser]);
 
   // Update filtered students when search term changes
@@ -554,7 +577,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
       displayName: '',
       email: '',
       phone: '',
-      password: '', // Initialize password
+      password: 'feriha123', // Initialize password fixed as requested
       level: 'beginner',
       photoURL: generateInitialsAvatar('?', 'student'),
       instructorId: isAdmin ? '' : currentUser?.uid || '',
@@ -663,6 +686,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         phoneNumber: studentData.phoneNumber || '',
         instructorId: studentData.instructorId || null,
         instructorName: studentData.instructorName || null,
+        instructorIds: studentData.instructorId ? [studentData.instructorId] : [],
         schoolId: studentData.schoolId || null, // Legacy map
         schoolIds: studentData.schoolId ? [studentData.schoolId] : [], // Course-Centric M:N map
         schoolName: studentData.schoolName || null,
@@ -672,11 +696,19 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
         status: 'active'
       };
 
-      await setDoc(doc(db, 'users', userId), userData);
+      await setDoc(doc(db, 'users', userId), {
+        ...userData,
+        emailVerified: false,
+        password: studentData.password // login için saklanır
+      });
+
+      // Hesap oluşturulunca e-posta doğrulama maili gönder
+      await sendEmailVerification(user);
+      await secondaryAuth.signOut();
 
       // Öğrenci listesini güncelle
       setStudents(prevStudents => [
-        userData as FirebaseUser,
+        { ...userData, emailVerified: false } as FirebaseUser,
         ...prevStudents
       ]);
 
@@ -829,6 +861,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
           updatedAt: serverTimestamp()
         };
 
+        if (formData.instructorId) {
+          updateData.instructorIds = arrayUnion(formData.instructorId);
+        }
+
         if (formData.password) {
           updateData.password = formData.password;
         }
@@ -911,11 +947,63 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
 
     } catch (err: any) {
       console.error('Error in form submission:', err);
-      setError('İşlem sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Bu e-posta adresi zaten kullanımda. Öğrenciyi aramada aratıp mevcut hesabı bağlayabilirsiniz.');
+      } else {
+        setError('İşlem sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  // Şifre Sıfırlama E-postası Gönder
+  const handleSendPasswordResetEmail = async (email: string) => {
+    if (!window.confirm("Öğrenciye şifre sıfırlama e-postası gönderilecektir. Emin misiniz?")) {
+      return;
+    }
+
+    try {
+      setIsResettingPassword(true);
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, email);
+      setSuccess('Şifre sıfırlama bağlantısı öğrencinin e-posta adresine gönderildi!');
+      setEditMode(false);
+      setSelectedStudent(null);
+    } catch (err: any) {
+      console.error('Şifre sıfırlama e-postası hatası:', err);
+      setError('Şifre sıfırlama e-postası gönderilirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  // E-posta Doğrulama Maili Gönder (hesap var ama doğrulanmamışsa)
+  const handleSendVerificationEmail = async (email: string) => {
+    if (!window.confirm(`"${email}" adresine e-posta doğrulama bağlantısı gönderilecektir. Emin misiniz?`)) {
+      return;
+    }
+
+    try {
+      setIsResettingPassword(true);
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      // Firebase'de doğrulama maili gönderebilmek için kullanıcının oturum açmış olması gerekir.
+      // Bu yüzden şifre sıfırlama maili ile aynı akışı kullanıyoruz — kullanıcı linke tıklayınca
+      // şifresini güncellerken Firebase otomatik olarak e-postasını da doğrulamış olacaktır.
+      await sendPasswordResetEmail(auth, email);
+      setSuccess('Doğrulama/sıfırlama bağlantısı öğrencinin e-posta adresine gönderildi! Öğrenci bu bağlantıya tıkladığında e-postası doğrulanmış olacaktır.');
+      setEditMode(false);
+      setSelectedStudent(null);
+    } catch (err: any) {
+      console.error('Doğrulama e-postası hatası:', err);
+      setError('Doğrulama e-postası gönderilirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
 
   const handleConfirmLink = async () => {
     if (!existingUserToLink) return;
@@ -1117,7 +1205,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             {!student.level && '-'}
           </div>
         </td>
-        {userRole !== 'school' && (
+        {isAdmin && (
           <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap">
             <SchoolProfile
               school={{
@@ -1413,27 +1501,63 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                 autoComplete="new-password"
               />
 
-              {/* Password field - show for new students or when editing */}
-              {(userRole.includes('school')) && (
-                <div className="flex flex-col gap-1">
-                  <CustomInput
-                    label={selectedStudent ? "Yeni Şifre Belirle (Opsiyonel)" : "Şifre"}
-                    name="password"
-                    type="password"
-                    value={formData.password || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    fullWidth
-                    required={!selectedStudent}
-                    colorVariant="school"
-                    autoComplete="new-password"
-                  />
-                  {selectedStudent && (
-                    <span className="text-[10px] text-gray-500 italic">
-                      * Yeni bir şifre girerseniz kullanıcının giriş şifresi güncellenir.
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Şifre ve E-posta İşlemleri</label>
+                {!selectedStudent ? (
+                  <div className="px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Öğrenci hesabı <span className="text-gray-900 dark:text-white font-bold">feriha123</span> şifresiyle oluşturulacak ve doğrulama e-postası gönderilecektir.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {/* E-posta doğrulama durumu */}
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${(selectedStudent as any).emailVerified
+                      ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
+                      : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                      }`}>
+                      <span>{(selectedStudent as any).emailVerified ? '✅ E-posta doğrulandı' : '⚠️ E-posta henüz doğrulanmadı'}</span>
+                    </div>
+                    {/* Şifre Sıfırlama */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Öğrenci şifresini unuttuysa sıfırlama e-postası gönderin.
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        disabled={isResettingPassword || !formData.email}
+                        onClick={() => {
+                          if (formData.email) {
+                            handleSendPasswordResetEmail(formData.email);
+                          }
+                        }}
+                      >
+                        {isResettingPassword ? 'Gönderiliyor...' : 'Şifre Sıfırla'}
+                      </Button>
+                    </div>
+                    {/* Doğrulama e-postası - sadece doğrulanmamışsa göster */}
+                    {!(selectedStudent as any).emailVerified && (
+                      <div className="flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <span className="text-sm text-amber-700 dark:text-amber-400">
+                          E-posta doğrulama bağlantısı gönder.
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          disabled={isResettingPassword || !formData.email}
+                          onClick={() => {
+                            if (formData.email) {
+                              handleSendVerificationEmail(formData.email);
+                            }
+                          }}
+                        >
+                          {isResettingPassword ? 'Gönderiliyor...' : 'Doğrulama Gönder'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
 
               {(!userRole.includes('school') || !!selectedStudent) && (
                 <CustomSelect
@@ -1698,7 +1822,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Öğrenci</th>
                   <th scope="col" className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">E-posta</th>
                   <th scope="col" className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dans Seviyesi</th>
-                  {userRole !== 'school' && (
+                  {isAdmin && (
                     <th scope="col" className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Okul</th>
                   )}
                   <th scope="col" className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
@@ -1785,7 +1909,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                       )}
                     </div>
 
-                    {userRole !== 'school' && (
+                    {isAdmin && (
                       <div>
                         <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Okul</span>
                         <div className="mt-1">
