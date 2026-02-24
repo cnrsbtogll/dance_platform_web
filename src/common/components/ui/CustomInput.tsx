@@ -1,5 +1,6 @@
-import { ChangeEvent } from 'react';
-import { TextField } from '@mui/material';
+import { useState, ChangeEvent } from 'react';
+import { TextField, InputAdornment, IconButton } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useTheme } from '../../../contexts/ThemeContext';
 
@@ -43,6 +44,12 @@ export const CustomInput: React.FC<CustomInputProps> = ({
   autoComplete,
 }) => {
   const { isDark } = useTheme();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleClickShowPassword = () => setShowPassword((show) => !show);
+  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  };
 
   const isSchool = colorVariant === 'school';
   const isInstructor = colorVariant === 'instructor';
@@ -62,7 +69,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
       label={label}
       value={value}
       onChange={onChange}
-      type={type}
+      type={type === 'password' ? (showPassword ? 'text' : 'password') : type}
       error={error}
       helperText={helperText}
       fullWidth={fullWidth}
@@ -162,6 +169,20 @@ export const CustomInput: React.FC<CustomInputProps> = ({
           <div className="flex items-center pl-3 pr-1 text-gray-400">
             {startIcon}
           </div>
+        ) : null,
+        endAdornment: type === 'password' ? (
+          <InputAdornment position="end" sx={{ pr: 1 }}>
+            <IconButton
+              aria-label="şifre görünürlüğünü değiştir"
+              onClick={handleClickShowPassword}
+              onMouseDown={handleMouseDownPassword}
+              edge="end"
+              size="small"
+              sx={{ color: labelColor }}
+            >
+              {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+            </IconButton>
+          </InputAdornment>
         ) : null,
       }}
     />

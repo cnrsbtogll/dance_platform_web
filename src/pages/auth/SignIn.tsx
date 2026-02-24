@@ -5,6 +5,7 @@ import Button from '../../common/components/ui/Button';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../../api/firebase/firebase';
 import { AuthError, UserCredential } from 'firebase/auth';
+import PasswordInput from '../../common/components/ui/PasswordInput';
 
 interface LocationState {
   from?: string;
@@ -176,12 +177,10 @@ const SignIn = () => {
                 Şifremi unuttum?
               </button>
             </div>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink"
               required
             />
           </div>
