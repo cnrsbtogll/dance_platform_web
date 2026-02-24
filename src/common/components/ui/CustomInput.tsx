@@ -59,7 +59,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
   const labelColor = isDark ? (isSchool ? '#cba990' : '#94a3b8') : '#6B7280';
   const borderColor = isDark ? (isSchool ? '#493322' : '#475569') : '#E5E7EB';
   const borderHover = isDark ? (isSchool ? '#cba990' : '#64748b') : '#9CA3AF';
-  const borderFocus = isSchool ? '#b45309' : isInstructor ? (isDark ? '#a78bfa' : '#7c3aed') : isStudent ? '#9f1239' : (isDark ? '#a78bfa' : '#7c3aed');
+  const borderFocus = isSchool ? '#b45309' : isInstructor ? '#005f73' : isStudent ? '#9f1239' : (isDark ? '#94a3b8' : '#111827');
   const disabledBg = isDark ? (isSchool ? '#1a120b' : '#0f172a') : '#f9fafb';
   const disabledText = isDark ? (isSchool ? '#8e715b' : '#64748b') : '#9CA3AF';
 

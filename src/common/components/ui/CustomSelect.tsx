@@ -49,10 +49,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   const labelColor = isDark ? (isSchool ? '#cba990' : '#94a3b8') : '#6B7280';
   const borderColor = isDark ? (isSchool ? '#493322' : '#475569') : '#E5E7EB';
   const borderHover = isDark ? (isSchool ? '#cba990' : '#64748b') : '#9CA3AF';
-  const borderFocus = isSchool ? '#b45309' : isInstructor ? (isDark ? '#a78bfa' : '#7c3aed') : isStudent ? '#9f1239' : (isDark ? '#a78bfa' : '#7c3aed');
+  const borderFocus = isSchool ? '#b45309' : isInstructor ? '#005f73' : isStudent ? '#9f1239' : (isDark ? '#94a3b8' : '#111827');
   const placeholderColor = isDark ? (isSchool ? '#8e715b' : '#64748b') : '#9CA3AF';
-  const selectedBg = isDark ? (isSchool ? '#493322' : '#334155') : (isStudent ? '#fff1f2' : '#f5f3ff');
-  const selectedHoverBg = isDark ? (isSchool ? '#493322' : '#475569') : (isStudent ? '#ffe4e6' : '#ede9fe');
+  const selectedBg = isDark ? (isSchool ? '#493322' : '#334155') : (isStudent ? '#fff1f2' : '#f3f4f6');
+  const selectedHoverBg = isDark ? (isSchool ? '#493322' : '#475569') : (isStudent ? '#ffe4e6' : '#e5e7eb');
 
   const handleChange = (event: any) => {
     const selectedValue = event.target.value;

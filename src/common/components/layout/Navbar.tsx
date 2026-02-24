@@ -333,7 +333,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
   return (
     <>
-      <nav className={`shadow-md fixed w-full z-50 backdrop-blur-sm transition-colors duration-300 ${hasSchoolRole && !hasInstructorRole ? 'bg-white/90 dark:bg-[#231810]/90' : 'bg-white/90 dark:bg-gray-900/90'} ${hasInstructorRole ? 'border-b-2 border-instructor' : hasSchoolRole ? 'border-b-2 border-school' : 'border-b border-gray-200 dark:border-gray-700'}`}>
+      <nav className={`shadow-md fixed w-full z-50 backdrop-blur-sm transition-colors duration-300 bg-white/90 dark:bg-gray-900/90 ${hasInstructorRole ? 'border-b-2 border-instructor' : hasSchoolRole ? 'border-b-2 border-school' : 'border-b border-gray-200 dark:border-gray-700'}`}>
         {/* Instructor mode banner */}
         {hasInstructorRole && (
           <div className="bg-gradient-to-r from-instructor-dark via-instructor to-instructor-light px-4 py-0.5 flex items-center justify-center gap-2">
