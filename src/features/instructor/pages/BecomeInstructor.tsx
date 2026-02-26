@@ -20,6 +20,7 @@ import CustomInput from '../../../common/components/ui/CustomInput';
 import CustomPhoneInput from '../../../common/components/ui/CustomPhoneInput';
 import Button from '../../../common/components/ui/Button';
 import ImageUploader from '../../../common/components/ui/ImageUploader';
+import DocumentUploader, { DocumentFile } from '../../../common/components/ui/DocumentUploader';
 import { motion } from 'framer-motion';
 
 // Dans stilleri interface
@@ -39,6 +40,8 @@ interface FormData {
   bio: string;
   photoURL?: string | null;
   password?: string;
+  idDocument?: DocumentFile | null;
+  certificate?: DocumentFile | null;
 }
 
 const initialFormData: FormData = {
@@ -50,7 +53,9 @@ const initialFormData: FormData = {
   experience: '',
   bio: '',
   photoURL: null,
-  password: ''
+  password: '',
+  idDocument: null,
+  certificate: null
 };
 
 function BecomeInstructor() {
@@ -67,6 +72,8 @@ function BecomeInstructor() {
   const [isLoading, setIsLoading] = useState(true);
   const [danceStyles, setDanceStyles] = useState<DanceStyle[]>([]);
   const [loadingStyles, setLoadingStyles] = useState(true);
+  const [idDocument, setIdDocument] = useState<DocumentFile | null>(null);
+  const [certificate, setCertificate] = useState<DocumentFile | null>(null);
 
   // Fetch dance styles from Firestore
   useEffect(() => {
@@ -270,6 +277,10 @@ function BecomeInstructor() {
       }
     }
 
+    if (!idDocument) {
+      errors.idDocument = 'Kimlik belgesi zorunludur';
+    }
+
     console.log('✅ Form validasyonu tamamlandı. Hatalar:', errors);
 
     if (Object.keys(errors).length > 0) {
@@ -340,7 +351,20 @@ function BecomeInstructor() {
         userEmail: userEmail,
         photoURL: formData.photoURL,
         status: 'pending',
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        // Belgeler
+        idDocument: idDocument ? {
+          name: idDocument.name,
+          type: idDocument.type,
+          base64: idDocument.base64,
+          sizeKB: idDocument.sizeKB
+        } : null,
+        certificate: certificate ? {
+          name: certificate.name,
+          type: certificate.type,
+          base64: certificate.base64,
+          sizeKB: certificate.sizeKB
+        } : null
       };
       console.log('📝 Gönderilecek veri:', instructorRequestData);
 
@@ -350,6 +374,8 @@ function BecomeInstructor() {
       setSuccess(true);
       setFormData(initialFormData);
       setSelectedDanceStyles([]);
+      setIdDocument(null);
+      setCertificate(null);
 
     } catch (err) {
       console.error('❌ Başvuru gönderilirken hata oluştu:', err);
@@ -581,6 +607,66 @@ function BecomeInstructor() {
                 displayName={`${formData.firstName} ${formData.lastName}`}
                 userType="instructor"
               />
+            </div>
+
+            {/* ──────────── Belge Yükleme Bölümü ──────────── */}
+            <div className="md:col-span-2">
+              <div className="mt-2 mb-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-px flex-1 bg-gray-200 dark:bg-slate-600" />
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-instructor/10 border border-instructor/20">
+                    <svg className="w-4 h-4 text-instructor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span className="text-xs font-semibold text-instructor">Kimlik &amp; Sertifika</span>
+                  </div>
+                  <div className="h-px flex-1 bg-gray-200 dark:bg-slate-600" />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-5 text-center">
+                  Başvurunuzun değerlendirilebilmesi için kimlik belgesi ve eğitmenlik sertifikanızı yüklemeniz gerekmektedir.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Kimlik belgesi */}
+                  <DocumentUploader
+                    label="Kimlik Belgesi"
+                    description="TC Kimlik Kartı veya Pasaport (ön yüz)"
+                    required
+                    value={idDocument}
+                    onChange={setIdDocument}
+                    error={formErrors.idDocument}
+                    icon={
+                      <svg className="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                      </svg>
+                    }
+                  />
+
+                  {/* Eğitmenlik sertifikası */}
+                  <DocumentUploader
+                    label="Eğitmenlik Sertifikası"
+                    description="Dans eğitmenliği veya ilgili sertifikanız"
+                    value={certificate}
+                    onChange={setCertificate}
+                    error={formErrors.certificate}
+                    icon={
+                      <svg className="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                      </svg>
+                    }
+                  />
+                </div>
+
+                {/* Kimlik zorunlu uyarısı */}
+                {!idDocument && (
+                  <p className="mt-3 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Kimlik belgesi zorunludur.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 

@@ -17,6 +17,13 @@ import { db } from '../../../../api/firebase/firebase';
 import { Instructor as InstructorType, UserRole } from '../../../../types';
 import Avatar from '../../../../common/components/ui/Avatar';
 
+interface DocumentFile {
+  name: string;
+  type: string;
+  base64: string;
+  sizeKB: number;
+}
+
 interface InstructorRequest {
   id: string;
   firstName: string;
@@ -30,6 +37,8 @@ interface InstructorRequest {
   photoURL?: string | null;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: Timestamp;
+  idDocument?: DocumentFile | null;
+  certificate?: DocumentFile | null;
 }
 
 function InstructorRequests() {
@@ -37,6 +46,7 @@ function InstructorRequests() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [docPreview, setDocPreview] = useState<{ doc: DocumentFile; title: string } | null>(null);
 
   useEffect(() => {
     fetchRequests();
