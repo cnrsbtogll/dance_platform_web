@@ -344,15 +344,20 @@ service cloud.firestore {
     // PAYMENT STATUSES (ÖDEME DURUMLARI)
     // ==========================================
     match /paymentStatuses/{docId} {
-      // Eğitmen ve okul okuyabilir
+      // Herkes okuyabilir (authenticated)
       allow read: if isAuthenticated();
       
-      // Eğitmen kendi öğrencisinin ödeme durumunu güncelleyebilir
-      // Okul ve admin de güncelleyebilir
-      allow create, update: if isAuthenticated() && (isInstructor() || isSchool() || isAdmin());
+      // Eğitmen, okul, admin veya docId'nin instructorId kısmı mevcut kullanıcıya ait ise yazabilir
+      // docId formatı: {studentId}_{instructorId}
+      allow create, update: if isAuthenticated() && (
+        isInstructor() ||
+        isSchool() ||
+        isAdmin() ||
+        request.resource.data.instructorId == request.auth.uid
+      );
       
-      // Sadece admin silebilir
-      allow delete: if isAdmin();
+      // Admin veya kaydı oluşturan kişi silebilir
+      allow delete: if isAuthenticated() && (isAdmin() || resource.data.instructorId == request.auth.uid);
     }
     
     // ==========================================
