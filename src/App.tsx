@@ -12,6 +12,7 @@ import Navbar from './common/components/layout/Navbar';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
 import ProfilePage from './pages/profile/ProfilePage';
+import CompleteProfile from './pages/auth/CompleteProfile';
 import HomePage from './pages/home/HomePage';
 import CourseSearchPage from './pages/courses/CourseSearchPage';
 import CourseDetailPage from './pages/courses/CourseDetailPage';
@@ -497,6 +498,7 @@ function AppContent(): JSX.Element {
                 } />
                 <Route path="/signin" element={isAuthenticated ? <Navigate to="/" /> : <SignIn />} />
                 <Route path="/signup" element={isAuthenticated ? <Navigate to="/" /> : <SignUp />} />
+                <Route path="/complete-profile" element={isAuthenticated ? <CompleteProfile /> : <Navigate to="/signin" />} />
                 <Route path="/yardim/giris-kayit" element={<AuthGuide />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>

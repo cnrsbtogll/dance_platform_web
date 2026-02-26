@@ -1,5 +1,5 @@
-import { 
-  createUserWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   UserCredential,
@@ -13,18 +13,18 @@ import { User, UserRole } from '../../../types';
 
 // Kullanıcı kaydı işlemini gerçekleştiren fonksiyon
 export const signUp = async (
-  email: string, 
-  password: string, 
+  email: string,
+  password: string,
   displayName: string,
   role: UserRole = 'student'
 ): Promise<User> => {
   try {
     // Firebase Authentication ile kullanıcı oluştur
     const userCredential: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
-    
+
     // Kullanıcı profiline displayName ekle
     await updateProfile(userCredential.user, { displayName });
-    
+
     // User modeli oluştur
     const newUser: User = {
       id: userCredential.user.uid,
@@ -35,13 +35,13 @@ export const signUp = async (
       role: role,
       createdAt: new Date(),
     };
-    
+
     // Firestore'a kullanıcı bilgilerini kaydet
     await setDoc(doc(db, 'users', newUser.id), {
       ...newUser,
-      createdAt: Timestamp.fromDate(newUser.createdAt)
+      createdAt: Timestamp.fromDate(newUser.createdAt ?? new Date())
     });
-    
+
     return newUser;
   } catch (error) {
     throw error;
@@ -87,6 +87,20 @@ export const getAuthErrorMessage = (error: AuthError): string => {
       return 'Hatalı şifre.';
     case 'auth/too-many-requests':
       return 'Çok fazla başarısız giriş denemesi. Lütfen daha sonra tekrar deneyin.';
+    case 'auth/popup-closed-by-user':
+      return 'Google giriş penceresi kapatıldı. Lütfen tekrar deneyin.';
+    case 'auth/popup-blocked':
+      return 'Giriş penceresi tarayıcınız tarafından engellendi. Açılır pencerelere izin verin.';
+    case 'auth/cancelled-popup-request':
+      return 'Giriş isteği iptal edildi. Lütfen tekrar deneyin.';
+    case 'auth/account-exists-with-different-credential':
+      return 'Bu e-posta adresi farklı bir giriş yöntemiyle kayıtlı. Mevcut yönteminizle giriş yapın.';
+    case 'auth/credential-already-in-use':
+      return 'Bu Google hesabı zaten başka bir hesaba bağlı.';
+    case 'auth/network-request-failed':
+      return 'Ağ bağlantısı başarısız. İnternet bağlantınızı kontrol edin.';
+    case 'auth/invalid-credential':
+      return 'Geçersiz kimlik bilgisi. E-posta ve şifrenizi kontrol edin.';
     default:
       return error.message || 'Bir hata oluştu. Lütfen tekrar deneyin.';
   }
