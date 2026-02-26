@@ -212,24 +212,39 @@ function InstructorRequests() {
     }
   };
 
-  const handleRejectRequest = async (requestId: string) => {
+  const handleRejectRequest = async (requestId: string, userId: string) => {
     setProcessingId(requestId);
 
     try {
-      // Update the request status
+      // 1. Update the request status
       const requestDocRef = doc(db, 'instructorRequests', requestId);
       await updateDoc(requestDocRef, {
         status: 'rejected',
         updatedAt: serverTimestamp(),
-        rejectedBy: 'admin' // Ideally, this would be the admin user ID
+        rejectedBy: 'admin'
       });
 
-      // Update the local state
+      // 2. Reset user role back to 'student'
+      if (userId) {
+        const userDocRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          await updateDoc(userDocRef, {
+            role: 'student',
+            isInstructor: false,
+            updatedAt: serverTimestamp()
+          });
+          console.log('✅ Kullanıcı rolü student olarak sıfırlandı:', userId);
+        }
+      }
+
+      // 3. Update the local state
       setRequests(prev =>
         prev.filter(req => req.id !== requestId)
       );
 
-      alert('Eğitmen talebi reddedildi.');
+      alert('Eğitmen talebi reddedildi. Kullanıcı rolü öğrenciye geri döndürüldü.');
 
     } catch (err) {
       console.error('Eğitmen talebi reddedilirken hata oluştu:', err);
@@ -367,7 +382,7 @@ function InstructorRequests() {
                           {processingId === request.id ? 'İşleniyor...' : 'Onayla'}
                         </button>
                         <button
-                          onClick={() => handleRejectRequest(request.id)}
+                          onClick={() => handleRejectRequest(request.id, request.userId)}
                           disabled={processingId === request.id}
                           className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
                         >
