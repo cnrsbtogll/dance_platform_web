@@ -88,6 +88,7 @@ interface FirebaseUser {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   rating?: number;
+  paymentRecords?: Record<string, 'paid' | 'unpaid' | 'pending'>;
 }
 
 // Instructor type
@@ -388,6 +389,81 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
   const [studentToDeleteId, setStudentToDeleteId] = useState<string | null>(null);
   // ------------------------------
 
+  // --- Payment Status State ---
+  const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
+  const [paymentRecordsMap, setPaymentRecordsMap] = useState<Record<string, Record<string, 'paid' | 'unpaid' | 'pending'>>>({});
+
+  // Get current month key (e.g. "2026-02")
+  const getCurrentMonthKey = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  const getMonthLabel = (monthKey: string) => {
+    const [year, month] = monthKey.split('-');
+    const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+    return `${months[parseInt(month) - 1]} ${year}`;
+  };
+
+  // Load payment records for a list of student IDs from paymentStatuses collection
+  const loadPaymentRecords = async (studentIds: string[]) => {
+    if (!studentIds.length || !auth.currentUser) return;
+    try {
+      const instructorId = auth.currentUser.uid;
+      const newMap: Record<string, Record<string, 'paid' | 'unpaid' | 'pending'>> = {};
+      await Promise.all(
+        studentIds.map(async (studentId) => {
+          const docId = `${studentId}_${instructorId}`;
+          const snap = await getDoc(doc(db, 'paymentStatuses', docId));
+          if (snap.exists()) {
+            newMap[studentId] = snap.data().records || {};
+          }
+        })
+      );
+      setPaymentRecordsMap(prev => ({ ...prev, ...newMap }));
+    } catch (err) {
+      console.error('Odeme kayitlari yuklenirken hata:', err);
+    }
+  };
+
+  const updatePaymentStatus = async (
+    studentId: string,
+    status: 'paid' | 'unpaid' | 'pending',
+    monthKey?: string
+  ) => {
+    const key = monthKey || getCurrentMonthKey();
+    const instructorId = auth.currentUser?.uid;
+    if (!instructorId) return;
+    const docId = `${studentId}_${instructorId}`;
+    setUpdatingPaymentId(studentId);
+    try {
+      const payRef = doc(db, 'paymentStatuses', docId);
+      await setDoc(payRef, {
+        studentId,
+        instructorId,
+        records: { [key]: status },
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      setPaymentRecordsMap(prev => ({
+        ...prev,
+        [studentId]: { ...(prev[studentId] || {}), [key]: status }
+      }));
+      setError(null);
+    } catch (err) {
+      console.error('Ödeme durumu güncellenirken hata:', err);
+      setError('Ödeme durumu güncellenemedi. Lütfen tekrar deneyin.');
+    } finally {
+      setUpdatingPaymentId(null);
+    }
+  };
+
+  const cyclePaymentStatus = (current: 'paid' | 'unpaid' | 'pending' | undefined): 'paid' | 'unpaid' | 'pending' => {
+    if (!current || current === 'pending') return 'paid';
+    if (current === 'paid') return 'unpaid';
+    return 'pending';
+  };
+  // ----------------------------
+
   // Check if current user is super admin
   useEffect(() => {
     const checkIfSuperAdmin = async () => {
@@ -472,6 +548,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
 
             console.log('Realtime students data:', studentsData);
             setStudents(studentsData);
+            // Load payment records for fetched students
+            loadPaymentRecords(studentsData.map(s => s.id));
             // Search update is handled by the other useEffect
           } catch (err) {
             console.error('Realtime students error:', err);
@@ -1251,6 +1329,34 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
             )}
           </div>
         </td>
+        <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap">
+          {(() => {
+            const monthKey = getCurrentMonthKey();
+            const status = paymentRecordsMap[student.id]?.[monthKey];
+            const isUpdating = updatingPaymentId === student.id;
+            const statusMap = {
+              paid: { label: 'Ödendi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40', dot: 'bg-emerald-500' },
+              unpaid: { label: 'Ödenmedi', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800/40', dot: 'bg-red-500' },
+              pending: { label: 'Bekliyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800/40', dot: 'bg-amber-500' },
+            };
+            const current = status && statusMap[status] ? statusMap[status] : { label: 'Bekliyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800/40', dot: 'bg-amber-500' };
+            return (
+              <button
+                onClick={() => updatePaymentStatus(student.id, cyclePaymentStatus(status), monthKey)}
+                disabled={isUpdating}
+                title="Ödeme durumunu değiştirmek için tıklayın"
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all hover:opacity-80 active:scale-95 disabled:opacity-50 cursor-pointer ${current.cls}`}
+              >
+                {isUpdating ? (
+                  <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
+                )}
+                {current.label}
+              </button>
+            );
+          })()}
+        </td>
         <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
           <div className="flex justify-end gap-2">
             <button
@@ -1829,6 +1935,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                   )}
                   <th scope="col" className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
                   <th scope="col" className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kurslar</th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ödeme ({getMonthLabel(getCurrentMonthKey())})</th>
                   <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
                 </tr>
               </thead>
@@ -1943,6 +2050,41 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({ isAdmin = 
                       ) : (
                         <p className="text-gray-400 text-xs italic mt-1">Kurs kaydı yok</p>
                       )}
+                    </div>
+
+                    {/* Payment Status - Mobile Card */}
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">
+                        Ödeme ({getMonthLabel(getCurrentMonthKey())})
+                      </span>
+                      <div className="mt-1.5">
+                        {(() => {
+                          const monthKey = getCurrentMonthKey();
+                          const status = paymentRecordsMap[student.id]?.[monthKey];
+                          const isUpdating = updatingPaymentId === student.id;
+                          const statusMap = {
+                            paid: { label: 'Ödendi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40', dot: 'bg-emerald-500' },
+                            unpaid: { label: 'Ödenmedi', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800/40', dot: 'bg-red-500' },
+                            pending: { label: 'Bekliyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800/40', dot: 'bg-amber-500' },
+                          };
+                          const current = status && statusMap[status] ? statusMap[status] : { label: 'Bekliyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800/40', dot: 'bg-amber-500' };
+                          return (
+                            <button
+                              onClick={() => updatePaymentStatus(student.id, cyclePaymentStatus(status), monthKey)}
+                              disabled={isUpdating}
+                              title="Ödeme durumunu değiştirmek için tıklayın"
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all hover:opacity-80 active:scale-95 disabled:opacity-50 cursor-pointer ${current.cls}`}
+                            >
+                              {isUpdating ? (
+                                <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
+                              )}
+                              {current.label}
+                            </button>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </div>
