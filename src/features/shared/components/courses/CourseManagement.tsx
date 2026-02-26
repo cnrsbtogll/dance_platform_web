@@ -1231,6 +1231,12 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     }
   };
 
+  // Rol kontrolü yardımcı fonksiyonu (string veya dizi desteği)
+  const hasRole = (role: string | string[], checkRole: string): boolean => {
+    if (Array.isArray(role)) return role.includes(checkRole);
+    return role === checkRole;
+  };
+
   // Eğitmen ve okul seçimlerini yönet
   const handleInstructorSchoolSelection = () => {
     const currentUser = auth.currentUser;
@@ -1247,7 +1253,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         // Süper admin: Hem eğitmen hem okul seçebilir
         fetchInstructors();
         fetchSchools();
-      } else if (role === 'instructor') {
+      } else if (hasRole(role, 'instructor')) {
         // Eğitmen: Otomatik olarak kendini ekle
         fetchSchools();
         setFormData(prev => ({
@@ -1255,7 +1261,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           instructorIds: [currentUser.uid],
           instructorNames: [userData?.displayName || 'Bilinmeyen Eğitmen']
         }));
-      } else if (role === 'school') {
+      } else if (hasRole(role, 'school')) {
         // Okul: Sadece eğitmen seçebilir, okul kendisidir
         const effectiveSchoolId = userData?.schoolId || currentUser.uid;
         console.log('Role school detected, setting effective schoolId:', effectiveSchoolId);
@@ -1885,9 +1891,15 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const cleanDataForFirebase = (data: any) => {
     const cleanData = { ...data };
 
-    // Obsolete fields from old single-instructor structure
-    delete cleanData.instructorId;
-    delete cleanData.instructorName;
+    // instructorId alanını sil değil, instructorIds dizisinden türet
+    // (Firestore güvenlik kuralları instructorId veya instructorIds kontrolü yapıyor)
+    delete cleanData.instructorName; // Eski tekil alan kaldırıldı; instructorNames kullanılıyor
+
+    // Eğer instructorIds doluysa ve instructorId yoksa, ilk eğitmeni instructorId olarak ata
+    // Bu Firestore kuvallarının çalışması için gerekli
+    if (cleanData.instructorIds && cleanData.instructorIds.length > 0 && !cleanData.instructorId) {
+      cleanData.instructorId = cleanData.instructorIds[0];
+    }
 
     // Undefined değerleri kaldır
     Object.keys(cleanData).forEach(key => {

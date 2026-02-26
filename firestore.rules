@@ -150,7 +150,7 @@ service cloud.firestore {
         userId == request.auth.uid || 
         isSchool() || 
         isAdmin() || 
-        (isInstructor() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['courseIds', 'schoolIds', 'instructorIds', 'updatedAt', 'password', 'displayName', 'phone', 'level', 'instructorId', 'instructorName', 'schoolId', 'schoolName', 'photoURL']))
+        (isInstructor() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['courseIds', 'schoolIds', 'instructorIds', 'updatedAt', 'password', 'displayName', 'phone', 'level', 'instructorId', 'instructorName', 'schoolId', 'schoolName', 'photoURL', 'paymentRecords']))
       );
       
       // Sadece admin silebilir
@@ -338,6 +338,21 @@ service cloud.firestore {
     match /pendingUsers/{userId} {
       allow read: if isAuthenticated() && (isSchool() || isAdmin());
       allow write: if isAuthenticated() && (isSchool() || isAdmin());
+    }
+
+    // ==========================================
+    // PAYMENT STATUSES (ÖDEME DURUMLARI)
+    // ==========================================
+    match /paymentStatuses/{docId} {
+      // Eğitmen ve okul okuyabilir
+      allow read: if isAuthenticated();
+      
+      // Eğitmen kendi öğrencisinin ödeme durumunu güncelleyebilir
+      // Okul ve admin de güncelleyebilir
+      allow create, update: if isAuthenticated() && (isInstructor() || isSchool() || isAdmin());
+      
+      // Sadece admin silebilir
+      allow delete: if isAdmin();
     }
     
     // ==========================================

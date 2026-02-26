@@ -375,46 +375,59 @@ function PartnerSearchPage(): JSX.Element {
       const querySnapshot = await getDocs(q);
 
       const users: FirestoreUser[] = [];
+
+      // Mevcut kullanıcının rollerini önceden belirle
+      const currentUserRoles = currentUserData?.role
+        ? (Array.isArray(currentUserData.role) ? currentUserData.role : [currentUserData.role as string])
+        : [];
+      const currentUserIsInstructor = currentUserRoles.includes('instructor');
+      const currentUserIsStudent = currentUserRoles.includes('student');
+      const isCurrentUserLoggedIn = !!currentUser;
+
+      console.log('Partner arama - mevcut kullanıcı rolleri:', currentUserRoles, '| giriş yapmış mı:', isCurrentUserLoggedIn);
+
       querySnapshot.forEach((doc) => {
         const userData = doc.data() as DocumentData;
 
-        // Parse roles safely
-        const userRoles = Array.isArray(userData.role) ? userData.role : [userData.role || ''];
-        const isUserAdmin = userRoles.includes('admin') || userRoles.includes('school');
-        const isUserInstructor = userRoles.includes('instructor');
-        const isUserStudent = userRoles.includes('student');
+        // Kullanıcı rollerini güvenli şekilde parse et
+        const rawRole = userData.role;
+        const userRoles: string[] = Array.isArray(rawRole)
+          ? rawRole
+          : rawRole
+            ? [String(rawRole)]
+            : [];
 
-        // Parse current user roles securely
-        const currentUserRoles = currentUserData?.role
-          ? (Array.isArray(currentUserData.role) ? currentUserData.role : [currentUserData.role])
-          : [];
-        const currentUserIsInstructor = currentUserRoles.includes('instructor');
-        const currentUserIsStudent = currentUserRoles.includes('student');
+        // Admin ve school rollerini filtrele - bunlar partner listesine çıkmaz
+        const isUserAdminOrSchool = userRoles.includes('admin') || userRoles.includes('school');
+        const isUserInstructor = userRoles.includes('instructor');
+
+        // isPartnerSearchActive kontrolü:
+        // - undefined/null → görünür (opt-out yapmamış)
+        // - false → gizlenmiş (opt-out)
+        // - true → açıkça dahil olmuş (opt-in)
+        const isOptedOut = userData.isPartnerSearchActive === false;
+        const isOptedIn = userData.isPartnerSearchActive === true;
 
         let isValidUser = false;
 
-        // Check if user has student or instructor role but not admin role
-        if (!isUserAdmin) {
-          const isOptedIn = userData.isPartnerSearchActive === true;
-          const isOptedOut = userData.isPartnerSearchActive === false;
-
+        if (!isUserAdminOrSchool) {
           if (isUserInstructor) {
-            // Eğitmenler: YALNIZCA başka bir oturum açmış eğitmen görebilir.
-            // Anonim (giriş yapmamış) kullanıcılar eğitmenleri HİÇ göremez.
-            // Eğitmen ayrıca isPartnerSearchActive=true ile kendi isteğiyle katılmış olmalı.
+            // Eğitmenler: sadece başka bir oturum açmış eğitmen görebilir.
+            // Eğitmen ayrıca isPartnerSearchActive=true ile kendini listeye eklemeli.
             if (currentUserIsInstructor && isOptedIn) {
               isValidUser = true;
             }
-          } else if (isUserStudent) {
-            // Öğrenciler: Diğer öğrencileri ve anonim kullanıcılar görebilir.
-            // Öğrenci isPartnerSearchActive=false ile kendini gizlemedikçe kavumdadır.
-            if ((currentUserIsStudent || currentUserRoles.length === 0) && !isOptedOut) {
+          } else {
+            // Öğrenciler ve rolü olmayan kullanıcılar:
+            // Giriş yapmış öğrenci ya da anonim kullanıcı görebilir.
+            // isPartnerSearchActive=false ile kendini gizlememişse göster.
+            if (!isOptedOut) {
               isValidUser = true;
             }
           }
         }
 
-        // Include valid users & exclude current user if logged in
+        // Geçerli kullanıcıları ekle; giriş yapmış kullanıcı kendini görmemeli
         if ((!currentUser || doc.id !== currentUser.id) && isValidUser) {
           users.push({
             id: doc.id,

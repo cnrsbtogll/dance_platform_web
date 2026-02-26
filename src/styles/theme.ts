@@ -78,11 +78,11 @@ const createAppTheme = (mode: 'light' | 'dark' = 'light') => createTheme({
           '& .MuiOutlinedInput-root': {
             borderRadius: 8,
             '&.Mui-focused fieldset': {
-              borderColor: '#ED3D81',
+              borderColor: mode === 'dark' ? '#94a3b8' : '#111827',
             },
           },
           '& label.Mui-focused': {
-            color: '#ED3D81',
+            color: mode === 'dark' ? '#94a3b8' : '#111827',
           },
         },
       },
