@@ -94,7 +94,7 @@ const SignIn = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-xl">
+    <div className="max-w-md mx-auto mt-10 mb-32 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">
         {isForgotPassword ? 'Şifremi Unuttum' : 'Giriş Yap'}
       </h2>
