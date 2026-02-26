@@ -73,13 +73,8 @@ const SignUp: React.FC = () => {
     setError('');
     setGoogleLoading(true);
     try {
-      const { isNewUser } = await signInWithGoogle();
-      if (isNewUser) {
-        navigate('/complete-profile');
-      } else {
-        // Zaten hesabı olan kullanıcı → ana sayfaya
-        navigate('/');
-      }
+      await signInWithGoogle();
+      navigate('/');
     } catch (err: any) {
       if (
         err?.code === 'auth/popup-closed-by-user' ||

@@ -97,30 +97,8 @@ const SignIn = () => {
     setError('');
     setGoogleLoading(true);
     try {
-      const { isNewUser } = await signInWithGoogle();
-      if (isNewUser) {
-        navigate('/complete-profile');
-      } else {
-        // Mevcut kullanıcı: rol bazlı yönlendirme
-        const user = (await import('firebase/auth')).getAuth().currentUser;
-        if (user) {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            if (userData.role?.includes('instructor')) {
-              navigate('/instructor/management');
-            } else if (userData.role?.includes('school')) {
-              navigate('/school/dashboard');
-            } else if (userData.role?.includes('admin')) {
-              navigate('/admin/dashboard');
-            } else {
-              navigate('/');
-            }
-            return;
-          }
-        }
-        navigate('/');
-      }
+      await signInWithGoogle();
+      navigate('/');
     } catch (err: any) {
       if (
         err?.code === 'auth/popup-closed-by-user' ||
