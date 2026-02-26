@@ -30,7 +30,7 @@ const StyledTextField = styled(TextField)({
     borderColor: '#9CA3AF'
   },
   '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: '#6366F1'
+    borderColor: '#111827'
   }
 });
 

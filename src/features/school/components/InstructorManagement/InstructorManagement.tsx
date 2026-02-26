@@ -1,63 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  serverTimestamp, 
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
   Timestamp,
-  orderBy 
+  orderBy,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
-import { db } from '../../../../api/firebase/firebase';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
+import { db, auth, secondaryAuth } from '../../../../api/firebase/firebase';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { 
-  Box, 
-  Button, 
-  Card, 
-  CardContent, 
-  CardActions, 
-  Grid, 
-  TextField, 
-  Dialog, 
-  DialogActions, 
-  DialogContent, 
-  DialogTitle, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
-  Typography,
-  Chip,
-  IconButton,
-  Avatar,
-  Tooltip,
-  Alert,
-  CircularProgress,
-  Rating,
-  Divider
-} from '@mui/material';
-import { 
-  Add as AddIcon, 
-  Edit as EditIcon, 
-  Delete as DeleteIcon, 
-  Search as SearchIcon,
-  School as SchoolIcon,
-  Person as PersonIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  Star as StarIcon
-} from '@mui/icons-material';
 import { DanceLevel, DanceStyle } from '../../../../types';
-import { SelectChangeEvent } from '@mui/material';
 import CustomInput from '../../../../common/components/ui/CustomInput';
 import CustomSelect from '../../../../common/components/ui/CustomSelect';
 import CustomPhoneInput from '../../../../common/components/ui/CustomPhoneInput';
 import ImageUploader from '../../../../common/components/ui/ImageUploader';
+import Button from '../../../../common/components/ui/Button';
+import Avatar from '../../../../common/components/ui/Avatar';
 
 interface Instructor {
   id: string;
@@ -69,6 +35,8 @@ interface Instructor {
   biography?: string;
   experience?: number;
   rating?: number;
+  courseIds?: string[];
+  role?: string | string[];
   createdAt: Timestamp;
 }
 
@@ -87,11 +55,7 @@ interface InstructorFormData {
   danceStyles: DanceStyle[];
   biography: string;
   experience: number;
-}
-
-interface Option {
-  value: string;
-  label: string;
+  password?: string;
 }
 
 const defaultInstructorFormData: InstructorFormData = {
@@ -102,26 +66,74 @@ const defaultInstructorFormData: InstructorFormData = {
   photoURL: '',
   danceStyles: [],
   biography: '',
-  experience: 0
+  experience: 0,
+  password: 'feriha123'
 };
+
+// SVG icons (no MUI dependency)
+const PlusIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+  </svg>
+);
+const PencilIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+);
+const TrashIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+const SearchIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+const StarIcon = ({ filled = true }: { filled?: boolean }) => (
+  <svg className={`w-4 h-4 ${filled ? 'text-school-yellow fill-school-yellow' : 'text-gray-300 fill-gray-300'}`} viewBox="0 0 20 20">
+    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+  </svg>
+);
+const EmailIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+);
+const PhoneIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+  </svg>
+);
+
+import SimpleModal from '../../../../common/components/ui/SimpleModal';
 
 const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo }) => {
   const { currentUser } = useAuth();
+  const [userRole, setUserRole] = useState<string[]>([]);
+  const isAdmin = userRole.includes('admin');
+  const isSchool = userRole.includes('school');
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [filteredInstructors, setFilteredInstructors] = useState<Instructor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Dialog states
   const [openDialog, setOpenDialog] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [formData, setFormData] = useState<InstructorFormData>(defaultInstructorFormData);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedInstructorId, setSelectedInstructorId] = useState<string | null>(null);
-  
+
   // Success message state
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Certification confirmation state
+  const [isCertifiedConfirmed, setIsCertifiedConfirmed] = useState(false);
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [instructorToApprove, setInstructorToApprove] = useState<Instructor | null>(null);
 
   // Dance styles and experience options
   const danceStyles: DanceStyle[] = ['salsa', 'bachata', 'kizomba', 'other'];
@@ -133,21 +145,72 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
     { value: 10, label: '10+ yıl' }
   ];
 
+  // --- NEW Quick Assign State ---
+  const [quickAssignModalOpen, setQuickAssignModalOpen] = useState(false);
+  const [instructorToAssign, setInstructorToAssign] = useState<Instructor | null>(null);
+  const [quickAssignCourseIds, setQuickAssignCourseIds] = useState<string[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [courses, setCourses] = useState<{ id: string, name: string }[]>([]);
+
+  // Existing user warning state
+  const [existingUserModalOpen, setExistingUserModalOpen] = useState(false);
+  const [existingUserToLink, setExistingUserToLink] = useState<any>(null);
+  // ------------------------------
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!currentUser) return;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const roles = userDoc.data().role || [];
+          setUserRole(Array.isArray(roles) ? roles : [roles]);
+        }
+      } catch (err) {
+        console.error('Error fetching user role:', err);
+      }
+    };
+    fetchUserRole();
+  }, [currentUser]);
+
   useEffect(() => {
     fetchInstructors();
-  }, [currentUser?.uid]);
+  }, [currentUser?.uid, userRole]);
 
   useEffect(() => {
     if (successMessage) {
-      const timer = setTimeout(() => {
-        setSuccessMessage(null);
-      }, 5000);
+      const timer = setTimeout(() => setSuccessMessage(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
 
   useEffect(() => {
-    const filtered = instructors.filter(instructor => 
+    // Fetch courses for the current school
+    const fetchCourses = async () => {
+      try {
+        const coursesRef = collection(db, 'courses');
+        const q = query(
+          coursesRef,
+          where('schoolId', '==', schoolInfo.id)
+        );
+        const querySnapshot = await getDocs(q);
+        const docs = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name || 'İsimsiz Kurs'
+        }));
+        setCourses(docs);
+      } catch (err) {
+        console.error('Kurslar yüklenirken hata:', err);
+      }
+    };
+
+    if (schoolInfo.id) {
+      fetchCourses();
+    }
+  }, [schoolInfo.id]);
+
+  useEffect(() => {
+    const filtered = instructors.filter(instructor =>
       instructor.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       instructor.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -157,37 +220,55 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   const fetchInstructors = async () => {
     try {
       if (!currentUser?.uid) return;
-      
       setLoading(true);
       const instructorsRef = collection(db, 'users');
-      console.log('Fetching instructors for currentUser.uid:', currentUser.uid);
-      
+
+      // Since Firestore doesn't support multiple array-contains or complex OR queries easily,
+      // and a user's role might be an array (e.g., ['student', 'instructor']) and schoolIds might be an array,
+      // we query by the legacy schoolId or array-contains schoolIds, and filter in memory.
+      // For now, we fetch ALL users of this school and filter the 'instructor' role in memory.
+
+      // Query users mapping to this school (using the legacy field for compatibility, 
+      // but ideally we'd use schoolIds array-contains, or just filter everything if small enough)
       const q = query(
-        instructorsRef, 
-        where('role', '==', 'instructor'),
-        where('schoolId', '==', currentUser.uid),
+        instructorsRef,
+        // Fallback to fetching all and filtering in memory or using where('schoolId', '==', schoolInfo.id)
+        // If we want to support M:N schoolIds we should use:
+        // where('schoolIds', 'array-contains', schoolInfo.id)
+        // But for backward compatibility with older data:
         orderBy('createdAt', 'desc')
       );
-      
+
       const querySnapshot = await getDocs(q);
-      console.log('Query snapshot size:', querySnapshot.size);
-      console.log('Raw query results:');
-      querySnapshot.forEach((doc) => {
-        console.log('Document ID:', doc.id);
-        console.log('Document data:', doc.data());
-      });
-      
       const instructorsData: Instructor[] = [];
-      
+
+      console.log('[DEBUG-INSTRUCTOR-PAGE] Fetched total user docs:', querySnapshot.docs.length);
+      console.log('[DEBUG-INSTRUCTOR-PAGE] Target schoolId:', schoolInfo.id);
+
       querySnapshot.forEach((doc) => {
-        instructorsData.push({
-          id: doc.id,
-          ...doc.data()
-        } as Instructor);
+        const data = doc.data();
+
+        // 1. Check if user belongs to this school
+        const belongsToSchool =
+          data.schoolId === schoolInfo.id ||
+          (Array.isArray(data.schoolIds) && data.schoolIds.includes(schoolInfo.id));
+
+        if (!belongsToSchool) return;
+
+        // 2. Check if user is an instructor
+        const isInstructor =
+          data.role === 'instructor' ||
+          data.role === 'draft-instructor' ||
+          (Array.isArray(data.role) && (data.role.includes('instructor') || data.role.includes('draft-instructor')));
+
+        if (isInstructor) {
+          console.log(`[DEBUG-INSTRUCTOR-PAGE] Found match for school:`, data.displayName, data.email, data.schoolId, data.schoolIds);
+          instructorsData.push({ id: doc.id, ...data } as Instructor);
+        }
       });
-      
-      console.log('Processed instructors data:', instructorsData);
-      
+
+      console.log('[DEBUG-INSTRUCTOR-PAGE] Final Valid Instructors Array:', instructorsData);
+
       setInstructors(instructorsData);
       setFilteredInstructors(instructorsData);
       setLoading(false);
@@ -200,7 +281,7 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
   const handleOpenDialog = (isEditMode: boolean, instructor?: Instructor) => {
     setIsEdit(isEditMode);
-    
+    setIsCertifiedConfirmed(false);
     if (isEditMode && instructor) {
       setFormData({
         id: instructor.id,
@@ -210,18 +291,19 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
         photoURL: instructor.photoURL || '',
         danceStyles: instructor.danceStyles || [],
         biography: instructor.biography || '',
-        experience: instructor.experience || 0
+        experience: instructor.experience || 0,
+        password: ''
       });
     } else {
       setFormData(defaultInstructorFormData);
     }
-    
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setFormData(defaultInstructorFormData);
+    setIsCertifiedConfirmed(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: any } }) => {
@@ -238,26 +320,17 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
   };
 
   const handleImageChange = (base64Image: string | null) => {
-    if (base64Image) {
-      setFormData(prev => ({ ...prev, photoURL: base64Image }));
-    }
+    if (base64Image) setFormData(prev => ({ ...prev, photoURL: base64Image }));
   };
 
   const handleSubmit = async () => {
-    if (!currentUser?.uid) {
-      setError('Oturum bilgisi bulunamadı.');
-      return;
-    }
-
-    const currentUserId = currentUser.uid;
-
+    if (!currentUser?.uid) { setError('Oturum bilgisi bulunamadı.'); return; }
+    const managedSchoolId = schoolInfo.id;
     try {
       setLoading(true);
-      
       if (isEdit) {
-        // Update existing instructor
         const instructorRef = doc(db, 'users', formData.id);
-        await updateDoc(instructorRef, {
+        const updatePayload: any = {
           displayName: formData.displayName,
           phoneNumber: formData.phoneNumber,
           danceStyles: formData.danceStyles,
@@ -265,134 +338,236 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
           experience: formData.experience,
           photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
           updatedAt: serverTimestamp()
-        });
-        
-        // Update the instructor in the local state
-        setInstructors(instructors.map(instructor => 
-          instructor.id === formData.id 
-            ? { 
-                ...instructor, 
-                displayName: formData.displayName,
-                phoneNumber: formData.phoneNumber,
-                danceStyles: formData.danceStyles,
-                biography: formData.biography,
-                experience: formData.experience,
-                photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
-              } 
+        };
+
+        if (formData.password) {
+          updatePayload.password = formData.password;
+        }
+
+        await updateDoc(instructorRef, updatePayload);
+        setInstructors(instructors.map(instructor =>
+          instructor.id === formData.id
+            ? { ...instructor, displayName: formData.displayName, phoneNumber: formData.phoneNumber, danceStyles: formData.danceStyles, biography: formData.biography, experience: formData.experience, photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png' }
             : instructor
         ));
-        
         setSuccessMessage('Eğitmen bilgileri başarıyla güncellendi.');
+        handleCloseDialog();
       } else {
-        // Check if instructor with this email already exists
+        // Check if user already exists
         const userSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', formData.email)));
-        
+
         if (!userSnapshot.empty) {
-          // Email already exists, check if user is an instructor
           const existingUser = userSnapshot.docs[0];
-          const existingUserId = existingUser.id;
-          const userData = existingUser.data();
-          
-          if (userData.role === 'instructor' || (Array.isArray(userData.role) && userData.role.includes('instructor'))) {
-            // Already an instructor, just update the school association
-            await updateDoc(doc(db, 'users', existingUserId), {
-              schoolId: currentUserId,
-              schoolName: schoolInfo.displayName,
-              updatedAt: serverTimestamp()
-            });
-            
-            // Add to the local state
-            const existingInstructorData = existingUser.data() as Instructor;
-            const updatedInstructor = {
-              ...existingInstructorData,
-              id: existingUserId,
-              schoolId: currentUserId,
-              schoolName: schoolInfo.displayName,
-            };
-            
-            setInstructors([updatedInstructor, ...instructors]);
-            setSuccessMessage('Mevcut eğitmen okulunuza bağlandı.');
-          } else {
-            // User exists but not an instructor - update role to include instructor
-            const currentRole = userData.role;
-            let newRole;
-            
-            if (Array.isArray(currentRole)) {
-              if (!currentRole.includes('instructor')) {
-                newRole = [...currentRole, 'instructor'];
-              } else {
-                newRole = currentRole;
-              }
-            } else if (typeof currentRole === 'string') {
-              newRole = currentRole === 'instructor' ? currentRole : ['instructor', currentRole];
-            } else {
-              newRole = 'instructor';
-            }
-            
-            await updateDoc(doc(db, 'users', existingUserId), {
-              role: newRole,
-              schoolId: currentUserId,
-              schoolName: schoolInfo.displayName,
-              danceStyles: formData.danceStyles,
-              biography: formData.biography,
-              experience: formData.experience,
-              updatedAt: serverTimestamp()
-            });
-            
-            // Add to the local state
-            const existingUserData = existingUser.data() as Instructor;
-            const updatedInstructor = {
-              ...existingUserData,
-              id: existingUserId,
-              role: newRole,
-              schoolId: currentUserId,
-              schoolName: schoolInfo.displayName,
-              danceStyles: formData.danceStyles,
-              biography: formData.biography,
-              experience: formData.experience,
-            };
-            
-            setInstructors([updatedInstructor, ...instructors]);
-            setSuccessMessage('Kullanıcı eğitmen rolüne yükseltildi ve okulunuza bağlandı.');
-          }
-        } else {
-          // Create a new instructor
-          const newInstructorId = `instructor_${Date.now()}`;
-          const newInstructorData = {
-            id: newInstructorId,
-            displayName: formData.displayName,
-            email: formData.email,
-            phoneNumber: formData.phoneNumber || '',
-            role: 'instructor',
-            danceStyles: formData.danceStyles,
-            biography: formData.biography,
-            experience: formData.experience,
-            schoolId: currentUserId,
-            schoolName: schoolInfo.displayName,
-            photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          };
-          
-          await setDoc(doc(db, 'users', newInstructorId), newInstructorData);
-          
-          // Add the new instructor to the local state
-          const newInstructor = {
-            ...newInstructorData,
-            createdAt: Timestamp.now()
-          } as Instructor;
-          
-          setInstructors([newInstructor, ...instructors]);
-          setSuccessMessage('Yeni eğitmen başarıyla eklendi.');
+          const userData = { id: existingUser.id, ...existingUser.data() };
+
+          setExistingUserToLink(userData);
+          setExistingUserModalOpen(true);
+          setLoading(false);
+          return;
         }
+
+        // Create new instructor if doesn't exist
+        const userCredential = await createUserWithEmailAndPassword(
+          secondaryAuth,
+          formData.email,
+          formData.password!
+        );
+
+        await updateProfile(userCredential.user, {
+          displayName: formData.displayName
+        });
+
+        const newInstructorId = userCredential.user.uid;
+        const newInstructorData = {
+          id: newInstructorId,
+          displayName: formData.displayName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber || '',
+          role: 'instructor',
+          danceStyles: formData.danceStyles,
+          biography: formData.biography,
+          experience: formData.experience,
+          schoolId: managedSchoolId,
+          schoolIds: [managedSchoolId],
+          schoolName: schoolInfo.displayName,
+          addedBySchoolId: managedSchoolId,
+          addedBySchoolName: schoolInfo.displayName,
+          isCertifiedConfirmed: isCertifiedConfirmed,
+          photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
+        await setDoc(doc(db, 'users', newInstructorId), {
+          ...newInstructorData,
+          emailVerified: false,
+          password: formData.password
+        });
+
+        // Hesap oluşturulunca e-posta doğrulama maili gönder
+        await sendEmailVerification(userCredential.user);
+        await secondaryAuth.signOut();
+
+        // Instructors koleksiyonuna da ekle
+        const instructorEntryId = `instructor_${newInstructorId}`;
+        await setDoc(doc(db, 'instructors', instructorEntryId), {
+          userId: newInstructorId,
+          displayName: formData.displayName,
+          ad: formData.displayName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber || '',
+          role: ['instructor'],
+          danceStyles: formData.danceStyles,
+          uzmanlık: formData.danceStyles,
+          biography: formData.biography,
+          biyografi: formData.biography,
+          experience: formData.experience,
+          tecrube: formData.experience,
+          schoolId: managedSchoolId,
+          okul_id: managedSchoolId,
+          schoolIds: [managedSchoolId],
+          schoolName: schoolInfo.displayName,
+          addedBySchoolId: managedSchoolId,
+          addedBySchoolName: schoolInfo.displayName,
+          isCertifiedConfirmed: isCertifiedConfirmed,
+          photoURL: formData.photoURL || '/assets/placeholders/default-instructor.png',
+          gorsel: formData.photoURL || '/assets/placeholders/default-instructor.png',
+          status: 'active',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+
+        setInstructors([{ ...newInstructorData, createdAt: Timestamp.now() } as Instructor, ...instructors]);
+        setSuccessMessage('Yeni eğitmen başarıyla oluşturuldu ve eklendi.');
+        handleCloseDialog();
       }
-      
       setLoading(false);
-      handleCloseDialog();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Eğitmen kaydedilirken bir hata oluştu:', err);
-      setError('Eğitmen kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.');
+      setError('Eğitmen kaydedilirken bir hata oluştu: ' + (err.message || 'Lütfen tekrar deneyin.'));
       setLoading(false);
+    }
+  };
+
+  const handleConfirmLink = async () => {
+    if (!existingUserToLink) return;
+    const managedSchoolId = schoolInfo.id;
+
+    try {
+      setLoading(true);
+      const existingUserId = existingUserToLink.id;
+      const userData = existingUserToLink;
+
+      // Check if already assigned to this school
+      const schoolIds = Array.isArray(userData.schoolIds) ? userData.schoolIds : (userData.schoolId ? [userData.schoolId] : []);
+      if (schoolIds.includes(managedSchoolId)) {
+        setError('Bu eğitmen zaten okulunuza kayıtlı.');
+        setLoading(false);
+        setExistingUserModalOpen(false);
+        return;
+      }
+
+      const currentRole = userData.role;
+      let newRole = Array.isArray(currentRole)
+        ? (!currentRole.includes('instructor') ? [...currentRole, 'instructor'] : currentRole)
+        : (typeof currentRole === 'string' ? (currentRole === 'instructor' ? currentRole : ['instructor', currentRole]) : 'instructor');
+
+      await updateDoc(doc(db, 'users', existingUserId), {
+        role: newRole,
+        schoolId: managedSchoolId, // Legacy
+        schoolIds: arrayUnion(managedSchoolId), // M:N
+        schoolName: schoolInfo.displayName,
+        addedBySchoolId: managedSchoolId,
+        addedBySchoolName: schoolInfo.displayName,
+        isCertifiedConfirmed: isCertifiedConfirmed,
+        updatedAt: serverTimestamp()
+      });
+
+      // Eğitmeni 'instructors' koleksiyonuna da kaydet/güncelle
+      const instructorsQuery = query(collection(db, 'instructors'), where('userId', '==', existingUserId));
+      const instructorsSnap = await getDocs(instructorsQuery);
+
+      const instructorDataToSave = {
+        userId: existingUserId,
+        displayName: userData.displayName || '',
+        ad: userData.displayName || '',
+        email: userData.email || '',
+        phoneNumber: userData.phoneNumber || '',
+        photoURL: userData.photoURL || '/assets/placeholders/default-instructor.png',
+        gorsel: userData.photoURL || '/assets/placeholders/default-instructor.png',
+        addedBySchoolId: managedSchoolId,
+        addedBySchoolName: schoolInfo.displayName,
+        isCertifiedConfirmed: isCertifiedConfirmed,
+        schoolIds: arrayUnion(managedSchoolId),
+        schoolId: managedSchoolId,
+        okul_id: managedSchoolId,
+        schoolName: schoolInfo.displayName,
+        status: 'active',
+        role: 'instructor',
+        updatedAt: serverTimestamp()
+      };
+
+      if (!instructorsSnap.empty) {
+        const docId = instructorsSnap.docs[0].id;
+        await setDoc(doc(db, 'instructors', docId), instructorDataToSave, { merge: true });
+      } else {
+        const newInstructorId = `instructor_${existingUserId}`;
+        await setDoc(doc(db, 'instructors', newInstructorId), {
+          ...instructorDataToSave,
+          createdAt: serverTimestamp()
+        }, { merge: true });
+      }
+
+      setInstructors([{ ...userData, id: existingUserId, role: newRole, schoolId: managedSchoolId, schoolName: schoolInfo.displayName } as any, ...instructors]);
+      setSuccessMessage('Mevcut kullanıcı eğitmen olarak okulunuza bağlandı.');
+
+      setExistingUserModalOpen(false);
+      setExistingUserToLink(null);
+      handleCloseDialog();
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Kullanıcı bağlanırken hata:', err);
+      setError('Kullanıcı bağlanırken bir hata oluştu.');
+      setLoading(false);
+    }
+  };
+
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  // Şifre Sıfırlama E-postası Gönder
+  const handleSendPasswordResetEmail = async (email: string) => {
+    if (!window.confirm("Eğitmene şifre sıfırlama e-postası gönderilecektir. Emin misiniz?")) {
+      return;
+    }
+    try {
+      setIsResettingPassword(true);
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMessage('Şifre sıfırlama bağlantısı eğitmenin e-posta adresine gönderildi!');
+      setOpenDialog(false);
+    } catch (err: any) {
+      console.error('Şifre sıfırlama e-postası hatası:', err);
+      setError('Şifre sıfırlama e-postası gönderilirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  // E-posta Doğrulama Maili Gönder
+  const handleSendVerificationEmail = async (email: string) => {
+    if (!window.confirm(`"${email}" adresine e-posta doğrulama bağlantısı gönderilecektir. Emin misiniz?`)) {
+      return;
+    }
+    try {
+      setIsResettingPassword(true);
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMessage('Doğrulama/sıfırlama bağlantısı eğitmenin e-posta adresine gönderildi!');
+      setOpenDialog(false);
+    } catch (err: any) {
+      console.error('Doğrulama e-postası hatası:', err);
+      setError('Doğrulama e-postası gönderilirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -403,22 +578,60 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
 
   const handleDeleteInstructor = async () => {
     if (!selectedInstructorId) return;
-    
     try {
       setLoading(true);
-      
-      // Remove the school association from the instructor
       const instructorRef = doc(db, 'users', selectedInstructorId);
+      const instructorSnap = await getDoc(instructorRef);
+
+      if (instructorSnap.exists()) {
+        const instData = instructorSnap.data();
+        const courseIds = instData.courseIds || [];
+        const displayName = instData.displayName || '';
+
+        // Eğer eğitmenin kayıtlı olduğu kurslar varsa, o kurslardan da temizle
+        if (courseIds.length > 0) {
+          const updatePromises = courseIds.map(async (courseId: string) => {
+            const courseRef = doc(db, 'courses', courseId);
+            const courseSnap = await getDoc(courseRef);
+            if (courseSnap.exists()) {
+              const courseData = courseSnap.data();
+              // Sadece bu okula ait kursları temizle (isteğe bağlı ama daha güvenli)
+              if (courseData.schoolId === schoolInfo.id) {
+                await updateDoc(courseRef, {
+                  instructorIds: arrayRemove(selectedInstructorId),
+                  instructorNames: arrayRemove(displayName),
+                  updatedAt: serverTimestamp()
+                });
+              }
+            }
+          });
+          await Promise.all(updatePromises);
+        }
+      }
+
+      // Hem schoolId (legacy) hem de schoolIds (array) alanlarından temizle, courseIds'i de sıfırla
       await updateDoc(instructorRef, {
         schoolId: null,
         schoolName: null,
+        schoolIds: arrayRemove(schoolInfo.id),
+        courseIds: [], // Okuldan ayrıldığı için kurs bağlarını da koparalım
         updatedAt: serverTimestamp()
       });
-      
-      // Remove from local state
+
+      // instructors koleksiyonunu da güncelle
+      const instructorsQuery = query(collection(db, 'instructors'), where('userId', '==', selectedInstructorId));
+      const instructorsSnap = await getDocs(instructorsQuery);
+      if (!instructorsSnap.empty) {
+        const docId = instructorsSnap.docs[0].id;
+        await updateDoc(doc(db, 'instructors', docId), {
+          schoolIds: arrayRemove(schoolInfo.id),
+          courseIds: [],
+          updatedAt: serverTimestamp()
+        });
+      }
+
       setInstructors(instructors.filter(instructor => instructor.id !== selectedInstructorId));
-      setSuccessMessage('Eğitmen okul listenizden kaldırıldı.');
-      
+      setSuccessMessage('Eğitmen okul listenizden kaldırıldı ve tüm kurs kayıtları temizlendi.');
       setLoading(false);
       setDeleteConfirmOpen(false);
       setSelectedInstructorId(null);
@@ -430,7 +643,83 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
     }
   };
 
-  // Helper function to get a label for experience level
+  // --- NEW Quick Assign Handlers ---
+  const handleOpenQuickAssign = (instructor: Instructor) => {
+    setInstructorToAssign(instructor);
+    // As instructors don't currently have "courseIds" displayed in their grid by default, 
+    // let's assume they have it in their user document if assigned previously
+    setQuickAssignCourseIds((instructor as any).courseIds || []);
+    setQuickAssignModalOpen(true);
+  };
+
+  const handleCloseQuickAssign = () => {
+    setQuickAssignModalOpen(false);
+    setInstructorToAssign(null);
+    setQuickAssignCourseIds([]);
+  };
+
+  const handleSaveQuickAssign = async () => {
+    if (!instructorToAssign) return;
+    setIsAssigning(true);
+    let errorMessage = '';
+
+    try {
+      const instructorRef = doc(db, 'users', instructorToAssign.id);
+      const oldCourseIds = (instructorToAssign as any).courseIds || [];
+      const newCourseIds = quickAssignCourseIds;
+
+      const addedCourseIds = newCourseIds.filter((id: string) => !oldCourseIds.includes(id));
+      const removedCourseIds = oldCourseIds.filter((id: string) => !newCourseIds.includes(id));
+
+      const payload: any = {
+        courseIds: newCourseIds,
+        updatedAt: serverTimestamp()
+      };
+
+      await updateDoc(instructorRef, payload);
+
+      // EKLENEN KURSLAR: courses tablosunda instructorIds ve instructorNames güncellemesi
+      for (const courseId of addedCourseIds) {
+        const courseRef = doc(db, 'courses', courseId);
+        await updateDoc(courseRef, {
+          instructorIds: arrayUnion(instructorToAssign.id),
+          instructorNames: arrayUnion(instructorToAssign.displayName || instructorToAssign.email)
+        });
+      }
+
+      // ÇIKARILAN KURSLAR: courses tablosundan bu eğitmeni düşür
+      for (const courseId of removedCourseIds) {
+        const courseRef = doc(db, 'courses', courseId);
+        const courseSnap = await getDoc(courseRef);
+        if (courseSnap.exists()) {
+          const cData = courseSnap.data();
+          const currInstIds = cData.instructorIds || [];
+          const currInstNames = cData.instructorNames || [];
+          const newInstIds = currInstIds.filter((id: string) => id !== instructorToAssign.id);
+          const newInstNames = currInstNames.filter((name: string) => name !== instructorToAssign.displayName && name !== instructorToAssign.email);
+          await updateDoc(courseRef, {
+            instructorIds: newInstIds,
+            instructorNames: newInstNames
+          });
+        }
+      }
+
+      setInstructors(prev =>
+        prev.map(i => i.id === instructorToAssign.id ? { ...i, courseIds: newCourseIds } : i)
+      );
+
+      setSuccessMessage('Eğitmenin kursları başarıyla güncellendi.');
+      handleCloseQuickAssign();
+    } catch (err) {
+      console.error('Hızlı atama sırasında hata:', err);
+      errorMessage = 'Kurs atama işlemi başarısız oldu.';
+      setError(errorMessage);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+  // ----------------------------------
+
   const getExperienceText = (years: number) => {
     if (years < 1) return '1 yıldan az';
     if (years <= 3) return '1-3 yıl';
@@ -439,251 +728,510 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
     return '10+ yıl';
   };
 
+  const handleApproveConfirmOpen = (instructor: Instructor) => {
+    setInstructorToApprove(instructor);
+    setApproveConfirmOpen(true);
+  };
+
+  const handleApproveInstructor = async () => {
+    if (!instructorToApprove) return;
+    try {
+      setLoading(true);
+      const instructorRef = doc(db, 'users', instructorToApprove.id);
+
+      const currentRole = instructorToApprove.role;
+      let newRole;
+
+      if (Array.isArray(currentRole)) {
+        newRole = currentRole.filter(r => r !== 'draft-instructor');
+        if (!newRole.includes('instructor')) {
+          newRole.push('instructor');
+        }
+      } else {
+        newRole = 'instructor';
+      }
+
+      await updateDoc(instructorRef, {
+        role: newRole,
+        addedBySchoolId: schoolInfo.id,
+        addedBySchoolName: schoolInfo.displayName,
+        isCertifiedConfirmed: true,
+        updatedAt: serverTimestamp()
+      });
+
+      // Eğitmeni ayrıca 'instructors' koleksiyonuna da kaydet/güncelle
+      const instructorsQuery = query(collection(db, 'instructors'), where('userId', '==', instructorToApprove.id));
+      const instructorsSnap = await getDocs(instructorsQuery);
+
+      const instructorDataToSave = {
+        userId: instructorToApprove.id,
+        displayName: instructorToApprove.displayName || (instructorToApprove as any).name || '',
+        ad: instructorToApprove.displayName || (instructorToApprove as any).name || '',
+        email: instructorToApprove.email || '',
+        phoneNumber: instructorToApprove.phoneNumber || '',
+        photoURL: instructorToApprove.photoURL || '/assets/placeholders/default-instructor.png',
+        gorsel: instructorToApprove.photoURL || '/assets/placeholders/default-instructor.png',
+        danceStyles: instructorToApprove.danceStyles || [],
+        uzmanlık: instructorToApprove.danceStyles || [],
+        biography: instructorToApprove.biography || '',
+        biyografi: instructorToApprove.biography || '',
+        experience: instructorToApprove.experience || 0,
+        tecrube: instructorToApprove.experience || 0,
+        addedBySchoolId: schoolInfo.id,
+        addedBySchoolName: schoolInfo.displayName,
+        isCertifiedConfirmed: true,
+        schoolIds: arrayUnion(schoolInfo.id),
+        schoolId: schoolInfo.id,
+        okul_id: schoolInfo.id,
+        schoolName: schoolInfo.displayName,
+        status: 'active',
+        role: 'instructor',
+        updatedAt: serverTimestamp()
+      };
+
+      if (!instructorsSnap.empty) {
+        const docId = instructorsSnap.docs[0].id;
+        await setDoc(doc(db, 'instructors', docId), instructorDataToSave, { merge: true });
+      } else {
+        const newInstructorId = `instructor_${instructorToApprove.id}`;
+        await setDoc(doc(db, 'instructors', newInstructorId), {
+          ...instructorDataToSave,
+          createdAt: serverTimestamp()
+        }, { merge: true });
+      }
+
+      setInstructors(prev =>
+        prev.map(i => i.id === instructorToApprove.id ? { ...i, role: newRole } : i)
+      );
+
+      setSuccessMessage(`${instructorToApprove.displayName} eğitmen olarak doğrulandı.`);
+      setApproveConfirmOpen(false);
+      setInstructorToApprove(null);
+    } catch (err: any) {
+      console.error('Eğitmen doğrulanırken hata:', err);
+      setError('Eğitmen doğrulanırken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" component="h1" gutterBottom fontWeight="bold">
-          Eğitmen Yönetimi
-        </Typography>
-        <Typography variant="body1" color="text.secondary" paragraph>
-          Okulunuza kayıtlı eğitmenleri yönetin, yeni eğitmenler ekleyin ve mevcut eğitmenleri düzenleyin.
-        </Typography>
-        
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        
-        {successMessage && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {successMessage}
-          </Alert>
-        )}
-      </Box>
-      
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: { xs: 'column', sm: 'row' }, 
-        justifyContent: 'space-between', 
-        alignItems: { xs: 'stretch', sm: 'center' }, 
-        gap: { xs: 2, sm: 0 },
-        mb: 3 
-      }}>
-        <Box sx={{ 
-          flex: { xs: '1', sm: '0 1 300px' },
-          order: { xs: 2, sm: 1 },
-          position: 'relative',
-          '& .MuiInputBase-root': {
-            paddingLeft: '40px'
-          }
-        }}>
-          <SearchIcon 
-            sx={{ 
-              position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'action.active',
-              pointerEvents: 'none'
-            }} 
-          />
-          <CustomInput
-            name="search"
-            label=""
-            placeholder="Eğitmen Ara..."
-            value={searchTerm}
-            onChange={(e: { target: { name: string; value: any } }) => setSearchTerm(e.target.value)}
-            fullWidth
-          />
-        </Box>
-        
-        <Box sx={{ 
-          order: { xs: 1, sm: 2 },
-          width: { xs: '100%', sm: 'auto' }
-        }}>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Eğitmen Yönetimi</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Okulunuza kayıtlı eğitmenleri yönetin, yeni eğitmenler ekleyin ve düzenleyin.
+          </p>
+        </div>
+
+        {/* Toolbar: search + add button */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="flex-1 sm:max-w-xs">
+            <CustomInput
+              name="search"
+              label=""
+              placeholder="Eğitmen Ara..."
+              value={searchTerm}
+              onChange={(e: { target: { name: string; value: any } }) => setSearchTerm(e.target.value)}
+              fullWidth
+              colorVariant="school"
+              startIcon={<SearchIcon />}
+            />
+          </div>
           <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
+            variant="school"
             onClick={() => handleOpenDialog(false)}
-            fullWidth={false}
-            sx={{ 
-              width: { xs: '100%', sm: 'auto' },
-              minWidth: { sm: '160px' },
-              bgcolor: 'primary.main',
-              '&:hover': { bgcolor: 'primary.dark' }
-            }}
+            className="flex items-center justify-center gap-2 whitespace-nowrap"
           >
-            Yeni Eğitmen
+            <PlusIcon />
+            <span>Yeni Eğitmen</span>
           </Button>
-        </Box>
-      </Box>
-      
-      {loading && instructors.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <Grid container spacing={3}>
-          {filteredInstructors.length > 0 ? (
-            filteredInstructors.map((instructor) => (
-              <Grid item xs={12} sm={6} md={4} key={instructor.id}>
-                <Card 
-                  elevation={2} 
-                  sx={{ 
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 8
-                    }
-                  }}
-                >
-                  <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Avatar
-                      src={instructor.photoURL}
-                      alt={instructor.displayName}
-                      sx={{ width: 100, height: 100, mb: 2 }}
-                    />
-                    <Typography variant="h6" align="center" gutterBottom>
-                      {instructor.displayName}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Rating 
-                        value={instructor.rating || 0} 
-                        readOnly 
-                        precision={0.5}
-                        size="small"
-                      />
-                      <Typography variant="body2" sx={{ ml: 1 }}>
-                        {instructor.rating ? instructor.rating.toFixed(1) : 'Değerlendirilmemiş'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 0.5, mb: 1 }}>
-                      {instructor.danceStyles && instructor.danceStyles.map((style) => (
-                        <Chip 
-                          key={style} 
-                          label={style.charAt(0).toUpperCase() + style.slice(1)} 
-                          size="small" 
-                          sx={{ fontWeight: 'medium' }}
-                        />
-                      ))}
-                    </Box>
-                  </Box>
-                  
-                  <Divider />
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    {instructor.biography && (
-                      <Typography variant="body2" color="text.secondary" paragraph>
-                        {instructor.biography.length > 100
-                          ? `${instructor.biography.substring(0, 100)}...`
-                          : instructor.biography}
-                      </Typography>
-                    )}
-                    
-                    <Box sx={{ mt: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <EmailIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
-                        <Typography variant="body2">{instructor.email}</Typography>
-                      </Box>
-                      {instructor.phoneNumber && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <PhoneIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
-                          <Typography variant="body2">{instructor.phoneNumber}</Typography>
-                        </Box>
-                      )}
-                      {instructor.experience && (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <StarIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
-                          <Typography variant="body2">
-                            Deneyim: {getExperienceText(instructor.experience)}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  </CardContent>
-                  
-                  <CardActions sx={{ p: 2, pt: 0 }}>
-                    <Button 
-                      size="small" 
-                      color="primary"
-                      onClick={() => handleOpenDialog(true, instructor)}
-                      startIcon={<EditIcon />}
-                    >
-                      Düzenle
-                    </Button>
-                    <Button 
-                      size="small" 
-                      color="error"
-                      onClick={() => handleDeleteConfirmOpen(instructor.id)}
-                      startIcon={<DeleteIcon />}
-                    >
-                      Kaldır
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))
-          ) : (
-            <Grid item xs={12}>
-              <Box sx={{ 
-                p: 4, 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center',
-                bgcolor: 'background.paper',
-                borderRadius: 2
-              }}>
-                <SchoolIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  {searchTerm ? 'Arama kriterine uygun eğitmen bulunamadı.' : 'Henüz hiç eğitmen kaydı bulunmuyor.'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" align="center">
-                  {searchTerm 
-                    ? 'Farklı bir arama terimi deneyin veya yeni eğitmen ekleyin.' 
-                    : 'Yeni bir eğitmen eklemek için "Yeni Eğitmen" butonuna tıklayın.'}
-                </Typography>
-              </Box>
-            </Grid>
-          )}
-        </Grid>
+        </div>
+      </div>
+
+      {/* Alerts */}
+      {error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-400 rounded-xl text-sm">
+          {error}
+        </div>
       )}
-      
-      {/* Add/Edit Instructor Dialog */}
-      <Dialog 
-        open={openDialog} 
-        onClose={handleCloseDialog} 
-        maxWidth="md" 
-        fullWidth
-        PaperProps={{
-          sx: {
-            m: { xs: 2, sm: 4 },
-            width: '100%',
-            maxWidth: { xs: '100%', sm: '600px', md: '800px' }
-          }
-        }}
+      {successMessage && (
+        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-sm">
+          {successMessage}
+        </div>
+      )}
+
+      {/* Instructor Grid */}
+      {loading && instructors.length === 0 ? (
+        <div className="flex justify-center my-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-school" />
+        </div>
+      ) : filteredInstructors.length > 0 ? (
+        <>
+          {/* Desktop Table View */}
+          <div className={`rounded-lg shadow overflow-hidden border ${isAdmin
+            ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+            : 'bg-school-bg border-school/40 dark:border-school/30 dark:bg-[#1a120b]'
+            }`}>
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className={isAdmin
+                  ? 'bg-gray-50 dark:bg-slate-900'
+                  : 'bg-school-bg dark:bg-school/20'
+                }>
+                  <tr>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Eğitmen</th>
+                    <th scope="col" className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">E-posta</th>
+                    <th scope="col" className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kurslar</th>
+                    <th scope="col" className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
+                    <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${isAdmin
+                  ? 'bg-white dark:bg-slate-800 divide-gray-200 dark:divide-slate-700'
+                  : 'bg-school-bg dark:bg-[#1a120b] divide-school/20 dark:divide-[#493322]'
+                  }`}>
+                  {filteredInstructors.map((instructor) => (
+                    <tr key={instructor.id} className={`transition-colors ${isAdmin
+                      ? 'hover:bg-gray-50 dark:hover:bg-slate-800'
+                      : 'hover:bg-school/5 dark:hover:bg-school/10'
+                      }`}>
+                      <td className="px-4 py-4 whitespace-nowrap max-w-[180px]">
+                        <div className="flex items-center min-w-0">
+                          <div className="flex-shrink-0 h-9 w-9">
+                            <Avatar
+                              src={instructor.photoURL}
+                              alt={instructor.displayName}
+                              className="h-9 w-9 ring-1 ring-school/20"
+                              userType="instructor"
+                            />
+                          </div>
+                          <div className="ml-3 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{instructor.displayName}</div>
+                            {instructor.phoneNumber && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{instructor.phoneNumber}</div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="hidden lg:table-cell px-4 py-4">
+                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[180px]" title={instructor.email}>{instructor.email}</div>
+                      </td>
+                      <td className="hidden xl:table-cell px-4 py-4">
+                        <div className="flex flex-wrap gap-1 max-w-[200px]">
+                          {instructor.courseIds && instructor.courseIds.length > 0 ? (
+                            instructor.courseIds.map(courseId => {
+                              const course = courses.find(c => c.id === courseId);
+                              return course ? (
+                                <span key={courseId} className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                                  {course.name}
+                                </span>
+                              ) : null;
+                            })
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <StarIcon filled={true} />
+                          <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                            {instructor.rating ? instructor.rating.toFixed(1) : '0.0'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          {instructor.role?.includes('draft-instructor') || instructor.role === 'draft-instructor' ? (
+                            <button
+                              onClick={() => handleApproveConfirmOpen(instructor)}
+                              className="inline-flex items-center px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800/50 rounded-md text-xs font-medium hover:bg-green-100 dark:hover:bg-green-900/20 transition-all shadow-sm active:scale-95"
+                            >
+                              Doğrula
+                            </button>
+                          ) : null}
+                          {/* Kursa Ata - Sadece doğrulanmış eğitmenler için aktif */}
+                          {(() => {
+                            const isDraft = instructor.role?.includes('draft-instructor') || instructor.role === 'draft-instructor';
+                            return (
+                              <button
+                                onClick={() => !isDraft && handleOpenQuickAssign(instructor)}
+                                disabled={isDraft}
+                                title={isDraft ? 'Önce eğitmeni doğrulayın' : 'Kursa Ata'}
+                                className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm border ${isDraft
+                                  ? 'bg-gray-50 dark:bg-gray-800/30 text-gray-300 dark:text-gray-600 border-gray-100 dark:border-gray-700 cursor-not-allowed opacity-50'
+                                  : 'bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/20 active:scale-95'
+                                  }`}
+                              >
+                                Kursa Ata
+                              </button>
+                            );
+                          })()}
+                          <button
+                            onClick={() => handleOpenDialog(true, instructor)}
+                            className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm active:scale-95 ${isAdmin
+                              ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                              : 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30 hover:bg-school/20 dark:hover:bg-school/30'
+                              }`}
+                          >
+                            Düzenle
+                          </button>
+                          <button
+                            onClick={() => handleDeleteConfirmOpen(instructor.id)}
+                            className="inline-flex items-center px-3 py-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-md text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/20 transition-all shadow-sm active:scale-95"
+                          >
+                            Kaldır
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-3 mt-4">
+            {filteredInstructors.map((instructor) => (
+              <div
+                key={instructor.id}
+                className={`rounded-xl border shadow-sm overflow-hidden ${isAdmin
+                  ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+                  : 'bg-white dark:bg-[#231810] border-school/20 dark:border-[#493322]'
+                  }`}
+              >
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center min-w-0">
+                      <div className="flex-shrink-0">
+                        <Avatar
+                          src={instructor.photoURL}
+                          alt={instructor.displayName}
+                          className="h-11 w-11 ring-2 ring-school/10"
+                          userType="instructor"
+                        />
+                      </div>
+                      <div className="ml-3 min-w-0">
+                        <div className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                          {instructor.displayName}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-[#cba990] truncate" title={instructor.email}>
+                          {instructor.email}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <StarIcon filled={true} />
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {instructor.rating ? instructor.rating.toFixed(1) : '0.0'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-[#cba990]/60">Atanmış Kurslar</span>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {instructor.courseIds && instructor.courseIds.length > 0 ? (
+                          instructor.courseIds.map(courseId => {
+                            const course = courses.find(c => c.id === courseId);
+                            return course ? (
+                              <span key={courseId} className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-[10px] font-semibold text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800/30">
+                                {course.name}
+                              </span>
+                            ) : null;
+                          })
+                        ) : (
+                          <p className="text-gray-400 text-xs italic">Kurs atanmamış</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {instructor.phoneNumber && (
+                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 015.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        {instructor.phoneNumber}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className={`flex items-center justify-end gap-2 px-4 py-3 border-t ${isAdmin ? 'bg-gray-50/50 dark:bg-slate-900/40 border-gray-100 dark:border-slate-700' : 'bg-school/5 dark:bg-[#1a120b] border-school/10 dark:border-[#493322]'
+                  }`}>
+                  {instructor.role?.includes('draft-instructor') || instructor.role === 'draft-instructor' ? (
+                    <button
+                      onClick={() => handleApproveConfirmOpen(instructor)}
+                      className="inline-flex items-center px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800/50 rounded-lg text-xs font-bold hover:bg-green-100 transition-all active:scale-95"
+                    >
+                      Doğrula
+                    </button>
+                  ) : null}
+
+                  {(() => {
+                    const isDraft = instructor.role?.includes('draft-instructor') || instructor.role === 'draft-instructor';
+                    return (
+                      <button
+                        onClick={() => !isDraft && handleOpenQuickAssign(instructor)}
+                        disabled={isDraft}
+                        className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${isDraft
+                          ? 'bg-gray-50 dark:bg-gray-800/30 text-gray-300 dark:text-gray-600 border-gray-100 dark:border-gray-700 cursor-not-allowed opacity-50'
+                          : 'bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-100 active:scale-95'
+                          }`}
+                      >
+                        Kursa Ata
+                      </button>
+                    );
+                  })()}
+
+                  <button
+                    onClick={() => handleOpenDialog(true, instructor)}
+                    className={`inline-flex items-center p-2 rounded-lg text-xs font-medium transition-all active:scale-95 ${isAdmin
+                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800'
+                      : 'bg-school/10 dark:bg-school/20 text-school dark:text-school-light border border-school/20 dark:border-school/30'
+                      }`}
+                  >
+                    <PencilIcon />
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteConfirmOpen(instructor.id)}
+                    className="inline-flex items-center p-2 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 rounded-lg text-xs font-medium hover:bg-red-100 transition-all active:scale-95"
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="py-16 text-center">
+          <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-10 max-w-md mx-auto border border-dashed border-gray-200 dark:border-slate-700">
+            <div className="w-16 h-16 bg-school/10 dark:bg-school/20 rounded-full flex items-center justify-center mx-auto mb-4 text-school">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+              {searchTerm ? 'Eğitmen Bulunamadı' : 'Henüz Eğitmen Yok'}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              {searchTerm
+                ? 'Arama kriterlerinize uygun eğitmen bulunamadı. Farklı bir terim deneyin.'
+                : 'Yeni bir eğitmen eklemek için aşağıdaki butona tıklayın.'}
+            </p>
+            {!searchTerm && (
+              <Button variant="school" onClick={() => handleOpenDialog(false)} className="flex items-center gap-2 mx-auto">
+                <PlusIcon />
+                <span>Yeni Eğitmen Ekle</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Assign Modal */}
+      <SimpleModal
+        open={quickAssignModalOpen}
+        onClose={handleCloseQuickAssign}
+        title="Kursa Ata"
+        colorVariant="school"
       >
-        <DialogTitle sx={{ 
-          pb: 1,
-          fontSize: { xs: '1.25rem', sm: '1.5rem' }
-        }}>
-          {isEdit ? 'Eğitmen Düzenle' : 'Yeni Eğitmen Ekle'}
-        </DialogTitle>
-        <DialogContent sx={{ 
-          p: { xs: 2, sm: 3 },
-          '&:first-of-type': { pt: { xs: 2, sm: 3 } }
-        }}>
-          <Grid container spacing={{ xs: 2, sm: 3 }}>
-            {/* Kişisel Bilgiler */}
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
-                Kişisel Bilgiler
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+        <div className="p-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <strong className="text-gray-900 dark:text-white">{instructorToAssign?.displayName}</strong> adlı eğitmeni aşağıdaki kurslara atayabilirsiniz:
+          </p>
+          <div className="mt-4">
+            <CustomSelect
+              name="quickCourseIds"
+              label="Kurslar"
+              value={quickAssignCourseIds}
+              onChange={(value: string | string[]) => {
+                if (Array.isArray(value)) {
+                  setQuickAssignCourseIds(value);
+                }
+              }}
+              options={courses.map(course => ({
+                value: course.id,
+                label: course.name
+              }))}
+              fullWidth
+              multiple
+              required
+              colorVariant="school"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-100 dark:border-slate-800">
+            <Button
+              variant="outlined"
+              onClick={handleCloseQuickAssign}
+              disabled={isAssigning}
+            >
+              İptal
+            </Button>
+            <Button
+              onClick={handleSaveQuickAssign}
+              variant="school"
+              disabled={isAssigning}
+            >
+              {isAssigning ? 'Kaydediliyor...' : 'Atamayı Kaydet'}
+            </Button>
+          </div>
+        </div>
+      </SimpleModal>
+
+      {/* Add/Edit Modal */}
+      <SimpleModal
+        open={openDialog}
+        onClose={handleCloseDialog}
+        title={isEdit ? 'Eğitmen Düzenle' : 'Yeni Eğitmen Ekle'}
+        colorVariant={isAdmin ? 'admin' : 'school'}
+        bodyClassName={
+          isAdmin
+            ? 'bg-indigo-50/50 dark:bg-slate-900/80'
+            : 'bg-orange-50/30 dark:bg-[#1a120b]' /* Only School or Admin manages instructors directly */
+        }
+        actions={
+          <>
+            <Button variant="outlined" onClick={handleCloseDialog}>İptal</Button>
+            <Button
+              variant="school"
+              onClick={handleSubmit}
+              disabled={!formData.displayName || !formData.email || (!isEdit && !formData.password) || (!isEdit && !isCertifiedConfirmed)}
+            >
+              {isEdit ? 'Güncelle' : 'Ekle'}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-6">
+          {/* Profile Picture at Top */}
+          <div className="flex flex-col items-center justify-center pb-4 border-b border-gray-100 dark:border-slate-800">
+            <ImageUploader
+              currentPhotoURL={formData.photoURL}
+              onImageChange={handleImageChange}
+              displayName={formData.displayName}
+              userType="instructor"
+            />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Eğitmen Profil Fotoğrafı
+            </p>
+          </div>
+
+          {/* Personal info */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              Kişisel Bilgiler
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <CustomInput
                 name="displayName"
                 label="Ad Soyad"
@@ -691,9 +1239,8 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 onChange={handleInputChange}
                 required
                 fullWidth
+                colorVariant="school"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <CustomInput
                 name="email"
                 label="E-posta"
@@ -703,9 +1250,9 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 required
                 disabled={isEdit}
                 fullWidth
+                colorVariant="school"
+                autoComplete="new-password"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <CustomPhoneInput
                 name="phoneNumber"
                 label="Telefon"
@@ -713,120 +1260,219 @@ const InstructorManagement: React.FC<{ schoolInfo: SchoolInfo }> = ({ schoolInfo
                 phoneNumber={formData.phoneNumber.replace('+90', '')}
                 onCountryCodeChange={(code) => handlePhoneChange(code, formData.phoneNumber.replace('+90', ''))}
                 onPhoneNumberChange={(number) => handlePhoneChange('+90', number)}
+                autoComplete="new-password"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <ImageUploader
-                currentPhotoURL={formData.photoURL}
-                onImageChange={handleImageChange}
-                displayName={formData.displayName}
-                userType="instructor"
-              />
-            </Grid>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Şifre ve E-posta İşlemleri</label>
+                {!isEdit ? (
+                  <div className="px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Eğitmen hesabı <span className="text-gray-900 dark:text-white font-bold">feriha123</span> şifresiyle oluşturulacak ve doğrulama e-postası gönderilecektir.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {/* Şifre Sıfırlama */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Eğitmen şifresini unuttuysa sıfırlama e-postası gönderin.
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        disabled={isResettingPassword || !formData.email}
+                        onClick={() => {
+                          if (formData.email) {
+                            handleSendPasswordResetEmail(formData.email);
+                          }
+                        }}
+                      >
+                        {isResettingPassword ? 'Gönderiliyor...' : 'Şifre Sıfırla'}
+                      </Button>
+                    </div>
+                    {/* Doğrulama e-postası */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <span className="text-sm text-amber-700 dark:text-amber-400">
+                        E-posta doğrulama bağlantısı gönder.
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        disabled={isResettingPassword || !formData.email}
+                        onClick={() => {
+                          if (formData.email) {
+                            handleSendVerificationEmail(formData.email);
+                          }
+                        }}
+                      >
+                        {isResettingPassword ? 'Gönderiliyor...' : 'Doğrulama Gönder'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            {/* Dans Bilgileri */}
-            <Grid item xs={12} sx={{ mt: { xs: 2, sm: 3 } }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
-                Dans Bilgileri
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </div>
+          </div>
+
+          {/* Dance info */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              Dans Bilgileri
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <CustomSelect
                 name="experience"
                 label="Deneyim"
                 value={String(formData.experience)}
                 onChange={(value) => handleSelectChange('experience', value)}
-                options={experienceLevels.map(level => ({
-                  value: String(level.value),
-                  label: level.label
-                }))}
+                options={experienceLevels.map(level => ({ value: String(level.value), label: level.label }))}
                 fullWidth
+                colorVariant="school"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <CustomSelect
                 name="danceStyles"
                 label="Uzmanlık Alanları"
                 value={formData.danceStyles}
                 onChange={(value) => handleSelectChange('danceStyles', value)}
-                options={danceStyles.map(style => ({
-                  value: style,
-                  label: style.charAt(0).toUpperCase() + style.slice(1)
-                }))}
+                options={danceStyles.map(style => ({ value: style, label: style.charAt(0).toUpperCase() + style.slice(1) }))}
                 multiple
                 fullWidth
+                colorVariant="school"
               />
-            </Grid>
+            </div>
+          </div>
 
-            {/* Biyografi */}
-            <Grid item xs={12} sx={{ mt: { xs: 2, sm: 3 } }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
-                Biyografi
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <CustomInput
-                name="biography"
-                label="Biyografi"
-                value={formData.biography}
-                onChange={handleInputChange}
-                multiline
-                rows={4}
-                placeholder="Eğitmen hakkında kısa bir tanıtım yazısı..."
-                fullWidth
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{ 
-          p: { xs: 2, sm: 3 },
-          gap: 1
-        }}>
-          <Button 
-            onClick={handleCloseDialog} 
-            color="secondary"
-            sx={{ 
-              minWidth: { xs: '80px', sm: '100px' }
-            }}
-          >
-            İptal
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained" 
-            color="primary"
-            disabled={!formData.displayName || !formData.email}
-            sx={{ 
-              minWidth: { xs: '80px', sm: '100px' }
-            }}
-          >
-            {isEdit ? 'Güncelle' : 'Ekle'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-      
-      {/* Delete Confirmation Dialog */}
-      <Dialog
+          {/* Biography */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              Biyografi
+            </p>
+            <CustomInput
+              name="biography"
+              label="Biyografi"
+              value={formData.biography}
+              onChange={handleInputChange}
+              multiline
+              rows={4}
+              placeholder="Eğitmen hakkında kısa bir tanıtım yazısı..."
+              fullWidth
+              colorVariant="school"
+            />
+          </div>
+
+          {!isEdit && (
+            <div className="flex items-start p-4 mt-2 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-school/20">
+              <div className="flex items-center h-5">
+                <input
+                  id="certifiedConfirm"
+                  type="checkbox"
+                  className="w-4 h-4 text-school bg-white border-gray-300 rounded focus:ring-school dark:focus:ring-school dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  checked={isCertifiedConfirmed}
+                  onChange={(e) => setIsCertifiedConfirmed(e.target.checked)}
+                />
+              </div>
+              <div className="ml-3 text-sm">
+                <label htmlFor="certifiedConfirm" className="font-medium text-gray-900 dark:text-gray-100">
+                  Eğitmenin sertifikalı olduğunu onaylıyorum.
+                </label>
+                <p className="text-gray-600 dark:text-gray-400 text-xs mt-1">
+                  Eğitmenin sertifikalı bir eğitmen olduğu tarafınızdan onaylanmış sayılacaktır.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </SimpleModal>
+
+      {/* Existing User Warning Modal */}
+      <SimpleModal
+        open={existingUserModalOpen}
+        onClose={() => setExistingUserModalOpen(false)}
+        title="Kullanıcı Zaten Mevcut"
+        colorVariant="school"
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800/50 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-800/50 flex items-center justify-center flex-shrink-0 text-orange-600 dark:text-orange-400">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-gray-900 dark:text-white font-medium">Bu e-posta adresiyle bir kullanıcı zaten kayıtlı.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <strong>{existingUserToLink?.displayName}</strong> ({existingUserToLink?.email})
+                {existingUserToLink?.role?.includes('instructor')
+                  ? ' zaten bir eğitmen.'
+                  : ' şu an bir ' + existingUserToLink?.role + '.'}
+              </p>
+            </div>
+          </div>
+          <p className="text-gray-700 dark:text-gray-300">
+            Bu kullanıcıyı okulunuza eğitmen olarak bağlamak istiyor musunuz?
+            {existingUserToLink?.role !== 'instructor' && ' Kullanıcının rolü otomatik olarak eğitmen olarak güncellenecektir.'}
+          </p>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outlined" onClick={() => setExistingUserModalOpen(false)}>Vazgeç</Button>
+            <Button variant="school" onClick={handleConfirmLink}>Evet, Bağla</Button>
+          </div>
+        </div>
+      </SimpleModal>
+
+      {/* Delete Confirmation Modal */}
+      <SimpleModal
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
+        title="Eğitmeni Kaldır"
+        colorVariant={isAdmin ? 'admin' : 'school'}
+        bodyClassName={
+          isAdmin
+            ? 'bg-indigo-50/50 dark:bg-slate-900/80'
+            : 'bg-orange-50/30 dark:bg-[#1a120b]'
+        }
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => setDeleteConfirmOpen(false)}>İptal</Button>
+            <Button variant="danger" onClick={handleDeleteInstructor}>Kaldır</Button>
+          </>
+        }
       >
-        <DialogTitle>Eğitmeni Kaldır</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Bu eğitmeni okulunuzun listesinden kaldırmak istediğinize emin misiniz? Bu işlem, eğitmeni tamamen silmez, sadece okulunuzla olan bağlantısını kaldırır.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)} color="secondary">
-            İptal
-          </Button>
-          <Button onClick={handleDeleteInstructor} color="error" variant="contained">
-            Kaldır
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+          Bu eğitmeni okulunuzun listesinden kaldırmak istediğinize emin misiniz?
+          Bu işlem eğitmeni tamamen silmez, yalnızca okulunuzla bağlantısını kaldırır.
+        </p>
+      </SimpleModal>
+
+      {/* Approve Confirmation Modal */}
+      <SimpleModal
+        open={approveConfirmOpen}
+        onClose={() => setApproveConfirmOpen(false)}
+        title="Eğitmeni Doğrula"
+        colorVariant="school"
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => setApproveConfirmOpen(false)}>İptal</Button>
+            <Button variant="school" onClick={handleApproveInstructor}>Doğrula</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-school/20 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-800/50 flex items-center justify-center flex-shrink-0 text-orange-600 dark:text-orange-400">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-gray-900 dark:text-white font-medium">Dikkat: Bu işlem kalıcıdır ve eğitmeni okulunuzun referansıyla doğrular.</p>
+            </div>
+          </div>
+          <p className="text-gray-700 dark:text-gray-300">
+            <strong>{instructorToApprove?.displayName}</strong> adlı eğitmenin sertifikalı bir eğitmen olduğunu beyan ve teyit ediyorsunuz. Platform genelinde bu eğitmen, <strong>{schoolInfo.displayName}</strong> tarafından doğrulanmış olarak gösterilecektir. Bu işlemi onaylıyor musunuz?
+          </p>
+        </div>
+      </SimpleModal>
     </div>
   );
 };
 
-export default InstructorManagement; 
+export default InstructorManagement;

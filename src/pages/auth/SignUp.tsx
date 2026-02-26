@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthError } from 'firebase/auth';
 import { signUp, getAuthErrorMessage } from './services/authService';
 import Button from '../../common/components/ui/Button';
+import PasswordInput from '../../common/components/ui/PasswordInput';
 import { UserRole } from '../../types';
 
 const SignUp: React.FC = () => {
@@ -106,13 +107,11 @@ const SignUp: React.FC = () => {
           <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="password">
             Şifre
           </label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
-            className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink"
             required
           />
         </div>
@@ -121,13 +120,11 @@ const SignUp: React.FC = () => {
           <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="confirmPassword">
             Şifre Tekrar
           </label>
-          <input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
-            className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-pink"
             required
           />
         </div>

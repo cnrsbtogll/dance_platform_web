@@ -60,8 +60,8 @@ const CourseSearchPage: React.FC = () => {
 
         querySnapshot.forEach((doc) => {
           fetchedCourses.push({
-            id: doc.id,
             ...doc.data(),
+            id: doc.id,        // doc.id her zaman kazansın, içerideki id field'ını ezmeli
           } as DanceClass);
         });
 
@@ -266,12 +266,12 @@ const CourseSearchPage: React.FC = () => {
               )}
 
               {activeFilters.dansTuru && (
-                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
                   Dans Türü: {activeFilters.dansTuru}
                   <button
                     type="button"
                     onClick={() => clearFilter('dansTuru')}
-                    className="flex-shrink-0 ml-1 h-5 w-5 rounded-full inline-flex items-center justify-center text-purple-400 hover:bg-purple-200 hover:text-rose-600 focus:outline-none"
+                    className="flex-shrink-0 ml-1 h-5 w-5 rounded-full inline-flex items-center justify-center text-indigo-400 hover:bg-indigo-200 hover:text-rose-600 focus:outline-none"
                   >
                     <span className="sr-only">Dans türünü kaldır</span>
                     <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -53,6 +53,7 @@ export interface CustomPhoneInputProps {
   fullWidth?: boolean;
   disabled?: boolean;
   required?: boolean;
+  autoComplete?: string;
 }
 
 export const CustomPhoneInput: React.FC<CustomPhoneInputProps> = ({
@@ -67,6 +68,7 @@ export const CustomPhoneInput: React.FC<CustomPhoneInputProps> = ({
   fullWidth = true,
   disabled = false,
   required = false,
+  autoComplete,
 }) => {
   return (
     <div className="flex gap-2 items-start">
@@ -81,6 +83,7 @@ export const CustomPhoneInput: React.FC<CustomPhoneInputProps> = ({
         variant="outlined"
         size="small"
         sx={{ width: '120px' }}
+        autoComplete={autoComplete}
         InputProps={{
           inputComponent: CountryCodeMask as any,
           inputProps: {
@@ -100,6 +103,7 @@ export const CustomPhoneInput: React.FC<CustomPhoneInputProps> = ({
         disabled={disabled}
         variant="outlined"
         size="small"
+        autoComplete={autoComplete}
         InputProps={{
           inputComponent: PhoneNumberMask as any,
           inputProps: {

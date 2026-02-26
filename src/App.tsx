@@ -22,6 +22,7 @@ import SchoolDetailPage from './pages/schools/SchoolDetailPage';
 import Festivals from './pages/festivals/Festivals';
 import Nights from './pages/nights/Nights';
 import useAuth from './common/hooks/useAuth';
+import AuthGuide from './pages/help/AuthGuide';
 import { auth } from './api/firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { AuthProvider } from './contexts/AuthContext';
@@ -33,7 +34,7 @@ import createAppTheme from './styles/theme';
 import { collection, query, where, onSnapshot, writeBatch, getDocs } from 'firebase/firestore';
 import { db } from './api/firebase/firebase';
 import { ChatDialog } from './features/chat/components/ChatDialog';
-import { ChatList } from './features/chat/components/ChatList';
+import { ChatWidget } from './features/chat/components/ChatWidget';
 import { eventBus, EVENTS } from './common/utils/eventBus';
 import { User } from './types';
 
@@ -74,8 +75,6 @@ function AppContent(): JSX.Element {
   const isAuthenticated = !!user;
   const [firebaseInitError, setFirebaseInitError] = useState<string | null>(null);
   const [resetTrigger, setResetTrigger] = useState<number>(0);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [showChatList, setShowChatList] = useState(false);
 
   useEffect(() => {
     setCurrentUser(user);
@@ -271,61 +270,49 @@ function AppContent(): JSX.Element {
     };
   }, []);
 
-  // Okunmamış mesajları takip et
+  // E-posta doğrulama banner state'leri — erken return'lerden ÖNCE tanımlanmalı (Rules of Hooks)
+  const [emailBannerDismissed, setEmailBannerDismissed] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState<boolean | null>(null);
+
   useEffect(() => {
-    if (!user?.id) return;
-
-    console.log('Mesaj dinleyicisi başlatılıyor...');
-
-    const messagesRef = collection(db, 'messages');
-    const q = query(
-      messagesRef,
-      where('receiverId', '==', user.id),
-      where('viewed', '==', false)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const unviewedCount = snapshot.docs.length;
-      console.log('Okunmamış mesaj sayısı güncellendi:', unviewedCount);
-      setUnreadCount(unviewedCount);
-    }, (error) => {
-      console.error('Mesaj dinleyici hatası:', error);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setIsEmailVerified(firebaseUser.emailVerified);
+        firebaseUser.reload()
+          .then(() => setIsEmailVerified(firebaseUser.emailVerified))
+          .catch(err => console.warn('User reload ignored:', err));
+      } else {
+        setIsEmailVerified(null);
+      }
     });
+    return () => unsubscribe();
+  }, []);
 
-    return () => {
-      console.log('Mesaj dinleyicisi temizleniyor...');
-      unsubscribe();
-    };
-  }, [user?.id]); // Sadece user.id değiştiğinde yeniden bağlan
-
-  // Tüm mesajları görüntülendi olarak işaretle
-  const markAllMessagesAsViewed = async () => {
-    if (!user?.id) return;
-
+  const handleSendVerificationEmail = async () => {
+    if (!auth.currentUser) return;
     try {
-      const q = query(
-        collection(db, 'messages'),
-        where('receiverId', '==', user.id),
-        where('viewed', '==', false)
-      );
-
-      const snapshot = await getDocs(q);
-      const batch = writeBatch(db);
-
-      snapshot.docs.forEach((doc) => {
-        batch.update(doc.ref, { viewed: true });
-      });
-
-      await batch.commit();
-    } catch (error) {
-      console.error('Error marking all messages as viewed:', error);
+      const { sendEmailVerification } = await import('firebase/auth');
+      await sendEmailVerification(auth.currentUser);
+      alert('Doğrulama e-postası gönderildi! Lütfen e-posta kutunuzu kontrol edin.');
+    } catch {
+      alert('E-posta gönderilemedi, lütfen daha sonra tekrar deneyin.');
     }
   };
 
-  // Chat listesi kapatılırken mesajları görüntülendi olarak işaretle
-  const handleCloseChatList = () => {
-    setShowChatList(false);
-  };
+  useEffect(() => {
+    console.log('--- BANNER DEGISTI DURUMU ---', {
+      isAuthenticated,
+      isEmailVerified,
+      emailBannerDismissed,
+      isOffline,
+      error,
+      userExists: !!user,
+      currentUserObj: auth.currentUser ? {
+        email: auth.currentUser.email,
+        emailVerified: auth.currentUser.emailVerified
+      } : 'null'
+    });
+  }, [isAuthenticated, isEmailVerified, emailBannerDismissed, isOffline, error, user]);
 
   if (loading) {
     return (
@@ -400,14 +387,37 @@ function AppContent(): JSX.Element {
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
             {isAuthenticated && <InstructorRedirect user={user} />}
             {isOffline && (
-              <div className="bg-yellow-500 text-white text-center py-2 px-4 fixed top-0 left-0 w-full z-50">
+              <div className="bg-yellow-500 text-white text-center py-2 px-4 fixed top-0 left-0 w-full z-[60]">
                 ⚠️ Çevrimdışı moddasınız. İnternet bağlantınızı kontrol edin.
               </div>
             )}
 
             {error && !isOffline && (
-              <div className="bg-orange-500 text-white text-center py-2 px-4 fixed top-0 left-0 w-full z-50">
+              <div className="bg-orange-500 text-white text-center py-2 px-4 fixed top-0 left-0 w-full z-[60]">
                 ⚠️ {getUserFriendlyErrorMessage(error)}
+              </div>
+            )}
+
+            {/* E-posta doğrulama uyarı banner'ı */}
+            {isAuthenticated && isEmailVerified === false && !emailBannerDismissed && !isOffline && !error && (
+              <div className="bg-amber-500 text-white flex items-center justify-between py-2 px-4 fixed top-0 left-0 w-full z-[60] gap-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <span>✉️</span>
+                  <span>E-posta adresiniz henüz doğrulanmadı. Lütfen gelen kutunuzu kontrol edin.</span>
+                  <button
+                    onClick={handleSendVerificationEmail}
+                    className="underline font-bold hover:text-amber-100 transition-colors ml-1"
+                  >
+                    Tekrar Gönder
+                  </button>
+                </div>
+                <button
+                  onClick={() => setEmailBannerDismissed(true)}
+                  className="text-white hover:text-amber-100 flex-shrink-0 text-lg leading-none"
+                  aria-label="Kapat"
+                >
+                  ✕
+                </button>
               </div>
             )}
 
@@ -473,29 +483,26 @@ function AppContent(): JSX.Element {
                     />
                   }
                 />
-                <Route
-                  path="/profile"
-                  element={
-                    isAuthenticated ? (
-                      <ProfilePage
-                        user={currentUser}
-                        onUpdate={(updatedUser) => {
-                          console.log('Profil güncellendi:', updatedUser);
-                          // Profil güncellendiğinde yapılacak işlemler
-                        }}
-                      />
-                    ) : (
-                      <Navigate to="/signin" />
-                    )
-                  }
-                />
+                <Route path="/profile" element={
+                  isAuthenticated ? (
+                    <ProfilePage
+                      user={currentUser}
+                      onUpdate={(updatedUser) => {
+                        console.log('Profil güncellendi:', updatedUser);
+                      }}
+                    />
+                  ) : (
+                    <Navigate to="/signin" />
+                  )
+                } />
                 <Route path="/signin" element={isAuthenticated ? <Navigate to="/" /> : <SignIn />} />
                 <Route path="/signup" element={isAuthenticated ? <Navigate to="/" /> : <SignUp />} />
+                <Route path="/yardim/giris-kayit" element={<AuthGuide />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </div>
 
-            <footer className="bg-gray-800 dark:bg-gray-950 text-white py-8 transition-colors duration-300">
+            <footer className={`${((currentUser?.role === 'school') || (Array.isArray(currentUser?.role) && currentUser.role.includes('school'))) ? 'bg-gray-800 dark:bg-[#231810] border-t dark:border-[#493322] border-transparent' : 'bg-gray-800 dark:bg-gray-950'} text-white py-8 transition-colors duration-300`}>
               <div className="container mx-auto px-4">
                 <div className="flex flex-col md:flex-row justify-between">
                   <div className="mb-6 md:mb-0">
@@ -505,13 +512,22 @@ function AppContent(): JSX.Element {
                     </p>
                   </div>
 
-                  <div>
+                  <div className="mb-6 md:mb-0">
                     <h3 className="text-lg font-semibold mb-3">Bağlantılar</h3>
                     <ul className="space-y-2">
-                      <li><a href="/courses" className="text-gray-300 hover:text-white">Kurs Bul</a></li>
-                      <li><a href="/partners" className="text-gray-300 hover:text-white">Partner Bul</a></li>
-                      <li><a href="/festivals" className="text-gray-300 hover:text-white">Festivaller</a></li>
-                      <li><a href="/nights" className="text-gray-300 hover:text-white">Geceler</a></li>
+                      <li><a href="/courses" className="text-gray-300 hover:text-white transition-colors">Kurs Bul</a></li>
+                      <li><a href="/partners" className="text-gray-300 hover:text-white transition-colors">Partner Bul</a></li>
+                      <li><a href="/festivals" className="text-gray-300 hover:text-white transition-colors">Festivaller</a></li>
+                      <li><a href="/nights" className="text-gray-300 hover:text-white transition-colors">Geceler</a></li>
+                    </ul>
+                  </div>
+
+                  <div className="mb-6 md:mb-0">
+                    <h3 className="text-lg font-semibold mb-3">Yardım & Destek</h3>
+                    <ul className="space-y-2">
+                      <li><a href="/yardim/giris-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Siteye Nasıl Giriş Yapılır?</a></li>
+                      <li><a href="/become-instructor" className="text-gray-300 hover:text-white transition-colors">Eğitmen Ol</a></li>
+                      <li><a href="/become-school" className="text-gray-300 hover:text-white transition-colors">Okul Ekle</a></li>
                     </ul>
                   </div>
 
@@ -566,59 +582,7 @@ function AppContent(): JSX.Element {
               </div>
             </footer>
 
-            {/* Floating Chat Button */}
-            {currentUser && (
-              <>
-                <button
-                  onClick={() => setShowChatList(true)}
-                  className="fixed bottom-6 right-6 bg-gradient-to-r from-brand-pink to-rose-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group z-50"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center animate-pulse">
-                      {unreadCount}
-                    </span>
-                  )}
-                  <span className="absolute right-full mr-2 bg-gray-900 text-white text-sm py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    Mesajlarım {unreadCount > 0 ? `(${unreadCount})` : ''}
-                  </span>
-                </button>
-
-                {/* Chat List Dialog */}
-                {showChatList && (
-                  <div className="fixed inset-0 z-50 overflow-hidden">
-                    <div
-                      className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-                      onClick={handleCloseChatList}
-                    />
-                    <div className="fixed inset-y-0 right-0 max-w-md w-full bg-white dark:bg-slate-800 shadow-xl">
-                      <div className="h-full flex flex-col">
-                        <div className="px-4 py-6 bg-gradient-to-r from-brand-pink to-rose-600">
-                          <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-semibold text-white">
-                              Mesajlarım {unreadCount > 0 && <span className="text-sm ml-2">({unreadCount} okunmamış)</span>}
-                            </h2>
-                            <button
-                              onClick={handleCloseChatList}
-                              className="text-white hover:text-gray-200"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex-1 overflow-y-auto">
-                          <ChatList onClose={handleCloseChatList} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+            <ChatWidget />
           </div>
         </Router>
       </AuthProvider>

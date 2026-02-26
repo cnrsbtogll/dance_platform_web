@@ -4,12 +4,14 @@ interface BadgeSystemProps {
   schoolInfo?: any;
   instructorId?: string;
   isAdmin?: boolean;
+  colorVariant?: 'default' | 'instructor' | 'school';
 }
 
 const BadgeSystem: React.FC<BadgeSystemProps> = ({
   schoolInfo,
   instructorId,
-  isAdmin = false
+  isAdmin = false,
+  colorVariant = 'default'
 }) => {
   return (
     <div className="space-y-6">
@@ -17,14 +19,14 @@ const BadgeSystem: React.FC<BadgeSystemProps> = ({
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Rozet Sistemi</h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {isAdmin 
+            {isAdmin
               ? 'Öğrencilerin başarılarını rozetlerle ödüllendirin'
               : 'Öğrencilerinizin başarılarını rozetlerle ödüllendirin'}
           </p>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 rounded-lg p-6">
+      <div className={`bg-white shadow-sm border rounded-lg p-6 ${colorVariant === 'school' ? 'dark:bg-[#1a120b] dark:border-[#493322]' : 'dark:bg-slate-800 border-gray-200 dark:border-slate-700'}`}>
         <div className="text-center py-12">
           <svg
             className="mx-auto h-12 w-12 text-gray-400"

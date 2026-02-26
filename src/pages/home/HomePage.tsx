@@ -123,18 +123,18 @@ function HomePage({ isAuthenticated, user }: HomePageProps) {
             {/* Kurs Bul Kartı */}
             <Link
               to="/courses"
-              className="group relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-violet-100 dark:hover:border-violet-900"
+              className="group relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-indigo-100 dark:hover:border-indigo-900"
             >
-              <div className="absolute top-0 right-0 -mt-6 -mr-6 h-28 w-28 rounded-full bg-violet-500 opacity-10 group-hover:opacity-20 transition-all duration-300 group-hover:scale-110"></div>
+              <div className="absolute top-0 right-0 -mt-6 -mr-6 h-28 w-28 rounded-full bg-indigo-500 opacity-10 group-hover:opacity-20 transition-all duration-300 group-hover:scale-110"></div>
               <div className="relative">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 mb-4 group-hover:scale-110 transform transition-transform duration-300 shadow-sm">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 mb-4 group-hover:scale-110 transform transition-transform duration-300 shadow-sm">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Dans Kursu Bul</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Size en uygun dans kursunu keşfedin ve hemen başlayın.</p>
-                <span className="mt-3 inline-flex items-center text-xs font-semibold text-violet-600 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">Keşfet →</span>
+                <span className="mt-3 inline-flex items-center text-xs font-semibold text-indigo-600 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">Keşfet →</span>
               </div>
             </Link>
 
@@ -316,23 +316,23 @@ function HomePage({ isAuthenticated, user }: HomePageProps) {
 
       {/* Call to Action */}
       {!isAuthenticated && (
-        <div className="bg-rose-700 text-white py-16">
+        <div className="bg-brand-pink text-white py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center">
               <h2 className="text-3xl font-bold mb-4">Dans Topluluğumuza Katılın</h2>
-              <p className="text-indigo-200 mb-8">
+              <p className="text-pink-100 mb-8">
                 Hemen kayıt olun ve dans dünyasının tüm avantajlarından yararlanmaya başlayın.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/signup"
-                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-slate-800 px-6 py-3 text-base font-medium text-rose-700 shadow-md hover:bg-rose-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-rose-700"
+                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-slate-800 px-6 py-3 text-base font-medium text-brand-pink shadow-md hover:bg-pink-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-brand-pink"
                 >
                   Ücretsiz Kayıt Ol
                 </Link>
                 <Link
                   to="/signin"
-                  className="inline-flex items-center justify-center rounded-md bg-brand-pink border border-white px-6 py-3 text-base font-medium text-white hover:bg-indigo-800 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-rose-700"
+                  className="inline-flex items-center justify-center rounded-md bg-transparent border border-white px-6 py-3 text-base font-medium text-white hover:bg-white hover:text-brand-pink transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-brand-pink"
                 >
                   Giriş Yap
                 </Link>

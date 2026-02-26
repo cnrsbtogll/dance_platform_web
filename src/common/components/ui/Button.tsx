@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'instructor' | 'school';
+type ButtonVariant = 'primary' | 'secondary' | 'instructor' | 'school' | 'indigo' | 'outlined' | 'danger';
 
 export interface ButtonProps {
   children: React.ReactNode;
@@ -10,6 +10,8 @@ export interface ButtonProps {
   fullWidth?: boolean;
   disabled?: boolean;
   loading?: boolean;
+  className?: string;
+  form?: string;
 }
 
 function Button({
@@ -19,14 +21,19 @@ function Button({
   variant = 'primary',
   fullWidth = false,
   disabled = false,
-  loading = false
+  loading = false,
+  className = '',
+  form
 }: ButtonProps) {
-  const baseClasses = 'px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2';
-  const variantClasses = {
+  const baseClasses = 'px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors';
+  const variantClasses: Record<ButtonVariant, string> = {
     primary: 'bg-brand-pink text-white hover:bg-rose-700 focus:ring-brand-pink',
-    secondary: 'bg-gray-200 text-gray-700 dark:text-gray-300 hover:bg-gray-300 focus:ring-gray-500',
+    secondary: 'bg-gray-200 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 focus:ring-gray-500',
     instructor: 'bg-instructor text-white hover:bg-instructor-dark focus:ring-instructor',
     school: 'bg-school text-white hover:bg-school-dark focus:ring-school',
+    indigo: 'bg-gradient-to-r from-indigo-600 to-blue-700 text-white hover:from-indigo-500 hover:to-blue-600 focus:ring-indigo-500 border-none shadow-sm',
+    outlined: 'bg-transparent border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 focus:ring-gray-400',
+    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
   };
   const widthClass = fullWidth ? 'w-full' : '';
   const disabledClass = (disabled || loading) ? 'opacity-50 cursor-not-allowed' : '';
@@ -34,9 +41,10 @@ function Button({
   return (
     <button
       type={type}
+      form={form}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`${baseClasses} ${variantClasses[variant]} ${widthClass} ${disabledClass}`}
+      className={`${baseClasses} ${variantClasses[variant]} ${widthClass} ${disabledClass} ${className}`}
     >
       {loading ? (
         <span className="flex items-center justify-center">
@@ -51,4 +59,4 @@ function Button({
   );
 }
 
-export default Button; 
+export default Button;

@@ -23,6 +23,8 @@ let app;
 let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
+let secondaryApp;
+let secondaryAuth: Auth;
 
 try {
   console.log('🔄 Firebase başlatılıyor...');
@@ -32,6 +34,12 @@ try {
   
   auth = getAuth(app);
   console.log('✅ Firebase Auth başlatıldı');
+
+  // Create a secondary app purely for creating new users
+  // This prevents the current admin user from being logged out when creating a new instructor/student
+  secondaryApp = initializeApp(firebaseConfig, "SecondaryAdminApp");
+  secondaryAuth = getAuth(secondaryApp);
+  console.log('✅ Firebase Secondary Auth başlatıldı (User Creation için)');
   
   db = getFirestore(app);
   console.log('✅ Firebase Firestore başlatıldı');
@@ -47,10 +55,11 @@ try {
   auth = {} as Auth;
   db = {} as Firestore;
   storage = {} as FirebaseStorage;
+  secondaryAuth = {} as Auth;
   
   console.warn('⚠️ Firebase servisleri boş nesneler olarak ayarlandı (fallback)');
 }
 
 console.log('🔍 Firebase servisleri export ediliyor');
-export { auth, db, storage };
+export { auth, db, storage, secondaryAuth };
 export default app;

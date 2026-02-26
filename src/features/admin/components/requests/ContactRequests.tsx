@@ -212,7 +212,7 @@ function ContactRequestsManagement(): JSX.Element {
               id="status-filter"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-pink focus:border-brand-pink text-sm"
+              className="border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-600 text-sm"
             >
               <option value="all">Tümü</option>
               <option value="pending">Beklemede</option>
@@ -222,7 +222,7 @@ function ContactRequestsManagement(): JSX.Element {
             </select>
             <button
               onClick={() => fetchContactRequests()}
-              className="ml-3 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-brand-pink hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink"
+              className="ml-3 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -249,7 +249,7 @@ function ContactRequestsManagement(): JSX.Element {
 
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-pink"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
             <span className="ml-3 text-lg text-gray-600 dark:text-gray-400">İletişim talepleri yükleniyor...</span>
           </div>
         ) : contactRequests.length === 0 ? (
