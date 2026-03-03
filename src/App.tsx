@@ -24,6 +24,10 @@ import Festivals from './pages/festivals/Festivals';
 import Nights from './pages/nights/Nights';
 import useAuth from './common/hooks/useAuth';
 import AuthGuide from './pages/help/AuthGuide';
+import ProfileGuide from './pages/help/ProfileGuide';
+import CourseEnrollGuide from './pages/help/CourseEnrollGuide';
+import InstructorGuide from './pages/help/InstructorGuide';
+import SchoolAdminGuide from './pages/help/SchoolAdminGuide';
 import { auth } from './api/firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { AuthProvider } from './contexts/AuthContext';
@@ -500,6 +504,10 @@ function AppContent(): JSX.Element {
                 <Route path="/signup" element={isAuthenticated ? <Navigate to="/" /> : <SignUp />} />
                 <Route path="/complete-profile" element={isAuthenticated ? <CompleteProfile /> : <Navigate to="/signin" />} />
                 <Route path="/yardim/giris-kayit" element={<AuthGuide />} />
+                <Route path="/yardim/profil-duzenleme" element={<ProfileGuide />} />
+                <Route path="/yardim/kurs-kayit" element={<CourseEnrollGuide />} />
+                <Route path="/yardim/egitmen-paneli" element={<InstructorGuide />} />
+                <Route path="/yardim/okul-paneli" element={<SchoolAdminGuide />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </div>
@@ -528,6 +536,10 @@ function AppContent(): JSX.Element {
                     <h3 className="text-lg font-semibold mb-3">Yardım & Destek</h3>
                     <ul className="space-y-2">
                       <li><a href="/yardim/giris-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Siteye Nasıl Giriş Yapılır?</a></li>
+                      <li><a href="/yardim/profil-duzenleme" className="text-gray-300 hover:text-white transition-colors">Rehber: Avatar &amp; Profil Nasıl Düzenlenir?</a></li>
+                      <li><a href="/yardim/kurs-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Kursa Nasıl Kaydolunur?</a></li>
+                      <li><a href="/yardim/egitmen-paneli" className="text-gray-300 hover:text-white transition-colors">Rehber: Eğitmen Paneli Nasıl Kullanılır?</a></li>
+                      <li><a href="/yardim/okul-paneli" className="text-gray-300 hover:text-white transition-colors">Rehber: Okul Paneli Nasıl Kullanılır?</a></li>
                       <li><a href="/become-instructor" className="text-gray-300 hover:text-white transition-colors">Eğitmen Ol</a></li>
                       <li><a href="/become-school" className="text-gray-300 hover:text-white transition-colors">Okul Ekle</a></li>
                     </ul>
