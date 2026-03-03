@@ -49,6 +49,7 @@ import InstructorManagement from '../components/InstructorManagement/InstructorM
 import { SchoolProfile } from '../components/SchoolProfile/SchoolProfile';
 import EarningsManagement from '../../../features/shared/components/earnings/EarningsManagement';
 import DeleteAccountModal from '../../../features/shared/components/profile/DeleteAccountModal';
+import { SchoolActivationWizard } from '../components/SchoolActivationWizard';
 
 
 interface Course {
@@ -86,6 +87,7 @@ const SchoolAdmin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showActivationWizard, setShowActivationWizard] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('school_sidebar_collapsed') === 'true'; } catch { return false; }
   });
@@ -821,6 +823,47 @@ const SchoolAdmin: React.FC = () => {
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full">
+              {/* Pasif / Beklemede Okul Aktivasyon Banner */}
+              {schoolInfo && (schoolInfo.status === 'passive' || schoolInfo.status === 'pending') && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mb-4 rounded-xl border p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 ${schoolInfo.status === 'pending'
+                      ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                      : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                    }`}
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="text-2xl">{schoolInfo.status === 'pending' ? '⏳' : '🔒'}</span>
+                    <div>
+                      <p className={`font-semibold text-sm ${schoolInfo.status === 'pending'
+                          ? 'text-amber-800 dark:text-amber-200'
+                          : 'text-blue-800 dark:text-blue-200'
+                        }`}>
+                        {schoolInfo.status === 'pending'
+                          ? 'Aktivasyon Talebiniz İnceleniyor'
+                          : 'Okulunuz Henüz Aktif Değil'}
+                      </p>
+                      <p className={`text-xs mt-0.5 ${schoolInfo.status === 'pending'
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-blue-600 dark:text-blue-400'
+                        }`}>
+                        {schoolInfo.status === 'pending'
+                          ? 'Belgeniz yönetici tarafından inceleniyor. Onay sonrası okulunuz yayına alınacak.'
+                          : 'Okulunuzu aktifleştirmek için belge yüklemeniz gerekiyor. Aktif olmayan okullar aramada görünmez.'}
+                      </p>
+                    </div>
+                  </div>
+                  {schoolInfo.status === 'passive' && (
+                    <button
+                      onClick={() => setShowActivationWizard(true)}
+                      className="shrink-0 px-4 py-2 bg-school text-white text-sm font-bold rounded-lg hover:bg-school-dark transition-colors shadow-sm whitespace-nowrap"
+                    >
+                      🚀 Aktif Et
+                    </button>
+                  )}
+                </motion.div>
+              )}
               <motion.div
                 key={activeTab}
                 initial={{ opacity: 0, y: 10 }}
@@ -951,6 +994,21 @@ const SchoolAdmin: React.FC = () => {
         colorVariant="school"
         schoolId={schoolInfo?.id}
       />
+
+      {/* Aktivasyon Sihirbazı */}
+      <AnimatePresence>
+        {showActivationWizard && schoolInfo && (
+          <SchoolActivationWizard
+            schoolInfo={schoolInfo}
+            onClose={() => setShowActivationWizard(false)}
+            onActivationRequested={() => {
+              setShowActivationWizard(false);
+              // Okul bilgisini güncelle (pending durumuna geç)
+              setSchoolInfo(prev => prev ? { ...prev, status: 'pending', documentStatus: 'pending' } : prev);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 };
