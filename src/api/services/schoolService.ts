@@ -3,13 +3,17 @@ import {
   doc,
   getDocs,
   getDoc,
+  setDoc,
+  addDoc,
   query,
   where,
   orderBy,
-  limit
+  limit,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { DanceSchool } from '../../types';
+import { generateInitialsAvatar } from '../../common/utils/imageUtils';
 
 // Koleksiyon adı
 const SCHOOLS_COLLECTION = 'schools';
@@ -142,4 +146,36 @@ export const getFeaturedDanceSchools = async (count: number = 4): Promise<DanceS
     console.error('Öne çıkan dans okulları getirilirken hata:', error);
     throw error;
   }
-}; 
+};
+
+export const createSchoolRequestForNewUser = async (userId: string, userEmail: string, displayName: string) => {
+  const photoURL = generateInitialsAvatar(displayName, 'school');
+
+  await setDoc(doc(db, 'users', userId), {
+    photoURL,
+    role: 'school',
+    is_school_pending: true,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  const schoolRequestRef = await addDoc(collection(db, 'schoolRequests'), {
+    schoolName: displayName + ' Dans Okulu',
+    contactPerson: displayName,
+    contactEmail: userEmail,
+    userId,
+    userEmail,
+    status: 'draft',
+    type: 'activation',
+    document_url: null,
+    documentStatus: null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+
+  await setDoc(doc(db, 'users', userId), {
+    schoolRequestId: schoolRequestRef.id,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  return schoolRequestRef.id;
+};
