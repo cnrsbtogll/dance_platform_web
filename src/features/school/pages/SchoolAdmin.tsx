@@ -152,6 +152,7 @@ const SchoolAdmin: React.FC = () => {
           return;
         }
 
+        // ── Durum 1: Onaylı okul → schools koleksiyonunda ──
         if (userData.schoolId) {
           const schoolRef = doc(db, 'schools', userData.schoolId);
           const schoolDoc = await getDoc(schoolRef);
@@ -161,20 +162,53 @@ const SchoolAdmin: React.FC = () => {
             setSchoolInfo({
               id: schoolDoc.id,
               displayName: schoolData.displayName || 'İsimsiz Okul',
-              email: schoolData.email || '',
+              email: schoolData.email || userData.email || '',
+              userId: currentUser.uid,
               ...schoolData
             });
+            setLoading(false);
+            return;
           }
-        } else {
-          setSchoolInfo({
-            id: userDoc.id,
-            displayName: userData.displayName || 'İsimsiz Okul',
-            email: userData.email || '',
-            ...userData
-          });
         }
 
-        setLoading(false);
+        // ── Durum 2: Aday/taslak okul → schoolRequests koleksiyonunda ──
+        if (userData.schoolRequestId) {
+          const reqRef = doc(db, 'schoolRequests', userData.schoolRequestId);
+          const reqDoc = await getDoc(reqRef);
+
+          if (reqDoc.exists()) {
+            const reqData = reqDoc.data();
+            setSchoolInfo({
+              id: reqDoc.id,              // schoolRequests ID'si
+              _isRequest: true,            // Henüz schools'da değil işareti
+              displayName: reqData.schoolName || userData.displayName || 'İsimsiz Okul',
+              name: reqData.schoolName || userData.displayName || 'İsimsiz Okul',
+              email: reqData.contactEmail || userData.email || '',
+              contactEmail: reqData.contactEmail || userData.email || '',
+              contactPerson: reqData.contactPerson || userData.displayName || '',
+              contactPhone: reqData.contactPhone || '',
+              address: reqData.address || '',
+              description: reqData.schoolDescription || reqData.description || '',
+              photoURL: reqData.photoURL || userData.photoURL || '',
+              status: reqData.status === 'draft' ? 'passive' : (reqData.status || 'passive'),
+              documentStatus: reqData.documentStatus || null,
+              document_url: reqData.document_url || reqData.schoolDocument || null,
+              userId: currentUser.uid,
+            });
+            setLoading(false);
+            return;
+          }
+        }
+
+        // ── Durum 3: Fallback — kullanıcı verisi üzerinden göster ──
+        setSchoolInfo({
+          id: userDoc.id,
+          displayName: userData.displayName || 'İsimsiz Okul',
+          email: userData.email || '',
+          status: 'passive',
+          userId: currentUser.uid,
+          ...userData
+        });
       } catch (err) {
         console.error('Okul bilgileri yüklenirken hata:', err);
         setError('Okul bilgileri yüklenirken bir hata oluştu.');
@@ -829,24 +863,24 @@ const SchoolAdmin: React.FC = () => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={`mb-4 rounded-xl border p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 ${schoolInfo.status === 'pending'
-                      ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-                      : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                    : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
                     }`}
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <span className="text-2xl">{schoolInfo.status === 'pending' ? '⏳' : '🔒'}</span>
                     <div>
                       <p className={`font-semibold text-sm ${schoolInfo.status === 'pending'
-                          ? 'text-amber-800 dark:text-amber-200'
-                          : 'text-blue-800 dark:text-blue-200'
+                        ? 'text-amber-800 dark:text-amber-200'
+                        : 'text-blue-800 dark:text-blue-200'
                         }`}>
                         {schoolInfo.status === 'pending'
                           ? 'Aktivasyon Talebiniz İnceleniyor'
                           : 'Okulunuz Henüz Aktif Değil'}
                       </p>
                       <p className={`text-xs mt-0.5 ${schoolInfo.status === 'pending'
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-blue-600 dark:text-blue-400'
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-blue-600 dark:text-blue-400'
                         }`}>
                         {schoolInfo.status === 'pending'
                           ? 'Belgeniz yönetici tarafından inceleniyor. Onay sonrası okulunuz yayına alınacak.'

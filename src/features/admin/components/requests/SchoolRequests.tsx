@@ -23,22 +23,26 @@ interface SchoolRequest {
   lastName?: string;
   schoolName: string;
   schoolDescription?: string;
-  schoolAddress?: string;  // Firestore'da schoolAddress olarak geçiyor
-  address?: string;        // eski alan fallback
+  description?: string;          // alias
+  schoolAddress?: string;
+  address?: string;
   city?: string;
   zipCode?: string;
   country?: string;
-  contactNumber?: string;  // Firestore'da contactNumber
-  contactPhone?: string;   // fallback
+  contactNumber?: string;
+  contactPhone?: string;
   contactPerson?: string;
   contactEmail?: string;
   instagramHandle?: string;
   website?: string;
   danceStyles?: string[];
   establishedYear?: string;
+  photoURL?: string;             // okul fotoğrafı
+  document_url?: string;         // belge URL (activation akışı)
+  document_name?: string;
   userId: string;
   userEmail: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'draft' | 'pending' | 'approved' | 'rejected';
   type?: 'activation' | 'new_school';
   schoolId?: string;
   schoolDocument?: string;
@@ -56,13 +60,13 @@ function SchoolRequests(): JSX.Element {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<SchoolRequest | null>(null);
   const [contactRequest, setContactRequest] = useState<SchoolRequest | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'pending' | 'approved' | 'rejected'>('pending');
 
   useEffect(() => {
     fetchRequests(statusFilter);
   }, [statusFilter]);
 
-  const fetchRequests = async (status: 'all' | 'pending' | 'approved' | 'rejected' = 'pending') => {
+  const fetchRequests = async (status: 'all' | 'draft' | 'pending' | 'approved' | 'rejected' = 'pending') => {
     setLoading(true);
     setError(null);
 
@@ -110,28 +114,47 @@ function SchoolRequests(): JSX.Element {
 
       const requestData = requestDoc.data() as SchoolRequest;
 
-      // ── Aktivasyon talebi (yeni akış): Okul zaten var, sadece aktifleştir ──
-      if (requestData.type === 'activation' && requestData.schoolId) {
-        const schoolRef = doc(db, 'schools', requestData.schoolId);
-        await updateDoc(schoolRef, {
+      // ── Aktivasyon talebi (yeni akış): schoolRequests → schools ──
+      if (requestData.type === 'activation') {
+        // 1. schoolRequests verisinden yeni aktif okul oluştur
+        const newSchoolData = {
+          name: requestData.schoolName,
+          displayName: requestData.schoolName,
+          description: requestData.schoolDescription || requestData.description || '',
+          contactPerson: requestData.contactPerson,
+          contactEmail: requestData.contactEmail,
+          contactPhone: requestData.contactPhone || '',
+          address: requestData.address || '',
+          photoURL: requestData.photoURL || null,
+          document_url: requestData.schoolDocument || requestData.document_url || null,
+          document_name: requestData.schoolDocumentName || requestData.document_name || null,
+          userId: userId,
           status: 'active',
           documentStatus: 'approved',
           approvedAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
+        };
 
-        // Kullanıcı is_school_pending'i kaldır
+        const newSchoolDoc = await addDoc(collection(db, 'schools'), newSchoolData);
+
+        // 2. Kullanıcıyı güncelle: schoolId ekle, schoolRequestId'yi temizle
         const userDocRef = doc(db, 'users', userId);
         await updateDoc(userDocRef, {
+          schoolId: newSchoolDoc.id,
+          schoolRequestId: null,
           is_school_pending: false,
           role: 'school',
+          isSchool: true,
           schoolApprovedAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
 
+        // 3. schoolRequests kaydını approved yap
         await updateDoc(requestDocRef, {
           status: 'approved',
           approvedBy: 'admin',
+          schoolId: newSchoolDoc.id,
           updatedAt: serverTimestamp()
         });
 
@@ -257,10 +280,17 @@ function SchoolRequests(): JSX.Element {
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200">Okul Başvuruları</h2>
         {/* Scrollable filter bar — stays one line on all screen sizes */}
         <div className="flex overflow-x-auto pb-1 gap-2 scrollbar-hide">
-          {(['all', 'pending', 'approved', 'rejected'] as const).map((s) => {
-            const labels = { all: 'Tümü', pending: 'Bekleyen', approved: 'Onaylandı', rejected: 'Reddedildi' };
-            const colors = {
+          {(['all', 'draft', 'pending', 'approved', 'rejected'] as const).map((s) => {
+            const labels: Record<string, string> = {
+              all: 'Tümü',
+              draft: 'Taslak',
+              pending: 'Bekleyen',
+              approved: 'Onaylandı',
+              rejected: 'Reddedildi'
+            };
+            const colors: Record<string, string> = {
               all: statusFilter === s ? 'bg-gray-700 text-white border-gray-700' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700',
+              draft: statusFilter === s ? 'bg-slate-500 text-white border-slate-500' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700',
               pending: statusFilter === s ? 'bg-yellow-500 text-white border-yellow-500' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20',
               approved: statusFilter === s ? 'bg-green-600 text-white border-green-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-green-50 dark:hover:bg-green-900/20',
               rejected: statusFilter === s ? 'bg-red-600 text-white border-red-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/20',

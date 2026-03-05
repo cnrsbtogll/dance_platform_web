@@ -163,23 +163,25 @@ function BecomeSchool({ onMount }: BecomeSchoolProps) {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      // Pasif okul oluştur (schools koleksiyonuna)
-      const schoolRef = await addDoc(collection(db, 'schools'), {
-        name: displayName + ' Dans Okulu',
-        displayName: displayName + ' Dans Okulu',
+      // Aday okul kaydı → schoolRequests koleksiyonuna (status: 'draft')
+      // Belge ve profil doldurulduktan sonra 'pending' → admin kuyruğuna girer
+      const schoolRequestRef = await addDoc(collection(db, 'schoolRequests'), {
+        schoolName: displayName + ' Dans Okulu',
         contactPerson: displayName,
         contactEmail: userEmail,
         userId,
-        status: 'passive',          // pasif — henüz aktifleştirilmedi
+        userEmail,
+        status: 'draft',          // Henüz belge yok → taslak
+        type: 'activation',       // Yeni akış kayıt tipi
         document_url: null,
         documentStatus: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 
-      // Kullanıcıya schoolId bağla
+      // Kullanıcıya schoolRequestId bağla (schools'a değil, requests'e)
       await setDoc(doc(db, 'users', userId), {
-        schoolId: schoolRef.id,
+        schoolRequestId: schoolRequestRef.id,
         updatedAt: serverTimestamp()
       }, { merge: true });
 
