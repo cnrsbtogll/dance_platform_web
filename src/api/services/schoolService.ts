@@ -153,7 +153,7 @@ export const createSchoolRequestForNewUser = async (userId: string, userEmail: s
 
   await setDoc(doc(db, 'users', userId), {
     photoURL,
-    role: 'school',
+    role: 'draft-school',
     is_school_pending: true,
     updatedAt: serverTimestamp()
   }, { merge: true });

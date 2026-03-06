@@ -9,6 +9,7 @@ import LoginRequiredModal from '../modals/LoginRequiredModal';
 import { eventBus, EVENTS } from '../../utils/eventBus';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { createSchoolRequestForNewUser } from '../../../api/services/schoolService';
 
 // Navbar bileşeni için prop tipleri
 interface NavbarProps {
@@ -25,6 +26,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'tr' | 'en'>('tr');
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
   const [loginModalMessage, setLoginModalMessage] = useState<string>("");
+  const [openingSchool, setOpeningSchool] = useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -461,14 +463,39 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 {/* Dans Okulu Aç butonu */}
                 {!hasSchoolRole && !hasSchoolAdminRole && (
                   <button
-                    onClick={() => navigate('/signup', { state: { role: 'draft-school' } })}
-                    className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
+                    onClick={async () => {
+                      if (isAuthenticated && user) {
+                        // Zaten giriş yapmış kullanıcı: direkt schoolRequest oluştur ve panele git
+                        if (openingSchool) return;
+                        setOpeningSchool(true);
+                        try {
+                          await createSchoolRequestForNewUser(user.id, user.email || '', user.displayName || '');
+                          navigate('/school-admin');
+                        } catch (err) {
+                          console.error('Okul oluşturma hatası:', err);
+                        } finally {
+                          setOpeningSchool(false);
+                        }
+                      } else {
+                        // Giriş yapmamış kullanıcı: kayıt sayfasına yönlendir
+                        navigate('/signup', { state: { role: 'draft-school' } });
+                      }
+                    }}
+                    disabled={openingSchool}
+                    className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow disabled:opacity-60"
                     title="Dans Okulu Aç"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    <span className="hidden lg:inline">Dans Okulu Aç</span>
+                    {openingSchool ? (
+                      <svg className="animate-spin h-4 w-4 lg:mr-1" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    )}
+                    <span className="hidden lg:inline">{openingSchool ? 'Oluşturuluyor...' : 'Dans Okulu Aç'}</span>
                   </button>
                 )}
 
@@ -697,17 +724,38 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 {/* Dans Okulu Aç butonu - Mobil */}
                 {!hasSchoolRole && !hasSchoolAdminRole && (
                   <button
-                    onClick={() => {
-                      navigate('/signup', { state: { role: 'draft-school' } });
+                    onClick={async () => {
+                      if (isAuthenticated && user) {
+                        if (openingSchool) return;
+                        setOpeningSchool(true);
+                        try {
+                          await createSchoolRequestForNewUser(user.id, user.email || '', user.displayName || '');
+                          navigate('/school-admin');
+                        } catch (err) {
+                          console.error('Okul oluşturma hatası:', err);
+                        } finally {
+                          setOpeningSchool(false);
+                        }
+                      } else {
+                        navigate('/signup', { state: { role: 'draft-school' } });
+                      }
                       setIsMenuOpen(false);
                     }}
-                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
+                    disabled={openingSchool}
+                    className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:ring-offset-1 shadow-sm transition-all duration-200 disabled:opacity-60"
                   >
                     <div className="flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      Dans Okulu Aç
+                      {openingSchool ? (
+                        <svg className="animate-spin h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      )}
+                      {openingSchool ? 'Oluşturuluyor...' : 'Dans Okulu Aç'}
                     </div>
                   </button>
                 )}

@@ -1881,8 +1881,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     if (isDraftSchoolUser && !isAdmin) {
       const activeCount = courses.length;
       if (activeCount >= 3) {
-        setSchoolRequestReason('course-limit');
-        setShowSchoolRequestModal(true);
+        window.dispatchEvent(new CustomEvent('openActivationWizard'));
         return;
       }
     }
@@ -2081,8 +2080,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       if (selectedCourse) {
         // Draft school: kursu aktif yapamaz
         if (isDraftSchoolUser && !isAdmin && courseDataToSave.status === 'active') {
-          setSchoolRequestReason('activation');
-          setShowSchoolRequestModal(true);
+          window.dispatchEvent(new CustomEvent('openActivationWizard'));
           setLoading(false);
           return;
         }
@@ -2166,7 +2164,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           </div>
           {courses.length >= 3 && (
             <button
-              onClick={() => { setSchoolRequestReason('course-limit'); setShowSchoolRequestModal(true); }}
+              onClick={() => { window.dispatchEvent(new CustomEvent('openActivationWizard')); }}
               className="text-xs px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors flex-shrink-0"
             >
               Doğrulama İsteği Gönder
@@ -2175,75 +2173,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         </div>
       )}
 
-      {/* School Request Modal */}
-      {showSchoolRequestModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-amber-100 dark:bg-amber-900/40 rounded-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  {schoolRequestReason === 'course-limit' ? 'Kurs Limiti Doldu' : 'Kurs Aktifleştirme'}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Okul doğrulaması gerekli</p>
-              </div>
-            </div>
 
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
-              {schoolRequestReason === 'course-limit'
-                ? 'Taslak okul hesabınızla en fazla 3 kurs açabilirsiniz. 4. kursu açabilmek için okul doğrulama talebinde bulunmanız gerekiyor.'
-                : 'Taslak okul hesabınızdaki kursları aktif yapabilmek için okul doğrulama talebinde bulunmanız gerekiyor.'
-              }
-            </p>
-
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-700 dark:text-blue-300 mb-5">
-              <strong>Talep gönderdikten sonra:</strong> Ekibimiz belgelerinizi inceleyecek ve 1-3 iş günü içinde size geri dönecektir.
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setShowSchoolRequestModal(false); setSchoolRequestReason(null); }}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-xl transition-colors"
-              >
-                İptal
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    const currentUser = auth.currentUser;
-                    if (!currentUser) return;
-                    const { addDoc, collection: col } = await import('firebase/firestore');
-                    await addDoc(col(db, 'schoolRequests'), {
-                      userId: currentUser.uid,
-                      userEmail: currentUser.email,
-                      displayName: currentUser.displayName,
-                      type: schoolRequestReason === 'course-limit' ? 'upgrade-request' : 'activation-request',
-                      status: 'pending',
-                      reason: schoolRequestReason === 'course-limit'
-                        ? 'Kurs limiti aşıldı, okul doğrulaması talep ediliyor.'
-                        : 'Kurs aktifleştirmek için okul doğrulaması talep ediliyor.',
-                      createdAt: serverTimestamp()
-                    });
-                    setShowSchoolRequestModal(false);
-                    setSchoolRequestReason(null);
-                    setSuccess('Doğrulama talebiniz gönderildi. En kısa sürede size döneceğiz.');
-                  } catch (err) {
-                    console.error('School request error:', err);
-                    setError('Talep gönderilirken bir hata oluştu.');
-                  }
-                }}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors"
-              >
-                Talep Gönder
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Üst Başlık ve Arama Bölümü */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">

@@ -226,6 +226,16 @@ const SchoolAdmin: React.FC = () => {
     fetchSchoolInfo();
   }, [currentUser]);
 
+  // Listen for activation wizard requests from sub-components
+  useEffect(() => {
+    const handleOpenActivationWizard = () => {
+      setShowActivationWizard(true);
+    };
+
+    window.addEventListener('openActivationWizard', handleOpenActivationWizard);
+    return () => window.removeEventListener('openActivationWizard', handleOpenActivationWizard);
+  }, []);
+
   useEffect(() => {
     const fetchCourses = async () => {
       if (!schoolInfo?.id) return;
