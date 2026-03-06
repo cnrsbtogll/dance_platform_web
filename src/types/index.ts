@@ -4,7 +4,7 @@ export type DanceStyle = 'salsa' | 'bachata' | 'kizomba' | 'zouk' | 'tango' | 'o
 
 export type DanceLevel = 'beginner' | 'intermediate' | 'advanced' | 'professional';
 
-export type UserRole = 'student' | 'instructor' | 'school' | 'school_admin' | 'admin';
+export type UserRole = 'student' | 'instructor' | 'school' | 'school_admin' | 'admin' | 'draft-school';
 
 export interface User {
   id: string;

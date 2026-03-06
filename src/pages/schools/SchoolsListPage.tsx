@@ -34,9 +34,9 @@ const SchoolsListPage: React.FC = () => {
         });
 
         setSchools(sortedSchools);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Dans okulları yüklenirken hata oluştu:', err);
-        setError('Dans okulları yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+        setError(`Dans okulları yüklenirken hata: ${err?.message || JSON.stringify(err)}`);
       } finally {
         setLoading(false);
       }
