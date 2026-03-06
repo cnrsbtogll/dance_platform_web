@@ -34,6 +34,11 @@ export const getAllDanceSchools = async (): Promise<DanceSchool[]> => {
     for (const doc of schoolsSnapshot.docs) {
       const schoolData = doc.data();
 
+      // Sadece aktif okulları göster
+      if (schoolData.status !== 'active') {
+        continue;
+      }
+
       // Kurs sayısını hesapla
       let courseCount = 0;
       try {

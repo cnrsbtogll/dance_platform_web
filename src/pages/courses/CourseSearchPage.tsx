@@ -59,10 +59,13 @@ const CourseSearchPage: React.FC = () => {
         const fetchedCourses: DanceClass[] = [];
 
         querySnapshot.forEach((doc) => {
-          fetchedCourses.push({
-            ...doc.data(),
-            id: doc.id,        // doc.id her zaman kazansın, içerideki id field'ını ezmeli
-          } as DanceClass);
+          const data = doc.data();
+          if (data.status === 'active') {
+            fetchedCourses.push({
+              ...data,
+              id: doc.id,
+            } as DanceClass);
+          }
         });
 
         setCourses(fetchedCourses);
