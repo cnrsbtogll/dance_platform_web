@@ -52,7 +52,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
   const hasInstructorRole = user?.role === 'instructor';
   const hasSchoolAdminRole = user?.role === 'school_admin';
-  const hasSchoolRole = user?.role === 'school';
+  const hasSchoolRole = user?.role === 'school' || user?.role === 'draft-school';
+  const hasDraftSchoolRole = user?.role === 'draft-school';
   const hasSuperAdminRole = user?.role === 'admin';
   const hasStudentRole = !user?.role || (!hasInstructorRole && !hasSchoolAdminRole && !hasSchoolRole && !hasSuperAdminRole && isAuthenticated);
 
@@ -459,8 +460,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
                 {/* Dans Okulu Aç butonu */}
                 {!hasSchoolRole && !hasSchoolAdminRole && (
-                  <Link
-                    to="/become-school"
+                  <button
+                    onClick={() => navigate('/signup', { state: { role: 'draft-school' } })}
                     className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                     title="Dans Okulu Aç"
                   >
@@ -468,7 +469,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                     <span className="hidden lg:inline">Dans Okulu Aç</span>
-                  </Link>
+                  </button>
                 )}
 
                 {/* Eğitim Paneli butonu */}
@@ -506,8 +507,8 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       className="mr-1 lg:mr-3 inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                       title="Okul Yönetim Paneli"
                     >
-                      <span className="hidden lg:inline">Okul Yönetim Paneli</span>
-                      <span className="lg:hidden text-[10px] font-bold">OKUL</span>
+                      <span className="hidden lg:inline">{hasDraftSchoolRole ? 'Taslak Okul Paneli' : 'Okul Yönetim Paneli'}</span>
+                      <span className="lg:hidden text-[10px] font-bold">{hasDraftSchoolRole ? 'TASLAK' : 'OKUL'}</span>
                     </Link>
                   )}
                   <div className="ml-3 relative">
@@ -695,22 +696,9 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
 
                 {/* Dans Okulu Aç butonu - Mobil */}
                 {!hasSchoolRole && !hasSchoolAdminRole && (
-                  <Link
-                    to="/become-school"
+                  <button
                     onClick={() => {
-                      console.log('🎯 Dans Okulu Aç butonuna tıklandı (Mobil):', {
-                        userId: user?.id,
-                        userEmail: user?.email,
-                        userRole: user?.role,
-                        roleChecks: {
-                          hasInstructorRole,
-                          hasSchoolRole,
-                          hasSchoolAdminRole,
-                          hasSuperAdminRole
-                        },
-                        timestamp: new Date().toISOString(),
-                        currentPath: location.pathname
-                      });
+                      navigate('/signup', { state: { role: 'draft-school' } });
                       setIsMenuOpen(false);
                     }}
                     className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-amber-700 to-yellow-900 hover:from-amber-600 hover:to-yellow-800 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
@@ -721,7 +709,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                       </svg>
                       Dans Okulu Aç
                     </div>
-                  </Link>
+                  </button>
                 )}
 
                 {/* Eğitmen Paneli butonu - Mobil */}

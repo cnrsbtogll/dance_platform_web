@@ -142,8 +142,14 @@ const SchoolAdmin: React.FC = () => {
 
         const isSchool = userRole
           ? (Array.isArray(userRole)
-            ? userRole.includes('school')
-            : userRole === 'school')
+            ? (userRole.includes('school') || userRole.includes('draft-school'))
+            : (userRole === 'school' || userRole === 'draft-school'))
+          : false;
+
+        const isDraftSchool = userRole
+          ? (Array.isArray(userRole)
+            ? userRole.includes('draft-school')
+            : userRole === 'draft-school')
           : false;
 
         if (!isSchool) {
@@ -200,12 +206,13 @@ const SchoolAdmin: React.FC = () => {
           }
         }
 
-        // ── Durum 3: Fallback — kullanıcı verisi üzerinden göster ──
+        // ── Durum 3: Fallback — kullanıcı verisi üzerinden göster (draft-school dahil) ──
         setSchoolInfo({
           id: userDoc.id,
-          displayName: userData.displayName || 'İsimsiz Okul',
+          displayName: userData.displayName || 'Taslak Okul',
           email: userData.email || '',
           status: 'passive',
+          isDraftSchool: isDraftSchool,
           userId: currentUser.uid,
           ...userData
         });
@@ -435,8 +442,36 @@ const SchoolAdmin: React.FC = () => {
     );
   }
 
+  const isDraftSchool = !!(schoolInfo as any)?.isDraftSchool;
+
   const renderDashboardOverview = () => (
     <div className="space-y-6">
+      {/* Draft School Banner */}
+      {isDraftSchool && (
+        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Taslak Okul Hesabı</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                Hesabınız taslak modunda. En fazla <strong>3 kurs</strong> açabilirsiniz ve kurslar <strong>pasif</strong> olarak yayınlanır.
+                Daha fazla kurs açmak veya kurs aktif etmek için okul doğrulaması gereklidir.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab('courses')}
+            className="flex-shrink-0 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600 rounded-lg transition-colors"
+          >
+            Kurslarımı Gör
+          </button>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div

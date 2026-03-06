@@ -33,6 +33,11 @@ service cloud.firestore {
       return isAuthenticated() && hasRole('school');
     }
     
+    // Kullanıcı taslak okul mu?
+    function isDraftSchool() {
+      return isAuthenticated() && hasRole('draft-school');
+    }
+    
     // Kullanıcı authenticated mi?
     function isAuthenticated() {
       return request.auth != null;
@@ -45,12 +50,18 @@ service cloud.firestore {
       // Herkes okuyabilir (giriş yapmadan da)
       allow read: if true;
       
-      // Eğitmen kendi kursunu, Okul kendi kursunu ve Admin tüm kursları oluşturabilir
+      // Eğitmen kendi kursunu, Okul kendi kursunu, Taslak Okul kendi kursunu ve Admin tüm kursları oluşturabilir
       allow create: if isAuthenticated() && (
         isAdmin() ||
         (isSchool() && (
           request.resource.data.schoolId == request.auth.uid || 
           request.resource.data.schoolId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolId
+        )) ||
+        // Draft school: kendi adına kurs oluşturabilir (status kontrolü frontend'de yapılıyor)
+        (isDraftSchool() && (
+          request.resource.data.schoolId == request.auth.uid ||
+          !('schoolId' in request.resource.data) ||
+          request.resource.data.schoolId == ''
         )) ||
         (isInstructor() && (
           request.resource.data.instructorId == request.auth.uid ||
@@ -64,6 +75,12 @@ service cloud.firestore {
         (isSchool() && (
           resource.data.schoolId == request.auth.uid || 
           resource.data.schoolId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolId
+        )) ||
+        // Draft school: kendi kursunu güncelleyebilir
+        (isDraftSchool() && (
+          resource.data.schoolId == request.auth.uid ||
+          resource.data.schoolId == '' ||
+          !('schoolId' in resource.data)
         )) ||
         (isInstructor() && (
           resource.data.instructorId == request.auth.uid ||
@@ -79,6 +96,12 @@ service cloud.firestore {
         (isSchool() && (
           resource.data.schoolId == request.auth.uid || 
           resource.data.schoolId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolId
+        )) ||
+        // Draft school: kendi kursunu silebilir  
+        (isDraftSchool() && (
+          resource.data.schoolId == request.auth.uid ||
+          resource.data.schoolId == '' ||
+          !('schoolId' in resource.data)
         )) ||
         (isInstructor() && (
           resource.data.instructorId == request.auth.uid ||

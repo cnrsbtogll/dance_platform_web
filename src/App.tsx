@@ -7,7 +7,7 @@ import ProgressPage from './pages/progress/ProgressPage';
 import AdminPanel from './features/admin/pages/AdminPanel';
 import InstructorPanel from './features/instructor/pages/InstructorPanel';
 import BecomeInstructor from './features/instructor/pages/BecomeInstructor';
-import BecomeSchool from './features/school/pages/BecomeSchool';
+
 import Navbar from './common/components/layout/Navbar';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
@@ -462,7 +462,7 @@ function AppContent(): JSX.Element {
                 <Route
                   path="/school-admin"
                   element={
-                    isAuthenticated && currentUser?.role?.includes('school') ?
+                    isAuthenticated && (currentUser?.role === 'school' || currentUser?.role === 'draft-school') ?
                       <SchoolAdmin /> : <Navigate to="/signin" />
                   }
                 />
@@ -472,21 +472,7 @@ function AppContent(): JSX.Element {
                 />
                 <Route
                   path="/become-school"
-                  element={
-                    <BecomeSchool
-                      onMount={() => {
-                        console.log('🎯 /become-school route render:', {
-                          isAuthenticated,
-                          user: {
-                            id: currentUser?.id,
-                            email: currentUser?.email,
-                            role: currentUser?.role
-                          },
-                          timestamp: new Date().toISOString()
-                        });
-                      }}
-                    />
-                  }
+                  element={<Navigate to="/signup" replace />}
                 />
                 <Route path="/profile" element={
                   isAuthenticated ? (

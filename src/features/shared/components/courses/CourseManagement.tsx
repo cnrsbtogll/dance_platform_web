@@ -340,6 +340,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
   const [quickAddInstructorData, setQuickAddInstructorData] = useState({ displayName: '', email: '', password: 'feriha123', phoneNumber: '' });
   const [isQuickAddingInstructor, setIsQuickAddingInstructor] = useState(false);
   const [instructorToRemove, setInstructorToRemove] = useState<{ id: string, name: string, courseId: string } | null>(null);
+  // Draft school state'leri
+  const [isDraftSchoolUser, setIsDraftSchoolUser] = useState<boolean>(false);
+  const [showSchoolRequestModal, setShowSchoolRequestModal] = useState<boolean>(false);
+  const [schoolRequestReason, setSchoolRequestReason] = useState<'course-limit' | 'activation' | null>(null);
 
   const sectionBorderColor = isAdmin ? 'border-indigo-600' : colorVariant === 'school' ? 'border-school' : 'border-instructor';
   const inputFocusRing = colorVariant === 'school' ? 'focus:ring-school focus:border-school' : 'focus:ring-instructor focus:border-instructor';
@@ -1280,6 +1284,27 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     handleInstructorSchoolSelection();
   }, [isAdmin]);
 
+  // Draft school kontrolü
+  useEffect(() => {
+    const checkUserRole = async () => {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          const role = userDoc.data().role;
+          const isDraft = role === 'draft-school' ||
+            (Array.isArray(role) && role.includes('draft-school'));
+          setIsDraftSchoolUser(isDraft);
+        }
+      } catch (e) {
+        console.error('Draft school check error:', e);
+      }
+    };
+    checkUserRole();
+  }, []);
+
   // Stil bazlı görsel seçici bileşeni
   const renderImagePicker = () => {
     const selectedStyle = formData.danceStyle.toLowerCase().replace(/\s/g, '');
@@ -1737,21 +1762,34 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
               <h3 className={`text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 border-l-4 ${sectionBorderColor} pl-3`}>
                 8. Yayınlanma Durumu
               </h3>
-              <div className="grid grid-cols-3 gap-3">
-                {statusOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, status: opt.value as any })}
-                    className={`py-3 rounded-xl border-2 font-medium transition-all ${formData.status === opt.value
-                      ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
-                      : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300'
-                      }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+              {isDraftSchoolUser && !isAdmin ? (
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg flex items-center gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Kurs Pasif Olarak Kaydedilecek</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">Taslak okul hesabınız doğrulanana kadar kurslarınız pasif olarak yayınlanır.</p>
+                  </div>
+                  <span className="px-3 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full">Pasif</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3">
+                  {statusOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: opt.value as any })}
+                      className={`py-3 rounded-xl border-2 font-medium transition-all ${formData.status === opt.value
+                        ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
+                        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300'
+                        }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </section>
           </div>
         )}
@@ -1839,6 +1877,16 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
   // Yeni kurs ekleme
   const addNewCourse = () => {
+    // Draft school: max 3 kurs limiti
+    if (isDraftSchoolUser && !isAdmin) {
+      const activeCount = courses.length;
+      if (activeCount >= 3) {
+        setSchoolRequestReason('course-limit');
+        setShowSchoolRequestModal(true);
+        return;
+      }
+    }
+
     setSelectedCourse(null);
     setFormData({
       name: '',
@@ -1856,7 +1904,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       time: '18:00',
       price: 1500,
       currency: 'TRY',
-      status: 'active',
+      // Draft school ise zorunlu pasif
+      status: isDraftSchoolUser ? 'inactive' : 'active',
       recurring: true,
       schedule: [],
       location: {
@@ -2030,6 +2079,13 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       console.log('Kullanıcı UID:', auth.currentUser?.uid);
 
       if (selectedCourse) {
+        // Draft school: kursu aktif yapamaz
+        if (isDraftSchoolUser && !isAdmin && courseDataToSave.status === 'active') {
+          setSchoolRequestReason('activation');
+          setShowSchoolRequestModal(true);
+          setLoading(false);
+          return;
+        }
         // Mevcut kursu güncelle
         const courseRef = doc(db, 'courses', selectedCourse.id);
         await updateDoc(courseRef, courseDataToSave);
@@ -2047,6 +2103,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
         setSuccess('Kurs başarıyla güncellendi.');
       } else {
+        // Draft school: yeni kurs her zaman inactive
+        if (isDraftSchoolUser && !isAdmin) {
+          courseDataToSave.status = 'inactive';
+        }
         // Yeni kurs ekle
         const docRef = await addDoc(collection(db, 'courses'), {
           ...courseDataToSave,
@@ -2093,6 +2153,98 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
 
   return (
     <div className="space-y-6">
+      {/* Draft School Bilgi Bannerı */}
+      {isDraftSchoolUser && !isAdmin && (
+        <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm text-amber-800 dark:text-amber-300">
+              Taslak okul: <strong>{courses.length}/3</strong> kurs kullanıldı. Kurslar pasif olarak yayınlanır.
+            </span>
+          </div>
+          {courses.length >= 3 && (
+            <button
+              onClick={() => { setSchoolRequestReason('course-limit'); setShowSchoolRequestModal(true); }}
+              className="text-xs px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors flex-shrink-0"
+            >
+              Doğrulama İsteği Gönder
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* School Request Modal */}
+      {showSchoolRequestModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-amber-100 dark:bg-amber-900/40 rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {schoolRequestReason === 'course-limit' ? 'Kurs Limiti Doldu' : 'Kurs Aktifleştirme'}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Okul doğrulaması gerekli</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
+              {schoolRequestReason === 'course-limit'
+                ? 'Taslak okul hesabınızla en fazla 3 kurs açabilirsiniz. 4. kursu açabilmek için okul doğrulama talebinde bulunmanız gerekiyor.'
+                : 'Taslak okul hesabınızdaki kursları aktif yapabilmek için okul doğrulama talebinde bulunmanız gerekiyor.'
+              }
+            </p>
+
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-700 dark:text-blue-300 mb-5">
+              <strong>Talep gönderdikten sonra:</strong> Ekibimiz belgelerinizi inceleyecek ve 1-3 iş günü içinde size geri dönecektir.
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowSchoolRequestModal(false); setSchoolRequestReason(null); }}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-xl transition-colors"
+              >
+                İptal
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const currentUser = auth.currentUser;
+                    if (!currentUser) return;
+                    const { addDoc, collection: col } = await import('firebase/firestore');
+                    await addDoc(col(db, 'schoolRequests'), {
+                      userId: currentUser.uid,
+                      userEmail: currentUser.email,
+                      displayName: currentUser.displayName,
+                      type: schoolRequestReason === 'course-limit' ? 'upgrade-request' : 'activation-request',
+                      status: 'pending',
+                      reason: schoolRequestReason === 'course-limit'
+                        ? 'Kurs limiti aşıldı, okul doğrulaması talep ediliyor.'
+                        : 'Kurs aktifleştirmek için okul doğrulaması talep ediliyor.',
+                      createdAt: serverTimestamp()
+                    });
+                    setShowSchoolRequestModal(false);
+                    setSchoolRequestReason(null);
+                    setSuccess('Doğrulama talebiniz gönderildi. En kısa sürede size döneceğiz.');
+                  } catch (err) {
+                    console.error('School request error:', err);
+                    setError('Talep gönderilirken bir hata oluştu.');
+                  }
+                }}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors"
+              >
+                Talep Gönder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Üst Başlık ve Arama Bölümü */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
