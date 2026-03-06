@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { DanceClass, DanceStyle, DanceLevel } from '../../types';
+import { getAllDanceSchools } from './schoolService';
 
 // Koleksiyon adı
 const COURSES_COLLECTION = 'courses';
@@ -81,6 +82,9 @@ export const getDanceCourseById = async (courseId: string): Promise<DanceClass |
  */
 export const getAllDanceCourses = async (): Promise<DanceClass[]> => {
   try {
+    const activeSchools = await getAllDanceSchools();
+    const activeSchoolIds = new Set(activeSchools.map(school => school.id));
+
     const coursesQuery = query(
       collection(db, COURSES_COLLECTION),
       orderBy('createdAt', 'desc')
@@ -91,8 +95,11 @@ export const getAllDanceCourses = async (): Promise<DanceClass[]> => {
 
     coursesSnapshot.forEach((doc) => {
       const data = doc.data();
-      if (data.status === 'active') {
-        courses.push(data as DanceClass);
+      if (data.status === 'active' && activeSchoolIds.has(data.schoolId)) {
+        courses.push({
+          id: doc.id,
+          ...data
+        } as DanceClass);
       }
     });
 
@@ -317,11 +324,14 @@ export const deleteDanceCourse = async (courseId: string): Promise<void> => {
  */
 export const getFeaturedDanceCourses = async (count: number = 4): Promise<DanceClass[]> => {
   try {
-    // Limit(20) fetch to have enough courses to filter local active ones, then pick count
+    const activeSchools = await getAllDanceSchools();
+    const activeSchoolIds = new Set(activeSchools.map(school => school.id));
+
+    // Limit(50) fetch to have enough courses to filter local active ones, then pick count
     const coursesQuery = query(
       collection(db, COURSES_COLLECTION),
       orderBy('createdAt', 'desc'),
-      limit(20)
+      limit(50)
     );
 
     const coursesSnapshot = await getDocs(coursesQuery);
@@ -329,7 +339,7 @@ export const getFeaturedDanceCourses = async (count: number = 4): Promise<DanceC
 
     coursesSnapshot.forEach((doc) => {
       const data = doc.data();
-      if (data.status === 'active') {
+      if (data.status === 'active' && activeSchoolIds.has(data.schoolId)) {
         courses.push({
           id: doc.id,
           ...data

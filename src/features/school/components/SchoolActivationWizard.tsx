@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '../../../api/firebase/firebase';
 import CustomInput from '../../../common/components/ui/CustomInput';
 import CustomPhoneInput from '../../../common/components/ui/CustomPhoneInput';
@@ -103,7 +103,7 @@ export function SchoolActivationWizard({ schoolInfo, onClose, onActivationReques
             // schoolRequests üzerindeki mevcut kaydı güncelle (yeni yazmıyoruz)
             // BecomeSchool kayıt sırasında zaten schoolRequests'e draft olarak eklendi
             const reqRef = doc(db, 'schoolRequests', schoolInfo.id);
-            await updateDoc(reqRef, {
+            await setDoc(reqRef, {
                 schoolName: data.schoolName,
                 schoolDescription: data.description,
                 contactPerson: data.contactPerson,
@@ -117,9 +117,10 @@ export function SchoolActivationWizard({ schoolInfo, onClose, onActivationReques
                 document_name: data.schoolDocumentName,
                 documentStatus: 'pending',   // Yönetici onayı bekliyor
                 status: 'pending',           // draft → pending
+                userId: schoolInfo.userId || schoolInfo.id,
                 activationRequestedAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
-            });
+            }, { merge: true });
 
             onActivationRequested();
         } catch (err) {
