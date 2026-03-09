@@ -1,15 +1,15 @@
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDocs, 
-  getDoc, 
-  query, 
-  where, 
-  orderBy, 
-  Timestamp, 
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  getDoc,
+  query,
+  where,
+  orderBy,
+  Timestamp,
   serverTimestamp,
   setDoc,
   limit
@@ -46,10 +46,10 @@ export const createDanceCourse = async (danceClassData: Omit<DanceClass, 'id'>):
     // Yeni döküman oluştur
     const docRef = await addDoc(collection(db, COURSES_COLLECTION), courseData);
     console.log('Yeni dans kursu oluşturuldu:', docRef.id);
-    
+
     // Oluşturulan ID'yi ekleyerek güncelle
     await updateDoc(docRef, { id: docRef.id });
-    
+
     return docRef.id;
   } catch (error) {
     console.error('Dans kursu oluşturulurken hata:', error);
@@ -64,11 +64,11 @@ export const getDanceCourseById = async (courseId: string): Promise<DanceClass |
   try {
     const courseDocRef = doc(db, COURSES_COLLECTION, courseId);
     const courseSnapshot = await getDoc(courseDocRef);
-    
+
     if (!courseSnapshot.exists()) {
       return null;
     }
-    
+
     return courseSnapshot.data() as DanceClass;
   } catch (error) {
     console.error('Dans kursu getirilirken hata:', error);
@@ -82,18 +82,19 @@ export const getDanceCourseById = async (courseId: string): Promise<DanceClass |
 export const getAllDanceCourses = async (): Promise<DanceClass[]> => {
   try {
     const coursesQuery = query(
-      collection(db, COURSES_COLLECTION), 
+      collection(db, COURSES_COLLECTION),
+      where('status', '==', 'active'),
       orderBy('createdAt', 'desc')
     );
-    
+
     const coursesSnapshot = await getDocs(coursesQuery);
     const courses: DanceClass[] = [];
-    
+
     coursesSnapshot.forEach((doc) => {
       const data = doc.data();
       courses.push(data as DanceClass);
     });
-    
+
     return courses;
   } catch (error) {
     console.error('Dans kursları getirilirken hata:', error);
@@ -110,10 +111,10 @@ export const getSchoolDanceCourses = async (schoolId: string): Promise<DanceClas
       collection(db, COURSES_COLLECTION),
       where('schoolId', '==', schoolId)
     );
-    
+
     const coursesSnapshot = await getDocs(coursesQuery);
     const courses: DanceClass[] = [];
-    
+
     coursesSnapshot.forEach((doc) => {
       const data = doc.data();
       courses.push({
@@ -121,14 +122,16 @@ export const getSchoolDanceCourses = async (schoolId: string): Promise<DanceClas
         id: doc.id
       } as DanceClass);
     });
-    
+
     courses.sort((a, b) => {
-      if (a.createdAt && b.createdAt) {
-        return b.createdAt.seconds - a.createdAt.seconds;
-      }
-      return 0;
+      const getMs = (date: any) => {
+        if (date instanceof Date) return date.getTime();
+        if (date && typeof date === 'object' && 'seconds' in date) return (date as any).seconds * 1000;
+        return 0;
+      };
+      return getMs(b.createdAt) - getMs(a.createdAt);
     });
-    
+
     return courses;
   } catch (error) {
     console.error('Okul kursları getirilirken hata:', error);
@@ -142,24 +145,24 @@ export const getSchoolDanceCourses = async (schoolId: string): Promise<DanceClas
 export const getInstructorDanceCourses = async (instructorId: string): Promise<DanceClass[]> => {
   try {
     console.log('getInstructorDanceCourses çağrıldı, instructorId:', instructorId);
-    
+
     const coursesQuery = query(
       collection(db, COURSES_COLLECTION),
       where('instructorId', '==', instructorId)
     );
-    
+
     console.log('Query oluşturuldu:', COURSES_COLLECTION, 'instructorId ==', instructorId);
-    
+
     const coursesSnapshot = await getDocs(coursesQuery);
     console.log('Query sonucu:', coursesSnapshot.size, 'belge bulundu');
-    
+
     const courses: DanceClass[] = [];
-    
+
     coursesSnapshot.forEach((docSnapshot) => {
       // Firestore belgesi kimliğini ve verilerini al
       const id = docSnapshot.id;
       const data = docSnapshot.data();
-      
+
       // Timestamp dönüşümü için düzeltme
       const courseData = {
         id,
@@ -169,11 +172,11 @@ export const getInstructorDanceCourses = async (instructorId: string): Promise<D
         updatedAt: data.updatedAt ? new Date(data.updatedAt.seconds * 1000) : new Date(),
         date: data.date ? new Date(data.date.seconds * 1000) : new Date(),
       } as DanceClass;
-      
+
       console.log('İşlenmiş kurs verisi:', id, courseData);
       courses.push(courseData);
     });
-    
+
     console.log('Toplam kurslar:', courses.length);
     return courses;
   } catch (error) {
@@ -186,18 +189,18 @@ export const getInstructorDanceCourses = async (instructorId: string): Promise<D
  * Dans kursunu günceller
  */
 export const updateDanceCourse = async (
-  courseId: string, 
+  courseId: string,
   updateData: Partial<DanceClass>
 ): Promise<void> => {
   try {
     const courseDocRef = doc(db, COURSES_COLLECTION, courseId);
-    
+
     // Güncellenecek veri
     const updatePayload = {
       ...updateData,
       updatedAt: serverTimestamp()
     };
-    
+
     await updateDoc(courseDocRef, updatePayload);
     console.log('Dans kursu güncellendi:', courseId);
   } catch (error) {
@@ -210,7 +213,7 @@ export const updateDanceCourse = async (
  * Dans kursuna katılımcı ekler
  */
 export const addParticipantToCourse = async (
-  courseId: string, 
+  courseId: string,
   userId: string
 ): Promise<void> => {
   try {
@@ -219,19 +222,19 @@ export const addParticipantToCourse = async (
     if (!courseData) {
       throw new Error('Kurs bulunamadı');
     }
-    
+
     // Kapasite kontrolü
     if (courseData.currentParticipants >= courseData.maxParticipants) {
       throw new Error('Kurs kapasitesi dolu');
     }
-    
+
     // Katılımcılar koleksiyonunu güncelle
     const participantDocRef = doc(db, `${COURSES_COLLECTION}/${courseId}/participants`, userId);
     await setDoc(participantDocRef, {
       userId,
       joinedAt: serverTimestamp()
     });
-    
+
     // Kurs belgesindeki katılımcı sayısını güncelle
     const courseDocRef = doc(db, COURSES_COLLECTION, courseId);
     await updateDoc(courseDocRef, {
@@ -248,23 +251,23 @@ export const addParticipantToCourse = async (
  * Dans kursundan katılımcı çıkarır
  */
 export const removeParticipantFromCourse = async (
-  courseId: string, 
+  courseId: string,
   userId: string
 ): Promise<void> => {
   try {
     // Katılımcıyı sil
     const participantDocRef = doc(db, `${COURSES_COLLECTION}/${courseId}/participants`, userId);
     await deleteDoc(participantDocRef);
-    
+
     // Kursu getir
     const courseData = await getDanceCourseById(courseId);
     if (!courseData) {
       throw new Error('Kurs bulunamadı');
     }
-    
+
     // Katılımcı sayısını güncelle, en az 0 olacak şekilde
     const currentParticipants = Math.max(0, (courseData.currentParticipants || 1) - 1);
-    
+
     // Kurs belgesini güncelle
     const courseDocRef = doc(db, COURSES_COLLECTION, courseId);
     await updateDoc(courseDocRef, {
@@ -316,13 +319,14 @@ export const getFeaturedDanceCourses = async (count: number = 4): Promise<DanceC
     // En son eklenen dersleri getirelim
     const coursesQuery = query(
       collection(db, COURSES_COLLECTION),
+      where('status', '==', 'active'),
       orderBy('createdAt', 'desc'),
       limit(count)
     );
-    
+
     const coursesSnapshot = await getDocs(coursesQuery);
     const courses: DanceClass[] = [];
-    
+
     coursesSnapshot.forEach((doc) => {
       const data = doc.data();
       courses.push({
@@ -330,7 +334,7 @@ export const getFeaturedDanceCourses = async (count: number = 4): Promise<DanceC
         ...data
       } as DanceClass);
     });
-    
+
     return courses;
   } catch (error) {
     console.error('Öne çıkan dans kursları getirilirken hata:', error);

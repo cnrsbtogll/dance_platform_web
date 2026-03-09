@@ -256,7 +256,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             isActive: true,
-            role: 'instructor',
+            role: userData.role || 'draft-instructor',
             userId: user.id
           };
 
@@ -266,7 +266,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             setSelectedSpecialties([]);
             setProfilePhotoURL(userData.photoURL || '');
             await updateDoc(userRef, {
-              role: 'instructor',
+              role: userData.role || 'draft-instructor',
               updatedAt: new Date().toISOString()
             });
           } catch (error) {
@@ -740,8 +740,8 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
                     aria-checked={!!watch('isPartnerSearchActive')}
                     onClick={() => setValue('isPartnerSearchActive', !watch('isPartnerSearchActive'), { shouldDirty: true })}
                     className={`relative inline-flex h-7 w-14 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-instructor focus:ring-offset-2 dark:focus:ring-offset-slate-800 ${watch('isPartnerSearchActive')
-                        ? 'bg-instructor'
-                        : 'bg-gray-200 dark:bg-slate-600'
+                      ? 'bg-instructor'
+                      : 'bg-gray-200 dark:bg-slate-600'
                       }`}
                   >
                     <span

@@ -165,6 +165,7 @@ interface CourseManagementProps {
   schoolId?: string;
   isAdmin?: boolean;
   colorVariant?: 'instructor' | 'school';
+  isInstructorPending?: boolean;
 }
 
 // İletişim Modal bileşeni
@@ -271,7 +272,13 @@ const timestampToDate = (timestamp: any): string => {
   }
 };
 
-function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVariant = 'instructor' }: CourseManagementProps): JSX.Element {
+function CourseManagement({
+  instructorId,
+  schoolId,
+  isAdmin = false,
+  colorVariant = 'instructor',
+  isInstructorPending = false
+}: CourseManagementProps): JSX.Element {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
   const [editMode, setEditMode] = useState<boolean>(false);
@@ -1738,20 +1745,31 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                 8. Yayınlanma Durumu
               </h3>
               <div className="grid grid-cols-3 gap-3">
-                {statusOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, status: opt.value as any })}
-                    className={`py-3 rounded-xl border-2 font-medium transition-all ${formData.status === opt.value
-                      ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
-                      : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300'
-                      }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                {statusOptions.map((opt) => {
+                  const isLocked = isInstructorPending && opt.value === 'active' && !isAdmin;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => !isLocked && setFormData({ ...formData, status: opt.value as any })}
+                      className={`py-3 rounded-xl border-2 font-medium transition-all ${formData.status === opt.value
+                          ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
+                          : isLocked
+                            ? 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300'
+                        }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
+              {isInstructorPending && !isAdmin && (
+                <p className="text-amber-600 dark:text-amber-400 text-[10px] mt-2 italic flex items-center gap-1">
+                  <span className="text-xs">💡</span> Demo modunda kurslar sadece taslak veya pasif olarak kaydedilebilir.
+                </p>
+              )}
             </section>
           </div>
         )}
@@ -2023,6 +2041,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         location: finalLocation,
         recurring: true,
         schedule: formData.schedule,
+        status: isInstructorPending ? 'draft' : cleanedData.status,
         updatedAt: serverTimestamp()
       };
 

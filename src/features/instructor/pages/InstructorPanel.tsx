@@ -9,8 +9,9 @@ import { useNavigate } from 'react-router-dom';
 import InstructorProfileForm from '../components/InstructorProfileForm';
 import CourseManagement from '../../../features/shared/components/courses/CourseManagement';
 import { StudentManagement } from '../../../features/shared/components/students/StudentManagement';
-import { query, where, collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { query, where, collection, getDocs, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../api/firebase/firebase';
+import { toast } from 'react-hot-toast';
 import ScheduleManagement from '../../../features/shared/components/schedule/ScheduleManagement';
 import AttendanceManagement from '../../../features/shared/components/attendance/AttendanceManagement';
 import ProgressTracking from '../../../features/shared/components/progress/ProgressTracking';
@@ -139,6 +140,11 @@ const Icons = {
   ),
   Clock: () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  Timer: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   ),
@@ -431,6 +437,8 @@ function InstructorPanel({ user }: InstructorPanelProps) {
   const [loadingStats, setLoadingStats] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('instructor_sidebar_collapsed') === 'true'; } catch { return false; }
   });
@@ -446,12 +454,47 @@ function InstructorPanel({ user }: InstructorPanelProps) {
           const data = userSnap.data();
           setIsPending(data.is_instructor_pending === true);
         }
+
+        // Check for activation requests
+        const requestsRef = collection(db, 'instructorRequests');
+        const q = query(requestsRef, where('userId', '==', user.id));
+        const qSnap = await getDocs(q);
+
+        if (!qSnap.empty) {
+          const latestRequest = qSnap.docs.sort((a, b) => b.data().createdAt?.seconds - a.data().createdAt?.seconds)[0];
+          setRequestStatus(latestRequest.data().status || 'pending');
+        } else {
+          setRequestStatus('none');
+        }
       } catch (err) {
-        console.error('Error checking pending status:', err);
+        console.error('Error checking status:', err);
       }
     };
     checkPendingStatus();
   }, [user?.id]);
+
+  const handleSendActivationRequest = async () => {
+    if (!user?.id) return;
+    setIsSubmittingRequest(true);
+    try {
+      await addDoc(collection(db, 'instructorRequests'), {
+        userId: user.id,
+        userEmail: user.email,
+        displayName: user.displayName,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        type: 'activation',
+        source: 'instructor_panel_demo'
+      });
+      setRequestStatus('pending');
+      toast.success('Aktivasyon talebiniz başarıyla gönderildi!');
+    } catch (error) {
+      console.error('Error sending request:', error);
+      toast.error('Talep gönderilirken bir hata oluştu.');
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
 
   // Build navigation items dynamically based on pending status
   const currentNavItems = isPending
@@ -806,6 +849,22 @@ function InstructorPanel({ user }: InstructorPanelProps) {
 
           {/* ── Main Content ──────────────────────────────────────────────────── */}
           <main className={`flex-1 flex flex-col h-screen overflow-hidden relative w-full ${isPending ? 'pt-10' : ''}`}>
+            {isPending && (
+              <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-r from-teal-600 to-cyan-700 flex items-center justify-between px-4 z-40 shadow-md">
+                <div className="flex items-center gap-2 text-white">
+                  <Icons.Timer className="w-4 h-4 animate-pulse" />
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Demo Modu Aktif</span>
+                  <span className="hidden sm:inline text-[10px] opacity-80">|</span>
+                  <span className="hidden sm:inline text-[10px] opacity-90">Panel özelliklerini öğreniyorsunuz...</span>
+                </div>
+                <button
+                  onClick={() => setActiveTab('activation')}
+                  className="bg-white/20 hover:bg-white/30 text-white text-[10px] sm:text-xs px-2 py-1 rounded-full font-bold transition-colors cursor-pointer"
+                >
+                  Şimdi Aktifleştir
+                </button>
+              </div>
+            )}
             {/* Mobile header */}
             <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shrink-0 sticky top-0 z-30">
               <div className="flex items-center gap-3">
@@ -846,7 +905,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                     />
                   )}
                   {activeTab === 'profile' && <InstructorProfileForm user={user} />}
-                  {activeTab === 'courses' && <CourseManagement instructorId={user.id} />}
+                  {activeTab === 'courses' && <CourseManagement instructorId={user.id} isInstructorPending={isPending} />}
                   {activeTab === 'students' && <StudentManagement isAdmin={false} />}
                   {activeTab === 'schedule' && (
                     <ScheduleManagement
@@ -868,9 +927,78 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                     <EarningsManagement userId={user.id} role="instructor" colorVariant="instructor" />
                   )}
                   {activeTab === 'activation' && (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-8 text-center">
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Aktivasyon Talebi</h3>
-                      <p className="text-slate-600 dark:text-slate-400">Başvurunuz incelenmektedir. Onaylandığında tam yetki ile paneli kullanmaya devam edebileceksiniz.</p>
+                    <div className="space-y-6 pb-20">
+                      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-8 text-center">
+                        <div className="w-16 h-16 bg-teal-100 dark:bg-teal-900/40 text-instructor dark:text-teal-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Icons.Schedule />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Rehber & Aktivasyon</h3>
+                        <p className="text-slate-600 dark:text-slate-400 max-w-lg mx-auto mb-8">
+                          Demo modunda paneli dilediğiniz gibi kullanabilir, özellikleri öğrenebilirsiniz.
+                          Gerçek kurslar yayınlamak ve profilinizi tüm öğrencilere açmak için aktivasyon talebinde bulunmanız gerekir.
+                        </p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 text-left">
+                          <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                            <span className="text-instructor dark:text-teal-400 font-bold block mb-1 text-sm text-center">1. Paneli Keşfet</span>
+                            <span className="text-[10px] text-slate-500 block text-center">Menüleri gezin ve tüm özellikleri serbestçe inceleyin.</span>
+                          </div>
+                          <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                            <span className="text-instructor dark:text-teal-400 font-bold block mb-1 text-sm text-center">2. Talebi Gönder</span>
+                            <span className="text-[10px] text-slate-500 block text-center">Profilinizi tamamladıktan sonra aktivasyon isteğinizi iletin.</span>
+                          </div>
+                          <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                            <span className="text-instructor dark:text-teal-400 font-bold block mb-1 text-sm text-center">3. Aktif Kullanım</span>
+                            <span className="text-[10px] text-slate-500 block text-center">Onaydan sonra kurslarınız yayına girebilir.</span>
+                          </div>
+                        </div>
+
+                        {requestStatus === 'none' ? (
+                          <div className="space-y-4">
+                            <div className="p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/30 rounded-lg text-left max-w-md mx-auto mb-6">
+                              <p className="text-xs text-teal-800 dark:text-teal-300 font-medium leading-relaxed">
+                                💡 Aktivasyon talebi gönderdiğinizde, yöneticilerimiz profilinizi inceleyecektir. Onay sonrasında "Demo Modu" kısıtlamaları kalkacaktır.
+                              </p>
+                            </div>
+                            <button
+                              onClick={handleSendActivationRequest}
+                              disabled={isSubmittingRequest}
+                              className="px-8 py-3 bg-instructor text-white font-bold rounded-xl hover:bg-instructor-dark transition-all shadow-lg shadow-instructor/20 disabled:opacity-50 cursor-pointer"
+                            >
+                              {isSubmittingRequest ? 'Gönderiliyor...' : 'Hemen Aktivasyon Talebi Gönder'}
+                            </button>
+                          </div>
+                        ) : requestStatus === 'pending' ? (
+                          <div className="inline-flex items-center gap-2 px-6 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl border border-amber-200 dark:border-amber-800/30">
+                            <Icons.Timer /> Başvurunuz İnceleniyor
+                          </div>
+                        ) : requestStatus === 'approved' ? (
+                          <div className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-bold rounded-xl border border-emerald-200 dark:border-emerald-800/30">
+                            ✓ Hesabınız Aktif
+                          </div>
+                        ) : (
+                          <div className="text-center">
+                            <p className="text-red-500 mb-4 font-medium">Başvurunuz maalesef onaylanmadı.</p>
+                            <button
+                              onClick={handleSendActivationRequest}
+                              className="text-instructor underline font-bold cursor-pointer"
+                            >
+                              Tekrar Başvur
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-slate-900 text-white rounded-xl p-8 overflow-hidden relative group">
+                        <div className="relative z-10">
+                          <h4 className="text-xl font-bold mb-2">Profesyonel Eğitmenlik Yolculuğu</h4>
+                          <p className="text-slate-300 text-sm max-w-md">
+                            Feriha platformu olarak dans eğitmenlerimize en iyi araçları sunuyoruz.
+                            Gelişmiş istatistikler, öğrenci takibi ve güvenli ödeme sistemimizle sadece dansınıza odaklanın.
+                          </p>
+                        </div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full -mr-16 -mt-16 blur-3xl opacity-50" />
+                      </div>
                     </div>
                   )}
                 </motion.div>

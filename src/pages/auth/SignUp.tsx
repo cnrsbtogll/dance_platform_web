@@ -30,7 +30,7 @@ const SignUp: React.FC = () => {
     password: '',
     confirmPassword: '',
     displayName: '',
-    role: (isInstructorSignup ? 'instructor' : 'student') as UserRole,
+    role: (isInstructorSignup ? 'draft-instructor' : 'student') as UserRole,
   });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -66,16 +66,16 @@ const SignUp: React.FC = () => {
     try {
       const newUser = await signUp(formData.email, formData.password, formData.displayName, formData.role);
 
-      // If instructor signup, set pending flag and redirect to instructor panel
+      // If instructor signup, set role and redirect to instructor panel
       if (isInstructorSignup && newUser?.id) {
         try {
           const userRef = doc(db, 'users', newUser.id);
           await updateDoc(userRef, {
-            is_instructor_pending: true,
+            role: 'draft-instructor',
             updatedAt: serverTimestamp(),
           });
         } catch (updateErr) {
-          console.error('Error setting instructor pending flag:', updateErr);
+          console.error('Error setting instructor role:', updateErr);
         }
         navigate('/instructor');
       } else {
@@ -99,12 +99,11 @@ const SignUp: React.FC = () => {
         try {
           const userRef = doc(db, 'users', result.credential.user.uid);
           await updateDoc(userRef, {
-            role: 'instructor',
-            is_instructor_pending: true,
+            role: 'draft-instructor',
             updatedAt: serverTimestamp(),
           });
         } catch (updateErr) {
-          console.error('Error setting instructor pending flag:', updateErr);
+          console.error('Error setting instructor role:', updateErr);
         }
         navigate('/instructor');
       } else {

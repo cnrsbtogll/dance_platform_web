@@ -50,9 +50,9 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
     }
   };
 
-  const hasInstructorRole = user?.role === 'instructor';
+  const hasInstructorRole = user?.role === 'instructor' || user?.role === 'draft-instructor';
   const hasSchoolAdminRole = user?.role === 'school_admin';
-  const hasSchoolRole = user?.role === 'school';
+  const hasSchoolRole = user?.role === 'school' || user?.role === 'draft-school';
   const hasSuperAdminRole = user?.role === 'admin';
   const hasStudentRole = !user?.role || (!hasInstructorRole && !hasSchoolAdminRole && !hasSchoolRole && !hasSuperAdminRole && isAuthenticated);
 
@@ -168,8 +168,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
       if (user?.id) {
         const userRef = doc(db, 'users', user.id);
         await updateDoc(userRef, {
-          role: 'instructor',
-          is_instructor_pending: true,
+          role: 'draft-instructor',
           updatedAt: serverTimestamp()
         });
         navigate('/instructor');
