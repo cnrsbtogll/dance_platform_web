@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import InstructorProfileForm from '../components/InstructorProfileForm';
 import CourseManagement from '../../../features/shared/components/courses/CourseManagement';
 import { StudentManagement } from '../../../features/shared/components/students/StudentManagement';
-import { query, where, collection, getDocs } from 'firebase/firestore';
+import { query, where, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../api/firebase/firebase';
 import ScheduleManagement from '../../../features/shared/components/schedule/ScheduleManagement';
 import AttendanceManagement from '../../../features/shared/components/attendance/AttendanceManagement';
@@ -28,7 +28,8 @@ type TabType =
   | 'attendance'
   | 'progress'
   | 'badges'
-  | 'earnings';
+  | 'earnings'
+  | 'activation';
 
 interface Course {
   id: string;
@@ -168,9 +169,10 @@ interface DashboardProps {
   courses: Course[];
   loadingStats: boolean;
   onNavigate: (tab: TabType) => void;
+  isPending: boolean;
 }
 
-function DashboardOverview({ user, stats, courses, loadingStats, onNavigate }: DashboardProps) {
+function DashboardOverview({ user, stats, courses, loadingStats, onNavigate, isPending }: DashboardProps) {
   const statCards = [
     {
       title: 'Aktif Kurslar',
@@ -249,6 +251,21 @@ function DashboardOverview({ user, stats, courses, loadingStats, onNavigate }: D
             </p>
           </div>
         </div>
+
+        {isPending && (
+          <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-teal-600/10 to-cyan-600/10 border border-teal-200/50 dark:border-teal-700/30">
+            <h3 className="text-teal-800 dark:text-teal-300 font-bold text-sm mb-1">🚀 Demo Moduna Hoş Geldiniz!</h3>
+            <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+              Şu an panelin tüm özelliklerini serbestçe inceleyebilirsiniz. Kendi kurslarınızı oluşturun, öğrencilerinizle nasıl iletişim kuracağınızı görün. Hazır olduğunuzda profilinizi doğrulayarak gerçek satışlara başlayabilirsiniz.
+            </p>
+            <button
+              onClick={() => onNavigate('activation')}
+              className="mt-3 text-xs font-bold text-instructor dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              Hemen Nasıl Başlanır? <Icons.ArrowRight />
+            </button>
+          </div>
+        )}
       </motion.div>
 
       {/* Stat Cards */}
@@ -413,9 +430,44 @@ function InstructorPanel({ user }: InstructorPanelProps) {
   const [stats, setStats] = useState<StatsState>({ courses: 0, students: 0, upcomingLessons: 0, earnings: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('instructor_sidebar_collapsed') === 'true'; } catch { return false; }
   });
+
+  // Check if instructor is in pending/demo mode
+  useEffect(() => {
+    const checkPendingStatus = async () => {
+      if (!user?.id) return;
+      try {
+        const userRef = doc(db, 'users', user.id);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          setIsPending(data.is_instructor_pending === true);
+        }
+      } catch (err) {
+        console.error('Error checking pending status:', err);
+      }
+    };
+    checkPendingStatus();
+  }, [user?.id]);
+
+  // Build navigation items dynamically based on pending status
+  const currentNavItems = isPending
+    ? [
+      ...navItems,
+      {
+        id: 'activation' as TabType,
+        label: 'Rehber & Aktivasyon',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        ),
+      },
+    ]
+    : navItems;
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(prev => {
@@ -551,9 +603,27 @@ function InstructorPanel({ user }: InstructorPanelProps) {
       <ThemeProvider theme={instructorTheme}>
         <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-900 overflow-hidden font-sans text-slate-900 dark:text-slate-100 antialiased">
 
+          {/* ── Demo Mode Banner (fixed top) ───────────────────────────────── */}
+          {isPending && (
+            <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center py-2 px-4 text-sm font-medium shadow-md">
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Demo Modu — Hesabınız henüz aktif değil. Ders oluşturabilirsiniz ancak yayınlayamazsınız.</span>
+                <button
+                  onClick={() => setActiveTab('activation')}
+                  className="ml-2 px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Hesabı Aktifleştir →
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ── Desktop Sidebar ─────────────────────────────────────────────── */}
           <aside
-            className={`hidden lg:flex flex-col h-screen z-20 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${isSidebarCollapsed ? 'w-16' : 'w-72'
+            className={`hidden lg:flex flex-col h-screen z-20 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${isPending ? 'pt-10' : ''} ${isSidebarCollapsed ? 'w-16' : 'w-72'
               }`}
           >
             {/* Logo / brand */}
@@ -598,7 +668,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                   <Icons.ChevronRight />
                 </button>
               )}
-              {navItems.map(item => renderNavItem(item))}
+              {currentNavItems.map(item => renderNavItem(item))}
             </nav>
 
             {/* Logout + Delete */}
@@ -693,7 +763,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                   </div>
 
                   <nav className="flex flex-col flex-1 px-4 py-6 gap-1 overflow-y-auto">
-                    {navItems.map(item => {
+                    {currentNavItems.map(item => {
                       const isActive = activeTab === item.id;
                       return (
                         <button
@@ -735,7 +805,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
           </AnimatePresence>
 
           {/* ── Main Content ──────────────────────────────────────────────────── */}
-          <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+          <main className={`flex-1 flex flex-col h-screen overflow-hidden relative w-full ${isPending ? 'pt-10' : ''}`}>
             {/* Mobile header */}
             <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shrink-0 sticky top-0 z-30">
               <div className="flex items-center gap-3">
@@ -772,6 +842,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                       courses={courses}
                       loadingStats={loadingStats}
                       onNavigate={setActiveTab}
+                      isPending={isPending}
                     />
                   )}
                   {activeTab === 'profile' && <InstructorProfileForm user={user} />}
@@ -795,6 +866,12 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                   )}
                   {activeTab === 'earnings' && (
                     <EarningsManagement userId={user.id} role="instructor" colorVariant="instructor" />
+                  )}
+                  {activeTab === 'activation' && (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-8 text-center">
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Aktivasyon Talebi</h3>
+                      <p className="text-slate-600 dark:text-slate-400">Başvurunuz incelenmektedir. Onaylandığında tam yetki ile paneli kullanmaya devam edebileceksiniz.</p>
+                    </div>
                   )}
                 </motion.div>
               </AnimatePresence>

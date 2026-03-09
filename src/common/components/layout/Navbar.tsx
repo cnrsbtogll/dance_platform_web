@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { signOut } from '../../../pages/auth/services/authService';
 import { User as UserType } from '../../../types';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../api/firebase/firebase';
 import { generateInitialsAvatar } from '../../utils/imageUtils';
 import LoginRequiredModal from '../modals/LoginRequiredModal';
@@ -157,6 +157,29 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
       fetchUserDetails();
     }
   }, [user, isAuthenticated]);
+
+  const handleBecomeInstructorClick = async (e: React.MouseEvent) => {
+    // Giriş yapmamışsa linkin normal çalışmasına (signup sayfasına) izin ver
+    if (!isAuthenticated) return;
+
+    // Giriş yapmış bir öğrenciyse, rolünü hemen eğitmen (pending) olarak güncelle
+    e.preventDefault();
+    try {
+      if (user?.id) {
+        const userRef = doc(db, 'users', user.id);
+        await updateDoc(userRef, {
+          role: 'instructor',
+          is_instructor_pending: true,
+          updatedAt: serverTimestamp()
+        });
+        navigate('/instructor');
+      }
+    } catch (error) {
+      console.error('Eğitmen rolü güncelleme hatası:', error);
+      navigate('/become-instructor');
+    }
+  };
+
 
   // Rol durumlarını logla
   useEffect(() => {
@@ -446,7 +469,9 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                 {/* 'Eğitmen Ol' butonu */}
                 {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
                   <Link
-                    to="/become-instructor"
+                    to={isAuthenticated ? "/instructor" : "/signup"}
+                    state={{ role: 'instructor' }}
+                    onClick={handleBecomeInstructorClick}
                     className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-teal-800 to-cyan-900 hover:from-teal-700 hover:to-cyan-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
                     title="Eğitmen Ol"
                   >
@@ -680,9 +705,10 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
               <div className="px-4 space-y-2">
                 {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
                   <Link
-                    to="/become-instructor"
+                    to={isAuthenticated ? "/instructor" : "/signup"}
+                    state={{ role: 'instructor' }}
+                    onClick={(e) => { setIsMenuOpen(false); handleBecomeInstructorClick(e); }}
                     className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-teal-800 to-cyan-900 hover:from-teal-700 hover:to-cyan-800 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
-                    onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

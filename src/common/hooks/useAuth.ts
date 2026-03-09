@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, Timestamp, enableNetwork, disableNetwork, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, Timestamp, enableNetwork, disableNetwork, collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../../api/firebase/firebase';
 import { User } from '../../types';
 
@@ -20,14 +20,14 @@ const retry = async <T>(
   onError?: (error: any, attempt: number) => void
 ): Promise<T> => {
   let lastError: any;
-  
+
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
       if (onError) onError(error, attempt + 1);
-      
+
       if (attempt < retries - 1) {
         // console.log(`Retry attempt ${attempt + 1}/${retries} after ${delay}ms`);
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -36,7 +36,7 @@ const retry = async <T>(
       }
     }
   }
-  
+
   throw lastError;
 };
 
@@ -46,39 +46,48 @@ export const useAuth = (): AuthState => {
     loading: true,
     error: null,
     isOffline: false,
-    setUser: () => {}
+    setUser: () => { }
   });
 
   // Debug işlemleri için oluşturulmuş log mesajı
   // console.log('🔍 useAuth hook başlatılıyor');
-  
+
   // İşlem durumunu takip eden ref
   const isAuthProcessingRef = useRef(false);
   const userProfileCreatedRef = useRef(false);
   const firebaseCheckedRef = useRef(false);
+  const snapshotUnsubscribeRef = useRef<(() => void) | null>(null);
+
+  // Snapshot listener'ı temizleme fonksiyonu
+  const clearSnapshot = useCallback(() => {
+    if (snapshotUnsubscribeRef.current) {
+      snapshotUnsubscribeRef.current();
+      snapshotUnsubscribeRef.current = null;
+    }
+  }, []);
 
   // Firebase bağlantı durumunu kontrol et - sadece bir kez çalışması için ref kullanıldı
   useEffect(() => {
     // Eğer daha önce kontrol edildiyse tekrar kontrol etme
     if (firebaseCheckedRef.current) return;
     firebaseCheckedRef.current = true;
-    
+
     // console.log('🔍 Firebase bağlantı kontrol useEffect çalıştı');
-    
+
     const checkFirebaseConnection = async () => {
       // console.log('🔍 Firebase bağlantısı kontrol ediliyor...');
-      
+
       // Firestore nesnesini kontrol et
       if (!db || Object.keys(db).length === 0) {
         console.error('❌ Firestore nesnesi boş veya başlatılmamış');
-        setState(prev => ({ 
-          ...prev, 
-          isOffline: false, 
-          error: 'Firebase Firestore başlatılmamış. Lütfen sayfayı yenileyin.' 
+        setState(prev => ({
+          ...prev,
+          isOffline: false,
+          error: 'Firebase Firestore başlatılmamış. Lütfen sayfayı yenileyin.'
         }));
         return;
       }
-      
+
       try {
         // console.log('🔍 Firestore koleksiyon testi başlatılıyor...');
         // Firestore koleksiyonlarını listeleyerek bağlantı testi yap
@@ -98,7 +107,7 @@ export const useAuth = (): AuthState => {
             console.error('Hata mesajı:', error.message);
           }
         );
-        
+
         // console.log('✅ Firebase bağlantı testi başarılı');
         setState(prev => ({ ...prev, isOffline: false, error: null }));
       } catch (error: any) {
@@ -106,16 +115,16 @@ export const useAuth = (): AuthState => {
         console.error('Hata kodu:', error.code);
         console.error('Hata mesajı:', error.message);
         console.error('Hata stack:', error.stack);
-        
+
         // Bağlantı hatalarını daha detaylı sınıflandır
-        if (error.code === 'unavailable' || 
-            error.code === 'failed-precondition' || 
-            error.message?.includes('client is offline')) {
+        if (error.code === 'unavailable' ||
+          error.code === 'failed-precondition' ||
+          error.message?.includes('client is offline')) {
           console.log('⚠️ Offline durum tespit edildi');
-          setState(prev => ({ 
-            ...prev, 
-            isOffline: true, 
-            error: 'Firebase bağlantı hatası. İnternet bağlantınızı kontrol edin veya daha sonra tekrar deneyin.' 
+          setState(prev => ({
+            ...prev,
+            isOffline: true,
+            error: 'Firebase bağlantı hatası. İnternet bağlantınızı kontrol edin veya daha sonra tekrar deneyin.'
           }));
         } else if (error.code === 'permission-denied' || error.code === 'PERMISSION_DENIED') {
           console.log('⚠️ Yetki hatası tespit edildi');
@@ -143,11 +152,11 @@ export const useAuth = (): AuthState => {
     };
 
     checkFirebaseConnection();
-    
+
     // Periyodik olarak bağlantı durumunu kontrol et - 1 dakika aralıklarla
     // console.log('🔍 Periyodik bağlantı kontrolü başlatılıyor (60 saniye)');
     const connectionCheckInterval = setInterval(checkFirebaseConnection, 60000); // Her 1 dakikada bir
-    
+
     return () => {
       // console.log('🔍 Firebase bağlantı kontrol useEffect temizleniyor');
       clearInterval(connectionCheckInterval);
@@ -201,15 +210,15 @@ export const useAuth = (): AuthState => {
   // Auth durumunu izleme - useCallback ile fonksiyonları memolayarak render performansını arttıralım
   const handleUser = useCallback(async (firebaseUser: FirebaseUser | null) => {
     // console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
-    
+
     // Halihazırda işleniyor ise çık
     if (isAuthProcessingRef.current) {
       // console.log('⚠️ Auth state change is already being processed, skipping...');
       return;
     }
-    
+
     isAuthProcessingRef.current = true;
-    
+
     try {
       if (firebaseUser) {
         // Offline durumunu kontrol et
@@ -235,39 +244,47 @@ export const useAuth = (): AuthState => {
 
         try {
           // console.log(`Fetching user data for UID: ${firebaseUser.uid}`);
-          
+
           // Firestore'dan kullanıcı verilerini çek - yeniden deneme mekanizması ile
           const fetchUserData = async () => {
             return await getDoc(doc(db, 'users', firebaseUser.uid));
           };
-          
+
           const userDoc = await retry(
             fetchUserData,
             2, // Daha az deneme
             800, // Daha kısa ilk gecikme
             (error, attempt) => console.log(`User data fetch attempt ${attempt} failed:`, error)
           );
-          
+
           if (userDoc.exists()) {
-            // console.log('User document found in Firestore');
-            const userData = userDoc.data() as Omit<User, 'createdAt'> & { createdAt: Timestamp };
-            
-            // Kullanıcı verilerini ayarla
-            setState(prevState => ({
-              ...prevState,
-              user: {
-                ...userData,
-                id: firebaseUser.uid,
-                createdAt: userData.createdAt ? userData.createdAt.toDate() : new Date(),
-                // Auth verilerinden eksik bilgileri tamamla
-                displayName: userData.displayName || firebaseUser.displayName || '',
-                email: userData.email || firebaseUser.email || '',
-                photoURL: userData.photoURL || firebaseUser.photoURL || ''
-              } as User,
-              loading: false,
-              error: null,
-              isOffline: false
-            }));
+            // console.log('User document found in Firestore, setting up real-time listener');
+
+            // Mevcut bir listener varsa temizle
+            clearSnapshot();
+
+            // Real-time listener oluştur
+            snapshotUnsubscribeRef.current = onSnapshot(doc(db, 'users', firebaseUser.uid), (doc) => {
+              if (doc.exists()) {
+                const userData = doc.data() as Omit<User, 'createdAt'> & { createdAt: Timestamp };
+                setState(prevState => ({
+                  ...prevState,
+                  user: {
+                    ...userData,
+                    id: firebaseUser.uid,
+                    createdAt: userData.createdAt ? userData.createdAt.toDate() : new Date(),
+                    displayName: userData.displayName || firebaseUser.displayName || '',
+                    email: userData.email || firebaseUser.email || '',
+                    photoURL: userData.photoURL || firebaseUser.photoURL || ''
+                  } as User,
+                  loading: false,
+                  error: null,
+                  isOffline: false
+                }));
+              }
+            }, (error) => {
+              console.error('Snapshot listener error:', error);
+            });
           } else {
             // Kullanıcı profili daha önce oluşturulmuş mu kontrol et
             if (userProfileCreatedRef.current) {
@@ -289,10 +306,10 @@ export const useAuth = (): AuthState => {
               isAuthProcessingRef.current = false;
               return;
             }
-            
+
             console.log('User document NOT found in Firestore, creating new profile');
             userProfileCreatedRef.current = true; // Profil oluşturma girişimini işaretle
-            
+
             try {
               // Yeni kullanıcı belgesi oluştur
               const newUserData = {
@@ -303,11 +320,11 @@ export const useAuth = (): AuthState => {
                 role: 'student', // Varsayılan rol
                 createdAt: new Date()
               };
-              
+
               // Firestore'a kaydet
               await setDoc(doc(db, 'users', firebaseUser.uid), newUserData);
               console.log('✅ User profile created successfully');
-              
+
               // Kullanıcı durumunu güncelle - hata olmadan
               setState(prevState => ({
                 ...prevState,
@@ -318,7 +335,7 @@ export const useAuth = (): AuthState => {
               }));
             } catch (createError: any) {
               console.error('❌ Error creating user profile:', createError);
-              
+
               // Firestore'da kullanıcı verisi yoksa, sadece Firebase Authentication'dan gelen temel bilgileri kullan
               setState(prevState => ({
                 ...prevState,
@@ -340,10 +357,10 @@ export const useAuth = (): AuthState => {
           console.error('Error fetching user document:', error);
           console.error('Error code:', error.code);
           console.error('Error message:', error.message);
-          
+
           let errorMessage = 'Kullanıcı verileri çekilemedi.';
           let isOfflineStatus = false;
-          
+
           // Hata türüne göre özel mesajlar
           if (error.code === 'unavailable' || error.message?.includes('offline')) {
             errorMessage += ' Çevrimdışı modda çalışıyor olabilirsiniz.';
@@ -355,7 +372,7 @@ export const useAuth = (): AuthState => {
           } else if (error.code === 'resource-exhausted') {
             errorMessage += ' Kota sınırına ulaşıldı, daha sonra tekrar deneyin.';
           }
-          
+
           // Firestore erişim hatası - Authentication verilerini kullan
           setState(prevState => ({
             ...prevState,
@@ -374,6 +391,7 @@ export const useAuth = (): AuthState => {
         }
       } else {
         // Kullanıcı giriş yapmamış
+        clearSnapshot();
         setState(prevState => ({
           ...prevState,
           user: null,
@@ -384,7 +402,7 @@ export const useAuth = (): AuthState => {
       }
     } catch (err: any) {
       console.error('Error processing auth state change:', err);
-      
+
       // Hata mesajını daha net hale getir
       let errorMessage = 'Kimlik doğrulama işlemi sırasında bir hata oluştu';
       if (err.code === 'auth/invalid-credential') {
@@ -394,7 +412,7 @@ export const useAuth = (): AuthState => {
       } else if (err.code) {
         errorMessage += `: ${err.code}`;
       }
-      
+
       setState(prevState => ({
         ...prevState,
         user: null,
@@ -411,13 +429,14 @@ export const useAuth = (): AuthState => {
   // Auth state listener setup
   useEffect(() => {
     // console.log('Setting up auth state listener...');
-    
+
     try {
       const unsubscribe = onAuthStateChanged(auth, handleUser);
-      
+
       return () => {
-        // console.log('Cleaning up auth state listener');
+        // console.log('Cleaning up auth state and snapshot listeners');
         unsubscribe();
+        clearSnapshot();
       };
     } catch (error) {
       console.error('Error setting up auth state listener:', error);
@@ -426,7 +445,7 @@ export const useAuth = (): AuthState => {
         loading: false,
         error: 'Authentication service error'
       }));
-      return () => {};
+      return () => { };
     }
   }, [handleUser]);
 

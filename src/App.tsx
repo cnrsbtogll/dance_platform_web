@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import { FirebaseApp } from 'firebase/app';
 import { Toaster } from 'react-hot-toast';
 import PartnerSearchPage from './pages/partners/PartnerSearchPage';
@@ -36,7 +36,7 @@ import SchoolAdmin from './features/school/pages/SchoolAdmin';
 import NotificationsCenter from './common/components/badges/NotificationsCenter';
 import { ThemeProvider } from '@mui/material/styles';
 import createAppTheme from './styles/theme';
-import { collection, query, where, onSnapshot, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, writeBatch, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './api/firebase/firebase';
 import { ChatDialog } from './features/chat/components/ChatDialog';
 import { ChatWidget } from './features/chat/components/ChatWidget';
@@ -68,6 +68,125 @@ const InstructorRedirect: React.FC<{ user: any }> = ({ user }) => {
   }
 
   return null;
+};
+
+const AppFooter: React.FC<{ isAuthenticated: boolean; user: any }> = ({ isAuthenticated, user }) => {
+  const navigate = useNavigate();
+
+  const handleBecomeInstructorClick = async (e: React.MouseEvent) => {
+    if (!isAuthenticated) return;
+
+    e.preventDefault();
+    try {
+      if (user?.id) {
+        const userRef = doc(db, 'users', user.id);
+        await updateDoc(userRef, {
+          role: 'instructor',
+          is_instructor_pending: true,
+          updatedAt: serverTimestamp()
+        });
+        navigate('/instructor');
+      }
+    } catch (error) {
+      console.error('Error updating to instructor role:', error);
+    }
+  };
+
+  return (
+    <footer className="bg-gray-800 text-white py-12 px-4 sm:px-6 lg:px-8 mt-auto transition-colors duration-300">
+      <div className="container mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="mb-6 md:mb-0">
+            <h2 className="text-2xl font-bold mb-4 text-brand-pink">Feriha</h2>
+            <p className="text-gray-300">
+              Dans tutkunlarını bir araya getiren, becerilerini geliştiren ve paylaşan bir platform.
+            </p>
+          </div>
+
+          <div className="mb-6 md:mb-0">
+            <h3 className="text-lg font-semibold mb-3">Hızlı Linkler</h3>
+            <ul className="space-y-2">
+              <li><Link to="/" className="text-gray-300 hover:text-white transition-colors">Ana Sayfa</Link></li>
+              <li><Link to="/partners" className="text-gray-300 hover:text-white transition-colors">Partner Bul</Link></li>
+              <li><Link to="/instructors" className="text-gray-300 hover:text-white transition-colors">Eğitmenler</Link></li>
+              <li><Link to="/festivals" className="text-gray-300 hover:text-white transition-colors">Festivaller</Link></li>
+              <li><Link to="/nights" className="text-gray-300 hover:text-white transition-colors">Geceler</Link></li>
+            </ul>
+          </div>
+
+          <div className="mb-6 md:mb-0">
+            <h3 className="text-lg font-semibold mb-3">Yardım & Destek</h3>
+            <ul className="space-y-2">
+              <li><Link to="/yardim/giris-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Siteye Nasıl Giriş Yapılır?</Link></li>
+              <li><Link to="/yardim/profil-duzenleme" className="text-gray-300 hover:text-white transition-colors">Rehber: Avatar &amp; Profil Nasıl Düzenlenir?</Link></li>
+              <li><Link to="/yardim/kurs-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Kursa Nasıl Kaydolunur?</Link></li>
+              <li><Link to="/yardim/egitmen-paneli" className="text-gray-300 hover:text-white transition-colors">Rehber: Eğitmen Paneli Nasıl Kullanılır?</Link></li>
+              <li><Link to="/yardim/okul-paneli" className="text-gray-300 hover:text-white transition-colors">Rehber: Okul Paneli Nasıl Kullanılır?</Link></li>
+              <li>
+                <Link
+                  to={isAuthenticated ? "/instructor" : "/signup"}
+                  state={{ role: 'instructor' }}
+                  onClick={handleBecomeInstructorClick}
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Eğitmen Ol
+                </Link>
+              </li>
+              <li><Link to="/become-school" className="text-gray-300 hover:text-white transition-colors">Okul Ekle</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold mb-3">İletişim</h3>
+            <p className="text-gray-300">
+              <a href="mailto:info@venturessoftworks.com" className="hover:text-white flex items-center group">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+                info@venturessoftworks.com
+              </a>
+            </p>
+            <p className="text-gray-300">
+              <a href="mailto:cnrsbtogll@gmail.com" className="hover:text-white flex items-center group">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+                cnrsbtogll@gmail.com
+              </a>
+            </p>
+            <p className="text-gray-300">
+              <a href="https://wa.me/905550059876" className="hover:text-white flex items-center group">
+                <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#25D366] mr-2 transition-transform group-hover:scale-110" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                +90 555 005 9876
+              </a>
+            </p>
+            <div className="flex space-x-4 mt-4">
+              <a href="#" className="text-gray-300 hover:text-white">
+                <span className="sr-only">Facebook</span>
+                <i className="fab fa-facebook-f"></i>
+              </a>
+              <a href="#" className="text-gray-300 hover:text-white">
+                <span className="sr-only">Instagram</span>
+                <i className="fab fa-instagram"></i>
+              </a>
+              <a href="#" className="text-gray-300 hover:text-white">
+                <span className="sr-only">Twitter</span>
+                <i className="fab fa-twitter"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-700 text-gray-400 text-sm text-center">
+          &copy; {new Date().getFullYear()} Feriha. Tüm hakları saklıdır.
+        </div>
+      </div>
+    </footer>
+  );
 };
 
 function AppContent(): JSX.Element {
@@ -512,89 +631,7 @@ function AppContent(): JSX.Element {
               </Routes>
             </div>
 
-            <footer className={`${((currentUser?.role === 'school') || (Array.isArray(currentUser?.role) && currentUser.role.includes('school'))) ? 'bg-gray-800 dark:bg-[#231810] border-t dark:border-[#493322] border-transparent' : 'bg-gray-800 dark:bg-gray-950'} text-white py-8 transition-colors duration-300`}>
-              <div className="container mx-auto px-4">
-                <div className="flex flex-col md:flex-row justify-between">
-                  <div className="mb-6 md:mb-0">
-                    <h2 className="text-xl font-bold mb-4">Feriha</h2>
-                    <p className="text-gray-300 max-w-md">
-                      Türkiye'nin en kapsamlı dans platformu. Dans kursları, eğitmenler ve dans partnerleri için tek adres.
-                    </p>
-                  </div>
-
-                  <div className="mb-6 md:mb-0">
-                    <h3 className="text-lg font-semibold mb-3">Bağlantılar</h3>
-                    <ul className="space-y-2">
-                      <li><a href="/courses" className="text-gray-300 hover:text-white transition-colors">Kurs Bul</a></li>
-                      <li><a href="/partners" className="text-gray-300 hover:text-white transition-colors">Partner Bul</a></li>
-                      <li><a href="/festivals" className="text-gray-300 hover:text-white transition-colors">Festivaller</a></li>
-                      <li><a href="/nights" className="text-gray-300 hover:text-white transition-colors">Geceler</a></li>
-                    </ul>
-                  </div>
-
-                  <div className="mb-6 md:mb-0">
-                    <h3 className="text-lg font-semibold mb-3">Yardım & Destek</h3>
-                    <ul className="space-y-2">
-                      <li><a href="/yardim/giris-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Siteye Nasıl Giriş Yapılır?</a></li>
-                      <li><a href="/yardim/profil-duzenleme" className="text-gray-300 hover:text-white transition-colors">Rehber: Avatar &amp; Profil Nasıl Düzenlenir?</a></li>
-                      <li><a href="/yardim/kurs-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Kursa Nasıl Kaydolunur?</a></li>
-                      <li><a href="/yardim/egitmen-paneli" className="text-gray-300 hover:text-white transition-colors">Rehber: Eğitmen Paneli Nasıl Kullanılır?</a></li>
-                      <li><a href="/yardim/okul-paneli" className="text-gray-300 hover:text-white transition-colors">Rehber: Okul Paneli Nasıl Kullanılır?</a></li>
-                      <li><a href="/become-instructor" className="text-gray-300 hover:text-white transition-colors">Eğitmen Ol</a></li>
-                      <li><a href="/become-school" className="text-gray-300 hover:text-white transition-colors">Okul Ekle</a></li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">İletişim</h3>
-                    <p className="text-gray-300">
-                      <a href="mailto:info@venturessoftworks.com" className="hover:text-white flex items-center group">
-                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                          <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                        </svg>
-                        info@venturessoftworks.com
-                      </a>
-                    </p>
-                    <p className="text-gray-300">
-                      <a href="mailto:cnrsbtogll@gmail.com" className="hover:text-white flex items-center group">
-                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                          <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                        </svg>
-                        cnrsbtogll@gmail.com
-                      </a>
-                    </p>
-                    <p className="text-gray-300">
-                      <a href="https://wa.me/905550059876" className="hover:text-white flex items-center group">
-                        <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#25D366] mr-2 transition-transform group-hover:scale-110" fill="currentColor">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                        </svg>
-                        +90 555 005 9876
-                      </a>
-                    </p>
-                    <div className="flex space-x-4 mt-4">
-                      <a href="#" className="text-gray-300 hover:text-white">
-                        <span className="sr-only">Facebook</span>
-                        <i className="fab fa-facebook-f"></i>
-                      </a>
-                      <a href="#" className="text-gray-300 hover:text-white">
-                        <span className="sr-only">Instagram</span>
-                        <i className="fab fa-instagram"></i>
-                      </a>
-                      <a href="#" className="text-gray-300 hover:text-white">
-                        <span className="sr-only">Twitter</span>
-                        <i className="fab fa-twitter"></i>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-gray-700 text-gray-400 text-sm text-center">
-                  &copy; {new Date().getFullYear()} Feriha. Tüm hakları saklıdır.
-                </div>
-              </div>
-            </footer>
+            <AppFooter isAuthenticated={isAuthenticated} user={currentUser} />
 
             <ChatWidget />
           </div>
