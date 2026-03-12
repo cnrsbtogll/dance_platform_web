@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from '@mui/material/styles';
@@ -9,8 +9,9 @@ import { useNavigate } from 'react-router-dom';
 import InstructorProfileForm from '../components/InstructorProfileForm';
 import CourseManagement from '../../../features/shared/components/courses/CourseManagement';
 import { StudentManagement } from '../../../features/shared/components/students/StudentManagement';
-import { query, where, collection, getDocs, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../../api/firebase/firebase';
+import { query, where, collection, getDocs, doc, getDoc, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { db, storage } from '../../../api/firebase/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from 'react-hot-toast';
 import ScheduleManagement from '../../../features/shared/components/schedule/ScheduleManagement';
 import AttendanceManagement from '../../../features/shared/components/attendance/AttendanceManagement';
@@ -443,6 +444,18 @@ function InstructorPanel({ user }: InstructorPanelProps) {
     try { return localStorage.getItem('instructor_sidebar_collapsed') === 'true'; } catch { return false; }
   });
 
+  // Dual-path activation state
+  const [activationPath, setActivationPath] = useState<'school' | 'admin' | null>(null);
+  const [schools, setSchools] = useState<{ id: string; name: string; city?: string }[]>([]);
+  const [loadingSchools, setLoadingSchools] = useState(false);
+  const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [schoolRequestSent, setSchoolRequestSent] = useState(false);
+  // Admin path form
+  const [adminForm, setAdminForm] = useState({ bio: '', yearsExp: '', danceStyles: '' });
+  const [uploadedDocs, setUploadedDocs] = useState<{ name: string; url: string }[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Check if instructor is in pending/demo mode
   useEffect(() => {
     const checkPendingStatus = async () => {
@@ -452,7 +465,12 @@ function InstructorPanel({ user }: InstructorPanelProps) {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const data = userSnap.data();
-          setIsPending(data.is_instructor_pending === true);
+          // Draft-instructor role OR is_instructor_pending flag
+          const isDraft =
+            data.is_instructor_pending === true ||
+            data.role === 'draft-instructor' ||
+            user.role === 'draft-instructor';
+          setIsPending(isDraft);
         }
 
         // Check for activation requests
@@ -471,7 +489,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
       }
     };
     checkPendingStatus();
-  }, [user?.id]);
+  }, [user?.id, user?.role]);
 
   const handleSendActivationRequest = async () => {
     if (!user?.id) return;
@@ -491,6 +509,106 @@ function InstructorPanel({ user }: InstructorPanelProps) {
     } catch (error) {
       console.error('Error sending request:', error);
       toast.error('Talep gönderilirken bir hata oluştu.');
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
+  // Okul listesini Firestore'dan çek
+  const fetchSchools = async () => {
+    setLoadingSchools(true);
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      const schoolList = snap.docs
+        .filter(d => d.data().role === 'school' || d.data().role?.includes?.('school'))
+        .map(d => ({ id: d.id, name: d.data().displayName || d.data().schoolName || 'İsimsiz Okul', city: d.data().city || d.data().location || '' }));
+      setSchools(schoolList);
+    } catch (e) {
+      console.error('Schools fetch error:', e);
+      toast.error('Okullar yüklenemedi.');
+    } finally {
+      setLoadingSchools(false);
+    }
+  };
+
+  // Dosya yükleme (Firebase Storage)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !user?.id) return;
+    if (uploadedDocs.length >= 3) { toast.error('En fazla 3 dosya yükleyebilirsiniz.'); return; }
+
+    setUploadingDoc(true);
+    try {
+      const file = files[0];
+      const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      if (!allowed.includes(file.type)) { toast.error('Sadece PDF, JPG veya PNG dosyası yükleyebilirsiniz.'); return; }
+      if (file.size > 5 * 1024 * 1024) { toast.error('Dosya boyutu 5MB\'dan küçük olmalıdır.'); return; }
+
+      const fileRef = storageRef(storage, `instructor-docs/${user.id}/${Date.now()}_${file.name}`);
+      await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(fileRef);
+      setUploadedDocs(prev => [...prev, { name: file.name, url }]);
+      toast.success('Dosya yüklendi!');
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error('Dosya yüklenirken hata oluştu.');
+    } finally {
+      setUploadingDoc(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Okul yolu: Seçilen okula istek gönder
+  const handleSchoolActivationRequest = async () => {
+    if (!user?.id || !selectedSchoolId) { toast.error('Lütfen bir okul seçin.'); return; }
+    setIsSubmittingRequest(true);
+    try {
+      await addDoc(collection(db, 'instructorRequests'), {
+        userId: user.id,
+        userEmail: user.email,
+        displayName: user.displayName,
+        status: 'pending',
+        type: 'school_activation',
+        targetSchoolId: selectedSchoolId,
+        targetSchoolName: schools.find(s => s.id === selectedSchoolId)?.name || '',
+        createdAt: serverTimestamp(),
+      });
+      setSchoolRequestSent(true);
+      setRequestStatus('pending');
+      toast.success('Okula aktivasyon isteği gönderildi!');
+    } catch (err) {
+      console.error(err);
+      toast.error('İstek gönderilirken hata oluştu.');
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
+  // Admin yolu: Belge + form ile admin'e başvur
+  const handleAdminActivationRequest = async () => {
+    if (!user?.id) return;
+    if (!adminForm.bio.trim()) { toast.error('Lütfen kısa biyografinizi yazın.'); return; }
+    setIsSubmittingRequest(true);
+    try {
+      await addDoc(collection(db, 'instructorRequests'), {
+        userId: user.id,
+        userEmail: user.email,
+        displayName: user.displayName,
+        status: 'pending',
+        type: 'admin_activation',
+        bio: adminForm.bio,
+        yearsExp: adminForm.yearsExp,
+        danceStyles: adminForm.danceStyles,
+        documents: uploadedDocs,
+        createdAt: serverTimestamp(),
+      });
+      // Kullanıcı belgesini de güncelle
+      await updateDoc(doc(db, 'users', user.id), { is_instructor_pending: true, updatedAt: serverTimestamp() });
+      setRequestStatus('pending');
+      toast.success('Admin başvurunuz alındı! İnceleme sürecindeyiz.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Başvuru gönderilirken hata oluştu.');
     } finally {
       setIsSubmittingRequest(false);
     }
@@ -848,20 +966,21 @@ function InstructorPanel({ user }: InstructorPanelProps) {
           </AnimatePresence>
 
           {/* ── Main Content ──────────────────────────────────────────────────── */}
-          <main className={`flex-1 flex flex-col h-screen overflow-hidden relative w-full ${isPending ? 'pt-10' : ''}`}>
+          <main className={`flex-1 flex flex-col h-screen overflow-hidden relative w-full ${isPending ? 'pt-12' : ''}`}>
             {isPending && (
-              <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-r from-teal-600 to-cyan-700 flex items-center justify-between px-4 z-40 shadow-md">
-                <div className="flex items-center gap-2 text-white">
-                  <Icons.Timer className="w-4 h-4 animate-pulse" />
-                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Demo Modu Aktif</span>
-                  <span className="hidden sm:inline text-[10px] opacity-80">|</span>
-                  <span className="hidden sm:inline text-[10px] opacity-90">Panel özelliklerini öğreniyorsunuz...</span>
+              <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 flex items-center justify-between px-3 sm:px-5 z-40 shadow-lg">
+                <div className="flex items-center gap-2 text-white min-w-0">
+                  <svg className="w-4 h-4 flex-shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span className="text-xs font-bold uppercase tracking-wider whitespace-nowrap">Taslak Eğitmen Modu</span>
+                  <span className="hidden sm:inline text-[11px] opacity-80 truncate">— Kurslarınız pasif modda, diğer kullanıcılar göremez</span>
                 </div>
                 <button
                   onClick={() => setActiveTab('activation')}
-                  className="bg-white/20 hover:bg-white/30 text-white text-[10px] sm:text-xs px-2 py-1 rounded-full font-bold transition-colors cursor-pointer"
+                  className="flex-shrink-0 ml-2 bg-white text-amber-600 hover:bg-amber-50 text-[11px] sm:text-xs px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer shadow-sm whitespace-nowrap"
                 >
-                  Şimdi Aktifleştir
+                  🚀 Aktif Et
                 </button>
               </div>
             )}
@@ -928,72 +1047,215 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                   )}
                   {activeTab === 'activation' && (
                     <div className="space-y-6 pb-20">
-                      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-8 text-center">
-                        <div className="w-16 h-16 bg-teal-100 dark:bg-teal-900/40 text-instructor dark:text-teal-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Icons.Schedule />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Rehber & Aktivasyon</h3>
-                        <p className="text-slate-600 dark:text-slate-400 max-w-lg mx-auto mb-8">
-                          Demo modunda paneli dilediğiniz gibi kullanabilir, özellikleri öğrenebilirsiniz.
-                          Gerçek kurslar yayınlamak ve profilinizi tüm öğrencilere açmak için aktivasyon talebinde bulunmanız gerekir.
-                        </p>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 text-left">
-                          <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                            <span className="text-instructor dark:text-teal-400 font-bold block mb-1 text-sm text-center">1. Paneli Keşfet</span>
-                            <span className="text-[10px] text-slate-500 block text-center">Menüleri gezin ve tüm özellikleri serbestçe inceleyin.</span>
-                          </div>
-                          <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                            <span className="text-instructor dark:text-teal-400 font-bold block mb-1 text-sm text-center">2. Talebi Gönder</span>
-                            <span className="text-[10px] text-slate-500 block text-center">Profilinizi tamamladıktan sonra aktivasyon isteğinizi iletin.</span>
-                          </div>
-                          <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                            <span className="text-instructor dark:text-teal-400 font-bold block mb-1 text-sm text-center">3. Aktif Kullanım</span>
-                            <span className="text-[10px] text-slate-500 block text-center">Onaydan sonra kurslarınız yayına girebilir.</span>
+                      {/* Başvuru durumu: inceleniyor */}
+                      {requestStatus === 'pending' && (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-2xl p-6 flex items-center gap-4">
+                          <span className="text-3xl">⏳</span>
+                          <div>
+                            <p className="font-bold text-amber-700 dark:text-amber-400 text-lg">Başvurunuz İnceleniyor</p>
+                            <p className="text-sm text-amber-600 dark:text-amber-300 mt-1">Değerlendirme tamamlanınca e-posta ile bildirim alacaksınız.</p>
                           </div>
                         </div>
+                      )}
 
-                        {requestStatus === 'none' ? (
-                          <div className="space-y-4">
-                            <div className="p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/30 rounded-lg text-left max-w-md mx-auto mb-6">
-                              <p className="text-xs text-teal-800 dark:text-teal-300 font-medium leading-relaxed">
-                                💡 Aktivasyon talebi gönderdiğinizde, yöneticilerimiz profilinizi inceleyecektir. Onay sonrasında "Demo Modu" kısıtlamaları kalkacaktır.
-                              </p>
+                      {requestStatus === 'approved' && (
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/40 rounded-2xl p-6 flex items-center gap-4">
+                          <span className="text-3xl">✅</span>
+                          <div>
+                            <p className="font-bold text-emerald-700 dark:text-emerald-400 text-lg">Hesabınız Aktif!</p>
+                            <p className="text-sm text-emerald-600 dark:text-emerald-300 mt-1">Artık kurslarınızı yayınlayabilirsiniz.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {requestStatus === 'rejected' && (
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 rounded-2xl p-6 flex items-center gap-4">
+                          <span className="text-3xl">❌</span>
+                          <div>
+                            <p className="font-bold text-red-700 dark:text-red-400 text-lg">Başvurunuz Onaylanmadı</p>
+                            <p className="text-sm text-red-600 dark:text-red-300 mt-1">Bilgilerinizi güncelleyip tekrar başvurabilirsiniz.</p>
+                            <button onClick={() => { setRequestStatus('none'); setActivationPath(null); }} className="mt-2 text-sm text-red-600 dark:text-red-400 underline font-medium">Tekrar Başvur</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Ana aktivasyon kartı */}
+                      {requestStatus === 'none' && (
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="text-3xl">🚀</span>
+                            <div>
+                              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Aktif Eğitmen Ol</h3>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">Taslak modundan çıkmak için aşağıdaki yollardan birini seçin.</p>
                             </div>
-                            <button
-                              onClick={handleSendActivationRequest}
-                              disabled={isSubmittingRequest}
-                              className="px-8 py-3 bg-instructor text-white font-bold rounded-xl hover:bg-instructor-dark transition-all shadow-lg shadow-instructor/20 disabled:opacity-50 cursor-pointer"
-                            >
-                              {isSubmittingRequest ? 'Gönderiliyor...' : 'Hemen Aktivasyon Talebi Gönder'}
-                            </button>
                           </div>
-                        ) : requestStatus === 'pending' ? (
-                          <div className="inline-flex items-center gap-2 px-6 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl border border-amber-200 dark:border-amber-800/30">
-                            <Icons.Timer /> Başvurunuz İnceleniyor
-                          </div>
-                        ) : requestStatus === 'approved' ? (
-                          <div className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-bold rounded-xl border border-emerald-200 dark:border-emerald-800/30">
-                            ✓ Hesabınız Aktif
-                          </div>
-                        ) : (
-                          <div className="text-center">
-                            <p className="text-red-500 mb-4 font-medium">Başvurunuz maalesef onaylanmadı.</p>
-                            <button
-                              onClick={handleSendActivationRequest}
-                              className="text-instructor underline font-bold cursor-pointer"
-                            >
-                              Tekrar Başvur
-                            </button>
-                          </div>
-                        )}
-                      </div>
 
+                          {/* Yol seçim kartları */}
+                          {!activationPath && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                              <button
+                                onClick={() => { setActivationPath('school'); fetchSchools(); }}
+                                className="group text-left p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-instructor hover:bg-instructor/5 dark:hover:bg-instructor/10 transition-all cursor-pointer"
+                              >
+                                <span className="text-4xl block mb-3">🏫</span>
+                                <h4 className="font-bold text-slate-800 dark:text-white text-lg group-hover:text-instructor transition-colors">Okul Onayı ile Aktif Ol</h4>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                                  Platformda kayıtlı dans okullarından birine başvurun. Okul sizi onayladığında eğitmen hesabınız aktif olur.
+                                </p>
+                                <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-instructor">Seçmek için tıklayın →</span>
+                              </button>
+
+                              <button
+                                onClick={() => setActivationPath('admin')}
+                                className="group text-left p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all cursor-pointer"
+                              >
+                                <span className="text-4xl block mb-3">📋</span>
+                                <h4 className="font-bold text-slate-800 dark:text-white text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Admin Onayı ile Aktif Ol</h4>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                                  Sertifikalarınızı ve dans geçmişinizi yöneticilerimize gönderin. İnceleme sonrası hesabınız aktif edilir.
+                                </p>
+                                <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">Seçmek için tıklayın →</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {/* OKUL YOLU */}
+                          {activationPath === 'school' && (
+                            <div className="mt-6 space-y-4">
+                              <button onClick={() => setActivationPath(null)} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center gap-1 mb-2">← Geri</button>
+                              <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">🏫 Okul Seçin</h4>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">Aşağıdan bir dans okulu seçin. Seçtiğiniz okula aktivasyon isteği gönderilecektir.</p>
+
+                              {loadingSchools ? (
+                                <div className="flex items-center gap-2 py-6 justify-center">
+                                  <div className="animate-spin w-5 h-5 border-2 border-instructor border-t-transparent rounded-full" />
+                                  <span className="text-sm text-slate-500">Okullar yükleniyor...</span>
+                                </div>
+                              ) : schools.length === 0 ? (
+                                <div className="text-center py-8 text-slate-400 text-sm">Kayıtlı okul bulunamadı.</div>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
+                                  {schools.map(school => (
+                                    <button
+                                      key={school.id}
+                                      type="button"
+                                      onClick={() => setSelectedSchoolId(school.id)}
+                                      className={`text-left p-4 rounded-xl border-2 transition-all ${selectedSchoolId === school.id
+                                        ? 'border-instructor bg-instructor/10 text-instructor'
+                                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-instructor/50'}`}
+                                    >
+                                      <p className="font-semibold text-sm">{school.name}</p>
+                                      {school.city && <p className="text-xs text-slate-400 mt-0.5">📍 {school.city}</p>}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+
+                              {schoolRequestSent ? (
+                                <div className="text-center py-4 text-emerald-600 dark:text-emerald-400 font-semibold">✓ İstek gönderildi! Okulun onayını bekliyorsunuz.</div>
+                              ) : (
+                                <button
+                                  onClick={handleSchoolActivationRequest}
+                                  disabled={!selectedSchoolId || isSubmittingRequest}
+                                  className="w-full py-3 mt-2 bg-instructor text-white font-bold rounded-xl hover:bg-instructor-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-instructor/20"
+                                >
+                                  {isSubmittingRequest ? 'Gönderiliyor...' : '📤 Seçilen Okula İstek Gönder'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* ADMİN YOLU */}
+                          {activationPath === 'admin' && (
+                            <div className="mt-6 space-y-5">
+                              <button onClick={() => setActivationPath(null)} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center gap-1 mb-2">← Geri</button>
+                              <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">📋 Admin Aktivasyon Formu</h4>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">Sertifika, kurs geçmişi veya diploma belgelerinizi yükleyin ve formu doldurun.</p>
+
+                              <div>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Kısa Biyografi <span className="text-red-500">*</span></label>
+                                <textarea
+                                  rows={3}
+                                  value={adminForm.bio}
+                                  onChange={e => setAdminForm(f => ({ ...f, bio: e.target.value }))}
+                                  placeholder="Dans geçmişinizi ve kendinizi kısaca tanıtın..."
+                                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-instructor resize-none"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Deneyim Süresi</label>
+                                  <input
+                                    type="text"
+                                    value={adminForm.yearsExp}
+                                    onChange={e => setAdminForm(f => ({ ...f, yearsExp: e.target.value }))}
+                                    placeholder="Örn: 5 yıl"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-instructor"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Dans Stilleri</label>
+                                  <input
+                                    type="text"
+                                    value={adminForm.danceStyles}
+                                    onChange={e => setAdminForm(f => ({ ...f, danceStyles: e.target.value }))}
+                                    placeholder="Örn: Salsa, Bachata, Tango"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-instructor"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Belge yükleme */}
+                              <div>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                                  Sertifika / Belge Yükle <span className="text-slate-400 font-normal">(Maks. 3 dosya · 5MB · PDF/JPG/PNG)</span>
+                                </label>
+                                <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} className="hidden" id="doc-upload" />
+                                <label
+                                  htmlFor="doc-upload"
+                                  className={`flex items-center justify-center gap-3 w-full py-4 rounded-xl border-2 border-dashed cursor-pointer transition-all
+                                    ${uploadedDocs.length >= 3 ? 'border-slate-200 dark:border-slate-700 opacity-50 cursor-not-allowed' : 'border-amber-300 dark:border-amber-700 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10'}`}
+                                  onClick={(e: React.MouseEvent) => { if (uploadedDocs.length >= 3) e.preventDefault(); }}
+                                >
+                                  {uploadingDoc
+                                    ? <><div className="animate-spin w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full" /><span className="text-sm text-amber-600">Yükleniyor...</span></>
+                                    : <><span className="text-2xl">📎</span><span className="text-sm font-medium text-amber-600 dark:text-amber-400">Dosya Seç</span></>
+                                  }
+                                </label>
+
+                                {uploadedDocs.length > 0 && (
+                                  <div className="mt-3 space-y-2">
+                                    {uploadedDocs.map((d, i) => (
+                                      <div key={i} className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700/40">
+                                        <span className="text-emerald-600 text-lg">✓</span>
+                                        <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-700 dark:text-emerald-400 font-medium truncate flex-1">{d.name}</a>
+                                        <button onClick={() => setUploadedDocs(prev => prev.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500 transition-colors text-lg leading-none">&times;</button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              <button
+                                onClick={handleAdminActivationRequest}
+                                disabled={isSubmittingRequest || !adminForm.bio.trim()}
+                                className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/20"
+                              >
+                                {isSubmittingRequest ? 'Gönderiliyor...' : "📤 Admin'e Aktivasyon Başvurusu Gönder"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Alt tanıtım kartı */}
                       <div className="bg-slate-900 text-white rounded-xl p-8 overflow-hidden relative group">
                         <div className="relative z-10">
                           <h4 className="text-xl font-bold mb-2">Profesyonel Eğitmenlik Yolculuğu</h4>
                           <p className="text-slate-300 text-sm max-w-md">
-                            Feriha platformu olarak dans eğitmenlerimize en iyi araçları sunuyoruz.
+                            Dans eğitmenlerimize en iyi araçları sunuyoruz.
                             Gelişmiş istatistikler, öğrenci takibi ve güvenli ödeme sistemimizle sadece dansınıza odaklanın.
                           </p>
                         </div>

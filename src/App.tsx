@@ -574,7 +574,11 @@ function AppContent(): JSX.Element {
                 <Route
                   path="/instructor"
                   element={
-                    isAuthenticated && currentUser?.role?.includes('instructor') ?
+                    loading ? (
+                      <div className="flex justify-center items-center h-screen">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-pink" />
+                      </div>
+                    ) : isAuthenticated && (currentUser?.role?.includes('instructor') || currentUser?.role?.includes('draft-instructor')) ?
                       <InstructorPanel user={currentUser} /> : <Navigate to="/signin" />
                   }
                 />

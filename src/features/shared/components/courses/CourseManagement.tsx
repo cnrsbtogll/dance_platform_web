@@ -471,7 +471,8 @@ function CourseManagement({
         if (!isAdmin) {
           // If a schoolId prop is provided, prioritize it. Otherwise use the specific target (instructorId or schoolId)
           const targetSchoolId = schoolId || (userRole === 'school' ? currentUser.uid : null);
-          const targetInstructorId = instructorId || (userRole === 'instructor' ? currentUser.uid : null);
+          const isInstructorRole = userRole === 'instructor' || userRole === 'draft-instructor';
+          const targetInstructorId = instructorId || (isInstructorRole ? currentUser.uid : null);
 
           if (targetSchoolId) {
             console.log('School: Okula ait kurslar getiriliyor -', targetSchoolId);
@@ -482,9 +483,10 @@ function CourseManagement({
             );
           } else if (targetInstructorId) {
             console.log('Instructor: Eğitmene ait kurslar getiriliyor -', targetInstructorId);
+            // instructorIds (array) kullan — instructorId tekil yerine
             q = query(
               coursesRef,
-              where('instructorId', '==', targetInstructorId),
+              where('instructorIds', 'array-contains', targetInstructorId),
               orderBy('createdAt', 'desc')
             );
           }
@@ -1754,10 +1756,10 @@ function CourseManagement({
                       disabled={isLocked}
                       onClick={() => !isLocked && setFormData({ ...formData, status: opt.value as any })}
                       className={`py-3 rounded-xl border-2 font-medium transition-all ${formData.status === opt.value
-                          ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
-                          : isLocked
-                            ? 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-700 cursor-not-allowed'
-                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300'
+                        ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
+                        : isLocked
+                          ? 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300'
                         }`}
                     >
                       {opt.label}
@@ -1874,7 +1876,7 @@ function CourseManagement({
       time: '18:00',
       price: 1500,
       currency: 'TRY',
-      status: 'active',
+      status: isInstructorPending ? 'draft' : 'active',
       recurring: true,
       schedule: [],
       location: {

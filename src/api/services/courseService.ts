@@ -83,7 +83,6 @@ export const getAllDanceCourses = async (): Promise<DanceClass[]> => {
   try {
     const coursesQuery = query(
       collection(db, COURSES_COLLECTION),
-      where('status', '==', 'active'),
       orderBy('createdAt', 'desc')
     );
 
@@ -92,7 +91,10 @@ export const getAllDanceCourses = async (): Promise<DanceClass[]> => {
 
     coursesSnapshot.forEach((doc) => {
       const data = doc.data();
-      courses.push(data as DanceClass);
+      // Filter active courses client-side to avoid composite index requirement
+      if (data.status === 'active') {
+        courses.push(data as DanceClass);
+      }
     });
 
     return courses;
@@ -101,6 +103,7 @@ export const getAllDanceCourses = async (): Promise<DanceClass[]> => {
     throw error;
   }
 };
+
 
 /**
  * Bir okulun tüm kurslarını getirir
@@ -316,12 +319,12 @@ export const deleteDanceCourse = async (courseId: string): Promise<void> => {
  */
 export const getFeaturedDanceCourses = async (count: number = 4): Promise<DanceClass[]> => {
   try {
-    // En son eklenen dersleri getirelim
+    // Only orderBy + limit to avoid composite index requirement.
+    // Filter by status on the client side.
     const coursesQuery = query(
       collection(db, COURSES_COLLECTION),
-      where('status', '==', 'active'),
       orderBy('createdAt', 'desc'),
-      limit(count)
+      limit(count * 5) // fetch more to account for non-active ones
     );
 
     const coursesSnapshot = await getDocs(coursesQuery);
@@ -329,15 +332,17 @@ export const getFeaturedDanceCourses = async (count: number = 4): Promise<DanceC
 
     coursesSnapshot.forEach((doc) => {
       const data = doc.data();
-      courses.push({
-        id: doc.id,
-        ...data
-      } as DanceClass);
+      if (data.status === 'active') {
+        courses.push({
+          id: doc.id,
+          ...data
+        } as DanceClass);
+      }
     });
 
-    return courses;
+    return courses.slice(0, count);
   } catch (error) {
     console.error('Öne çıkan dans kursları getirilirken hata:', error);
     throw error;
   }
-}; 
+};

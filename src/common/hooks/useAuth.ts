@@ -286,9 +286,21 @@ export const useAuth = (): AuthState => {
               console.error('Snapshot listener error:', error);
             });
           } else {
-            // Kullanıcı profili daha önce oluşturulmuş mu kontrol et
-            if (userProfileCreatedRef.current) {
-              console.log('⚠️ User profile creation already attempted, skipping...');
+            // Döküman bulunamadı — signup sırasında setDoc henüz tamamlanmamış olabilir.
+            // Hemen yeni doküman oluşturmak yerine, onSnapshot ile bekliyoruz.
+            // Bu, createUserWithEmailAndPassword'dan gelen Auth callback'i ile
+            // authService.signUp'daki setDoc arasındaki race condition'ı çözer.
+            console.log('User document not found — waiting for Firestore write via onSnapshot...');
+
+            // Önce geçici olarak loading: true kalacak, snapshot gelince güncellenecek
+            // Loading'i false yapmadan snapshot bekle
+            clearSnapshot();
+
+            const MAX_WAIT_MS = 8000;
+            const waitTimer = setTimeout(() => {
+              // 8 saniye sonra hala gelmezse fallback: student rolü ile minimal profil
+              console.warn('onSnapshot timeout — creating minimal fallback profile');
+              clearSnapshot();
               setState(prevState => ({
                 ...prevState,
                 user: {
@@ -296,7 +308,7 @@ export const useAuth = (): AuthState => {
                   email: firebaseUser.email || '',
                   displayName: firebaseUser.displayName || '',
                   photoURL: firebaseUser.photoURL || '',
-                  role: 'student', // Varsayılan rol
+                  role: 'student',
                   createdAt: new Date(),
                 } as User,
                 loading: false,
@@ -304,54 +316,40 @@ export const useAuth = (): AuthState => {
                 isOffline: false
               }));
               isAuthProcessingRef.current = false;
-              return;
-            }
+            }, MAX_WAIT_MS);
 
-            console.log('User document NOT found in Firestore, creating new profile');
-            userProfileCreatedRef.current = true; // Profil oluşturma girişimini işaretle
+            snapshotUnsubscribeRef.current = onSnapshot(
+              doc(db, 'users', firebaseUser.uid),
+              (snap) => {
+                if (snap.exists()) {
+                  clearTimeout(waitTimer);
+                  const userData = snap.data() as Omit<User, 'createdAt'> & { createdAt: Timestamp };
+                  setState(prevState => ({
+                    ...prevState,
+                    user: {
+                      ...userData,
+                      id: firebaseUser.uid,
+                      createdAt: userData.createdAt ? userData.createdAt.toDate() : new Date(),
+                      displayName: userData.displayName || firebaseUser.displayName || '',
+                      email: userData.email || firebaseUser.email || '',
+                      photoURL: userData.photoURL || firebaseUser.photoURL || ''
+                    } as User,
+                    loading: false,
+                    error: null,
+                    isOffline: false
+                  }));
+                  isAuthProcessingRef.current = false;
+                }
+              },
+              (error) => {
+                clearTimeout(waitTimer);
+                console.error('Snapshot listener error while waiting for doc:', error);
+                isAuthProcessingRef.current = false;
+              }
+            );
 
-            try {
-              // Yeni kullanıcı belgesi oluştur
-              const newUserData = {
-                id: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                displayName: firebaseUser.displayName || '',
-                photoURL: firebaseUser.photoURL || '',
-                role: 'student', // Varsayılan rol
-                createdAt: new Date()
-              };
-
-              // Firestore'a kaydet
-              await setDoc(doc(db, 'users', firebaseUser.uid), newUserData);
-              console.log('✅ User profile created successfully');
-
-              // Kullanıcı durumunu güncelle - hata olmadan
-              setState(prevState => ({
-                ...prevState,
-                user: newUserData as User,
-                loading: false,
-                error: null,
-                isOffline: false
-              }));
-            } catch (createError: any) {
-              console.error('❌ Error creating user profile:', createError);
-
-              // Firestore'da kullanıcı verisi yoksa, sadece Firebase Authentication'dan gelen temel bilgileri kullan
-              setState(prevState => ({
-                ...prevState,
-                user: {
-                  id: firebaseUser.uid,
-                  email: firebaseUser.email || '',
-                  displayName: firebaseUser.displayName || '',
-                  photoURL: firebaseUser.photoURL || '',
-                  role: 'student', // Varsayılan rol
-                  createdAt: new Date(),
-                } as User,
-                loading: false,
-                error: `Kullanıcı profili oluşturulamadı: ${createError.message || 'Bilinmeyen hata'}`,
-                isOffline: false
-              }));
-            }
+            // isAuthProcessingRef.current will be released by snapshot or timeout
+            return;
           }
         } catch (error: any) {
           console.error('Error fetching user document:', error);
