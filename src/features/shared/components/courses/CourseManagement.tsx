@@ -671,65 +671,51 @@ function CourseManagement({
     // Both admins and instructors can see the school list for course affiliation
     if (!isAdmin && colorVariant !== 'instructor') return;
 
+    setLoadingSchools(true);
     try {
       console.log('Okullar getiriliyor...');
       const schoolsRef = collection(db, 'schools');
-      console.log('Schools koleksiyonu referansı:', schoolsRef);
-
-      const q = query(schoolsRef);
-      console.log('Oluşturulan query:', q);
-
-      const querySnapshot = await getDocs(q);
-      console.log('Query sonuçları:', {
-        empty: querySnapshot.empty,
-        size: querySnapshot.size,
-        docs: querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          data: doc.data()
-        }))
-      });
+      const querySnapshot = await getDocs(schoolsRef);
 
       const schoolsList = querySnapshot.docs
         .map(doc => {
           const data = doc.data();
-          console.log('Okul verisi işleniyor:', {
-            id: doc.id,
-            data: data,
-            displayName: data.displayName,
-            name: data.name,
-            ad: data.ad,
-            status: data.status,
-            userId: data.userId,
-            email: data.email
-          });
-
-          // Sadece aktif okulları al
-          if (data.status === 'active') {
-            return {
-              label: data.displayName || data.name || data.ad || data.email || 'İsimsiz Okul',
-              value: doc.id
-            };
-          }
-          return null;
+          return {
+            label: data.displayName || data.name || data.ad || data.email || 'İsimsiz Okul',
+            value: doc.id
+          };
         })
-        .filter((school): school is { label: string; value: string } => school !== null)
+        .filter(s => !!s.label)
         .sort((a, b) => a.label.localeCompare(b.label));
 
-      console.log('İşlenmiş okul listesi:', schoolsList);
-      setSchools(schoolsList);
-    } catch (error) {
-      console.error('Okullar yüklenirken hata detayı:', {
-        error,
-        message: error instanceof Error ? error.message : 'Bilinmeyen hata',
-        code: error instanceof Error ? (error as any).code : undefined,
-        stack: error instanceof Error ? error.stack : undefined
-      });
+      if (schoolsList.length > 0) {
+        console.log('Schools koleksiyonundan yüklendi:', schoolsList.length);
+        setSchools(schoolsList);
+        return;
+      }
 
-      // Varsayılan okul listesi
-      setSchools([
-        { label: 'Test Okul 1', value: 'test-school-1' },
-        { label: 'Test Okul 2', value: 'test-school-2' }
-      ]);
+      // Fallback: users koleksiyonunda role=school olan kayıtları ara
+      console.log('schools koleksiyonu boş, users koleksiyonundaki okullar aranıyor...');
+      const usersRef = collection(db, 'users');
+      const usersSnap = await getDocs(usersRef);
+      const usersSchoolList = usersSnap.docs
+        .filter(d => {
+          const role = d.data().role;
+          return role === 'school' || role === 'draft-school' ||
+            (Array.isArray(role) && (role.includes('school') || role.includes('draft-school')));
+        })
+        .map(d => ({
+          label: d.data().displayName || d.data().schoolName || d.data().name || d.data().email || 'İsimsiz Okul',
+          value: d.id
+        }))
+        .filter(s => !!s.label)
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+      console.log('Users koleksiyonundan okullar:', usersSchoolList.length);
+      setSchools(usersSchoolList);
+    } catch (error) {
+      console.error('Okullar yüklenirken hata:', error);
+      setSchools([]);
     } finally {
       setLoadingSchools(false);
     }
@@ -1433,6 +1419,10 @@ function CourseManagement({
                           schoolAddress: type === 'custom' ? '' : formData.schoolAddress,
                           customAddress: type === 'school' ? '' : formData.customAddress
                         });
+                        // Okullar yüklenmemişse yükle
+                        if (type === 'school' && schools.length === 0) {
+                          fetchSchools();
+                        }
                       }}
                       colorVariant={colorVariant}
                       required
@@ -1456,6 +1446,7 @@ function CourseManagement({
                           }}
                           placeholder="Okul Seçin"
                           colorVariant={colorVariant}
+                          required
                         />
                         <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
                           Seçtiğiniz dans okulunun kayıtlı adresi kurs detaylarında öğrencilere gösterilecektir.
@@ -1811,7 +1802,7 @@ function CourseManagement({
         }
 
         try {
-          if (isAdmin) {
+          if (isAdmin || colorVariant === 'instructor') {
             await fetchSchools();
           }
         } catch (e) {
@@ -1995,6 +1986,18 @@ function CourseManagement({
     // Kurs programı kontrolü
     if (formData.schedule.length === 0) {
       setError('Lütfen en az bir ders günü seçerek kurs programını oluşturun.');
+      return;
+    }
+
+    // Dans okulu seçimi zorunluluğu
+    if (formData.locationType === 'school' && !formData.schoolId) {
+      setError('Lütfen "Hangi Dans Okulunda?" alanından bir okul seçin.');
+      return;
+    }
+
+    // Özel adres zorunluluğu
+    if (formData.locationType === 'custom' && !formData.customAddress?.trim()) {
+      setError('Lütfen kursun yapılacağı adresi girin.');
       return;
     }
 
