@@ -5,7 +5,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import createInstructorTheme from '../../../styles/instructorTheme';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import InstructorProfileForm from '../components/InstructorProfileForm';
 import CourseManagement from '../../../features/shared/components/courses/CourseManagement';
 import { StudentManagement } from '../../../features/shared/components/students/StudentManagement';
@@ -429,9 +429,33 @@ function InstructorPanel({ user }: InstructorPanelProps) {
   const { isDark } = useTheme();
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const instructorTheme = createInstructorTheme(isDark ? 'dark' : 'light');
 
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  // Read initial tab from URL if present
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab') as TabType;
+    return tabParam && navItems.some(item => item.id === tabParam) || tabParam === 'activation' 
+      ? tabParam 
+      : 'dashboard';
+  });
+
+  // Sync tab state when URL changes (e.g., clicking 'Aktif Et' banner button)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab') as TabType;
+    if (tabParam && (navItems.some(item => item.id === tabParam) || tabParam === 'activation')) {
+      setActiveTab(tabParam);
+    }
+  }, [location.search]);
+
+  // Handle manual tab changes and keep URL in sync so external links always work
+  const handleTabChange = (tabId: TabType) => {
+    setActiveTab(tabId);
+    navigate(`/instructor?tab=${tabId}`, { replace: true });
+  };
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [stats, setStats] = useState<StatsState>({ courses: 0, students: 0, upcomingLessons: 0, earnings: 0 });
@@ -737,7 +761,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
     return (
       <div key={item.id} className="relative group">
         <button
-          onClick={() => { setActiveTab(item.id); onClick?.(); }}
+          onClick={() => { handleTabChange(item.id); onClick?.(); }}
           className={`flex items-center w-full rounded-lg transition-colors text-left ${isSidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'
             } ${isActive
               ? 'bg-teal-50 text-instructor dark:bg-teal-900/30 dark:text-teal-400 font-medium'
@@ -764,27 +788,9 @@ function InstructorPanel({ user }: InstructorPanelProps) {
       <ThemeProvider theme={instructorTheme}>
         <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-900 overflow-hidden font-sans text-slate-900 dark:text-slate-100 antialiased">
 
-          {/* ── Demo Mode Banner (fixed top) ───────────────────────────────── */}
-          {isPending && (
-            <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center py-2 px-4 text-sm font-medium shadow-md">
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Demo Modu — Hesabınız henüz aktif değil. Ders oluşturabilirsiniz ancak yayınlayamazsınız.</span>
-                <button
-                  onClick={() => setActiveTab('activation')}
-                  className="ml-2 px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors cursor-pointer"
-                >
-                  Hesabı Aktifleştir →
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* ── Desktop Sidebar ─────────────────────────────────────────────── */}
           <aside
-            className={`hidden lg:flex flex-col h-screen z-20 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${isPending ? 'pt-10' : ''} ${isSidebarCollapsed ? 'w-16' : 'w-72'
+            className={`hidden lg:flex flex-col h-screen z-20 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 sticky top-0 transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${isSidebarCollapsed ? 'w-16' : 'w-72'
               }`}
           >
             {/* Logo / brand */}
@@ -929,7 +935,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                       return (
                         <button
                           key={item.id}
-                          onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
+                          onClick={() => { handleTabChange(item.id); setIsMobileMenuOpen(false); }}
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left cursor-pointer ${isActive
                             ? 'bg-teal-50 text-instructor dark:bg-teal-900/30 dark:text-teal-400 font-medium'
                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-instructor dark:hover:text-teal-400'
@@ -966,9 +972,9 @@ function InstructorPanel({ user }: InstructorPanelProps) {
           </AnimatePresence>
 
           {/* ── Main Content ──────────────────────────────────────────────────── */}
-          <main className={`flex-1 flex flex-col h-screen overflow-hidden relative w-full ${isPending ? 'pt-12' : ''}`}>
+          <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
             {isPending && (
-              <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 flex items-center justify-between px-3 sm:px-5 z-40 shadow-lg">
+              <div className="shrink-0 h-12 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 flex items-center justify-between px-3 sm:px-5 z-40 shadow-sm relative">
                 <div className="flex items-center gap-2 text-white min-w-0">
                   <svg className="w-4 h-4 flex-shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -977,7 +983,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                   <span className="hidden sm:inline text-[11px] opacity-80 truncate">— Kurslarınız pasif modda, diğer kullanıcılar göremez</span>
                 </div>
                 <button
-                  onClick={() => setActiveTab('activation')}
+                  onClick={() => handleTabChange('activation')}
                   className="flex-shrink-0 ml-2 bg-white text-amber-600 hover:bg-amber-50 text-[11px] sm:text-xs px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer shadow-sm whitespace-nowrap"
                 >
                   🚀 Aktif Et
@@ -1019,7 +1025,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                       stats={stats}
                       courses={courses}
                       loadingStats={loadingStats}
-                      onNavigate={setActiveTab}
+                      onNavigate={handleTabChange}
                       isPending={isPending}
                     />
                   )}
@@ -1029,7 +1035,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                   {activeTab === 'schedule' && (
                     <ScheduleManagement
                       courses={courses}
-                      onAddCourse={() => setActiveTab('courses')}
+                      onAddCourse={() => handleTabChange('courses')}
                       isAdmin={false}
                     />
                   )}

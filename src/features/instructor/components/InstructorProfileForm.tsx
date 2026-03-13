@@ -110,7 +110,7 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
         const data = doc.data();
         stylesData.push({
           id: doc.id,
-          label: data.name,
+          label: data.name || '',
           value: doc.id
         });
       });
@@ -242,11 +242,8 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             location: '',
             photoURL: userData.photoURL || '',
             gender: userData.gender || '',
-            age: userData.age || undefined,
-            level: userData.level || 'beginner' as DanceLevel,
+            level: userData.level || ('beginner' as DanceLevel),
             city: userData.city || '',
-            height: userData.height || undefined,
-            weight: userData.weight || undefined,
             danceStyles: userData.danceStyles || [],
             availableTimes: userData.availableTimes || [],
             instagram: '',
@@ -260,16 +257,31 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             userId: user.id
           };
 
+          if (userData.age !== undefined) newInstructorData.age = userData.age;
+          if (userData.height !== undefined) newInstructorData.height = userData.height;
+          if (userData.weight !== undefined) newInstructorData.weight = userData.weight;
+
           try {
+            const currentRole = userData.role || 'user';
+            const targetRole = ['admin', 'instructor', 'school', 'draft-instructor'].includes(currentRole) ? currentRole : 'draft-instructor';
+            
+            // 1. Önce user rolünü güncelle ki firestore.rules üzerinden get(/users/...) yapan isInstructor() fonksiyonu izin versin
+            if (currentRole !== targetRole || !userData.role) {
+              await updateDoc(userRef, {
+                role: targetRole,
+                updatedAt: new Date().toISOString()
+              });
+            }
+
+            // 2. Şimdi instructor profilini oluştur
             await setDoc(instructorRef, newInstructorData);
+            
             reset(newInstructorData as InstructorProfileFormData);
             setSelectedSpecialties([]);
             setProfilePhotoURL(userData.photoURL || '');
-            await updateDoc(userRef, {
-              role: userData.role || 'draft-instructor',
-              updatedAt: new Date().toISOString()
-            });
+            
           } catch (error) {
+            console.error('Eğitmen profili oluşturma hatası:', error);
             toast.error('Eğitmen profili oluşturulurken bir hata oluştu');
             throw error;
           }
