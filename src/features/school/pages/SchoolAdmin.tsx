@@ -899,6 +899,42 @@ const SchoolAdmin: React.FC = () => {
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full">
+              {/* Demo Modu Banner */}
+              {isDraftSchool && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 rounded-xl border border-violet-300 dark:border-violet-700 bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40 px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="text-xl flex-shrink-0">🎮</span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-500"></span>
+                        </span>
+                        <p className="font-bold text-violet-800 dark:text-violet-300 text-sm">
+                          Okul Yönetim Demo Modu
+                        </p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-200 dark:bg-violet-800 text-violet-800 dark:text-violet-200 uppercase tracking-wide">
+                          Demo
+                        </span>
+                      </div>
+                      <p className="text-xs text-violet-700 dark:text-violet-400 mt-0.5 leading-relaxed">
+                        Paneli keşfediyorsunuz. Kurslar pasif yayınlanır ve en fazla <strong>3 kurs</strong> açılabilir. Tüm özellikleri açmak için okulunuzu doğrulayın.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowActivationWizard(true)}
+                    className="flex-shrink-0 px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 dark:bg-violet-700 dark:hover:bg-violet-600 rounded-lg transition-colors whitespace-nowrap shadow-sm"
+                  >
+                    Okulu Doğrula →
+                  </button>
+                </motion.div>
+              )}
+
               {/* Pasif / Beklemede Okul Aktivasyon Banner */}
               {schoolInfo && (schoolInfo.status === 'passive' || schoolInfo.status === 'pending') && (
                 <motion.div
