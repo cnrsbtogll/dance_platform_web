@@ -133,7 +133,6 @@ const SchoolAdmin: React.FC = () => {
 
         if (!userDoc.exists()) {
           setError('Kullanıcı bilgileri bulunamadı.');
-          setLoading(false);
           return;
         }
 
@@ -154,7 +153,6 @@ const SchoolAdmin: React.FC = () => {
 
         if (!isSchool) {
           setError('Bu sayfaya erişim yetkiniz bulunmamaktadır. Yalnızca dans okulu hesapları için erişilebilir.');
-          setLoading(false);
           return;
         }
 
@@ -172,7 +170,6 @@ const SchoolAdmin: React.FC = () => {
               userId: currentUser.uid,
               ...schoolData
             });
-            setLoading(false);
             return;
           }
         }
@@ -201,7 +198,6 @@ const SchoolAdmin: React.FC = () => {
               document_url: reqData.document_url || reqData.schoolDocument || null,
               userId: currentUser.uid,
             });
-            setLoading(false);
             return;
           }
         }
@@ -219,6 +215,7 @@ const SchoolAdmin: React.FC = () => {
       } catch (err) {
         console.error('Okul bilgileri yüklenirken hata:', err);
         setError('Okul bilgileri yüklenirken bir hata oluştu.');
+      } finally {
         setLoading(false);
       }
     };

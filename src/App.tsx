@@ -462,7 +462,7 @@ function AppContent(): JSX.Element {
                 <Route
                   path="/school-admin"
                   element={
-                    isAuthenticated && (currentUser?.role === 'school' || currentUser?.role === 'draft-school') ?
+                    isAuthenticated ?
                       <SchoolAdmin /> : <Navigate to="/signin" />
                   }
                 />
