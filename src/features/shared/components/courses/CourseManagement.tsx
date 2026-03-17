@@ -165,6 +165,7 @@ interface CourseManagementProps {
   schoolId?: string;
   isAdmin?: boolean;
   colorVariant?: 'instructor' | 'school';
+  isInstructorPending?: boolean;
 }
 
 // İletişim Modal bileşeni
@@ -271,7 +272,13 @@ const timestampToDate = (timestamp: any): string => {
   }
 };
 
-function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVariant = 'instructor' }: CourseManagementProps): JSX.Element {
+function CourseManagement({
+  instructorId,
+  schoolId,
+  isAdmin = false,
+  colorVariant = 'instructor',
+  isInstructorPending = false
+}: CourseManagementProps): JSX.Element {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
   const [editMode, setEditMode] = useState<boolean>(false);
@@ -464,7 +471,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         if (!isAdmin) {
           // If a schoolId prop is provided, prioritize it. Otherwise use the specific target (instructorId or schoolId)
           const targetSchoolId = schoolId || (userRole === 'school' ? currentUser.uid : null);
-          const targetInstructorId = instructorId || (userRole === 'instructor' ? currentUser.uid : null);
+          const isInstructorRole = userRole === 'instructor' || userRole === 'draft-instructor';
+          const targetInstructorId = instructorId || (isInstructorRole ? currentUser.uid : null);
 
           if (targetSchoolId) {
             console.log('School: Okula ait kurslar getiriliyor -', targetSchoolId);
@@ -475,9 +483,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
             );
           } else if (targetInstructorId) {
             console.log('Instructor: Eğitmene ait kurslar getiriliyor -', targetInstructorId);
+            // instructorIds (array) kullan — instructorId tekil yerine
             q = query(
               coursesRef,
-              where('instructorId', '==', targetInstructorId),
+              where('instructorIds', 'array-contains', targetInstructorId),
               orderBy('createdAt', 'desc')
             );
           }
@@ -662,65 +671,51 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     // Both admins and instructors can see the school list for course affiliation
     if (!isAdmin && colorVariant !== 'instructor') return;
 
+    setLoadingSchools(true);
     try {
       console.log('Okullar getiriliyor...');
       const schoolsRef = collection(db, 'schools');
-      console.log('Schools koleksiyonu referansı:', schoolsRef);
-
-      const q = query(schoolsRef);
-      console.log('Oluşturulan query:', q);
-
-      const querySnapshot = await getDocs(q);
-      console.log('Query sonuçları:', {
-        empty: querySnapshot.empty,
-        size: querySnapshot.size,
-        docs: querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          data: doc.data()
-        }))
-      });
+      const querySnapshot = await getDocs(schoolsRef);
 
       const schoolsList = querySnapshot.docs
         .map(doc => {
           const data = doc.data();
-          console.log('Okul verisi işleniyor:', {
-            id: doc.id,
-            data: data,
-            displayName: data.displayName,
-            name: data.name,
-            ad: data.ad,
-            status: data.status,
-            userId: data.userId,
-            email: data.email
-          });
-
-          // Sadece aktif okulları al
-          if (data.status === 'active') {
-            return {
-              label: data.displayName || data.name || data.ad || data.email || 'İsimsiz Okul',
-              value: doc.id
-            };
-          }
-          return null;
+          return {
+            label: data.displayName || data.name || data.ad || data.email || 'İsimsiz Okul',
+            value: doc.id
+          };
         })
-        .filter((school): school is { label: string; value: string } => school !== null)
+        .filter(s => !!s.label)
         .sort((a, b) => a.label.localeCompare(b.label));
 
-      console.log('İşlenmiş okul listesi:', schoolsList);
-      setSchools(schoolsList);
-    } catch (error) {
-      console.error('Okullar yüklenirken hata detayı:', {
-        error,
-        message: error instanceof Error ? error.message : 'Bilinmeyen hata',
-        code: error instanceof Error ? (error as any).code : undefined,
-        stack: error instanceof Error ? error.stack : undefined
-      });
+      if (schoolsList.length > 0) {
+        console.log('Schools koleksiyonundan yüklendi:', schoolsList.length);
+        setSchools(schoolsList);
+        return;
+      }
 
-      // Varsayılan okul listesi
-      setSchools([
-        { label: 'Test Okul 1', value: 'test-school-1' },
-        { label: 'Test Okul 2', value: 'test-school-2' }
-      ]);
+      // Fallback: users koleksiyonunda role=school olan kayıtları ara
+      console.log('schools koleksiyonu boş, users koleksiyonundaki okullar aranıyor...');
+      const usersRef = collection(db, 'users');
+      const usersSnap = await getDocs(usersRef);
+      const usersSchoolList = usersSnap.docs
+        .filter(d => {
+          const role = d.data().role;
+          return role === 'school' || role === 'draft-school' ||
+            (Array.isArray(role) && (role.includes('school') || role.includes('draft-school')));
+        })
+        .map(d => ({
+          label: d.data().displayName || d.data().schoolName || d.data().name || d.data().email || 'İsimsiz Okul',
+          value: d.id
+        }))
+        .filter(s => !!s.label)
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+      console.log('Users koleksiyonundan okullar:', usersSchoolList.length);
+      setSchools(usersSchoolList);
+    } catch (error) {
+      console.error('Okullar yüklenirken hata:', error);
+      setSchools([]);
     } finally {
       setLoadingSchools(false);
     }
@@ -1424,6 +1419,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                           schoolAddress: type === 'custom' ? '' : formData.schoolAddress,
                           customAddress: type === 'school' ? '' : formData.customAddress
                         });
+                        // Okullar yüklenmemişse yükle
+                        if (type === 'school' && schools.length === 0) {
+                          fetchSchools();
+                        }
                       }}
                       colorVariant={colorVariant}
                       required
@@ -1447,6 +1446,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                           }}
                           placeholder="Okul Seçin"
                           colorVariant={colorVariant}
+                          required
                         />
                         <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
                           Seçtiğiniz dans okulunun kayıtlı adresi kurs detaylarında öğrencilere gösterilecektir.
@@ -1738,20 +1738,31 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                 8. Yayınlanma Durumu
               </h3>
               <div className="grid grid-cols-3 gap-3">
-                {statusOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, status: opt.value as any })}
-                    className={`py-3 rounded-xl border-2 font-medium transition-all ${formData.status === opt.value
-                      ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
-                      : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300'
-                      }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                {statusOptions.map((opt) => {
+                  const isLocked = isInstructorPending && opt.value === 'active' && !isAdmin;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => !isLocked && setFormData({ ...formData, status: opt.value as any })}
+                      className={`py-3 rounded-xl border-2 font-medium transition-all ${formData.status === opt.value
+                        ? (colorVariant === 'school' ? 'bg-school/10 border-school text-school' : 'bg-instructor/10 border-instructor text-instructor')
+                        : isLocked
+                          ? 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300'
+                        }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
+              {isInstructorPending && !isAdmin && (
+                <p className="text-amber-600 dark:text-amber-400 text-[10px] mt-2 italic flex items-center gap-1">
+                  <span className="text-xs">💡</span> Demo modunda kurslar sadece taslak veya pasif olarak kaydedilebilir.
+                </p>
+              )}
             </section>
           </div>
         )}
@@ -1791,7 +1802,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         }
 
         try {
-          if (isAdmin) {
+          if (isAdmin || colorVariant === 'instructor') {
             await fetchSchools();
           }
         } catch (e) {
@@ -1856,7 +1867,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       time: '18:00',
       price: 1500,
       currency: 'TRY',
-      status: 'active',
+      status: isInstructorPending ? 'draft' : 'active',
       recurring: true,
       schedule: [],
       location: {
@@ -1978,6 +1989,18 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
       return;
     }
 
+    // Dans okulu seçimi zorunluluğu
+    if (formData.locationType === 'school' && !formData.schoolId) {
+      setError('Lütfen "Hangi Dans Okulunda?" alanından bir okul seçin.');
+      return;
+    }
+
+    // Özel adres zorunluluğu
+    if (formData.locationType === 'custom' && !formData.customAddress?.trim()) {
+      setError('Lütfen kursun yapılacağı adresi girin.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -2023,6 +2046,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         location: finalLocation,
         recurring: true,
         schedule: formData.schedule,
+        status: isInstructorPending ? 'draft' : cleanedData.status,
         updatedAt: serverTimestamp()
       };
 

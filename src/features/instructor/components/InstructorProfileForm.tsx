@@ -97,24 +97,80 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
       navigate('/');
     }
   }, [user, navigate]);
-
   const fetchDanceStyles = useCallback(async () => {
-    if (danceStyles.length > 0) return;
     try {
       setLoadingStyles(true);
       const stylesRef = collection(db, 'danceStyles');
       const q = query(stylesRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
+      
+      const defaultStyles = [
+        { id: 'salsa', label: 'Salsa', value: 'salsa' },
+        { id: 'bachata', label: 'Bachata', value: 'bachata' },
+        { id: 'kizomba', label: 'Kizomba', value: 'kizomba' },
+        { id: 'tango', label: 'Tango', value: 'tango' },
+        { id: 'hiphop', label: 'Hip Hop', value: 'hiphop' },
+        { id: 'contemporary', label: 'Contemporary', value: 'contemporary' },
+        { id: 'zumba', label: 'Zumba', value: 'zumba' },
+        { id: 'heels', label: 'High Heels', value: 'heels' },
+        { id: 'reggaeton', label: 'Reggaeton', value: 'reggaeton' },
+        { id: 'afro', label: 'Afro Dance', value: 'afro' },
+        { id: 'bellydance', label: 'Oryantal', value: 'bellydance' },
+        { id: 'ballet', label: 'Bale', value: 'ballet' },
+        { id: 'jazz', label: 'Jazz Dance', value: 'jazz' },
+        { id: 'flamenco', label: 'Flamenko', value: 'flamenco' },
+        { id: 'samba', label: 'Samba', value: 'samba' },
+        { id: 'rumba', label: 'Rumba', value: 'rumba' },
+        { id: 'cha-cha', label: 'Cha Cha', value: 'cha-cha' },
+        { id: 'pasodoble', label: 'Paso Doble', value: 'pasodoble' },
+        { id: 'jive', label: 'Jive', value: 'jive' },
+        { id: 'swing', label: 'Swing', value: 'swing' },
+        { id: 'lindyhop', label: 'Lindy Hop', value: 'lindyhop' },
+        { id: 'breakdance', label: 'Breakdance', value: 'breakdance' },
+        { id: 'popping', label: 'Popping', value: 'popping' },
+        { id: 'locking', label: 'Locking', value: 'locking' },
+        { id: 'krump', label: 'Krump', value: 'krump' },
+        { id: 'dancehall', label: 'Dancehall', value: 'dancehall' },
+        { id: 'vogue', label: 'Vogue', value: 'vogue' },
+        { id: 'waacking', label: 'Waacking', value: 'waacking' },
+        { id: 'commercial', label: 'Commercial Dance', value: 'commercial' },
+        { id: 'kpop', label: 'K-Pop', value: 'kpop' },
+        { id: 'bollywood', label: 'Bollywood', value: 'bollywood' },
+        { id: 'folk', label: 'Halk Oyunları', value: 'folk' },
+        { id: 'sirtaki', label: 'Sirtaki', value: 'sirtaki' },
+        { id: 'zeybek', label: 'Zeybek', value: 'zeybek' },
+        { id: 'horon', label: 'Horon', value: 'horon' },
+        { id: 'halay', label: 'Halay', value: 'halay' },
+        { id: 'roman', label: 'Roman Havası', value: 'roman' },
+        { id: 'pole', label: 'Pole Dance', value: 'pole' },
+        { id: 'aerial', label: 'Aerial Dance', value: 'aerial' },
+        { id: 'tap', label: 'Tap Dance', value: 'tap' },
+        { id: 'irish', label: 'Irish Dance', value: 'irish' },
+        { id: 'vals', label: 'Vals', value: 'vals' }
+      ];
+
+      if (querySnapshot.empty) {
+        setDanceStyles(defaultStyles);
+        return;
+      }
+
       const stylesData: DanceStyleOption[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        stylesData.push({
-          id: doc.id,
-          label: data.name,
-          value: doc.id
-        });
+        if (data && data.name) {
+          stylesData.push({
+            id: doc.id,
+            label: data.name,
+            value: doc.id
+          });
+        }
       });
-      setDanceStyles(stylesData.sort((a, b) => a.label.localeCompare(b.label)));
+      
+      if (stylesData.length === 0) {
+        setDanceStyles(defaultStyles);
+      } else {
+        setDanceStyles(stylesData.sort((a, b) => a.label.localeCompare(b.label)));
+      }
     } catch (error) {
       console.error('Dance styles fetch error fallback to defaults', error);
       const defaultStyles = [
@@ -159,14 +215,13 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
         { id: 'aerial', label: 'Aerial Dance', value: 'aerial' },
         { id: 'tap', label: 'Tap Dance', value: 'tap' },
         { id: 'irish', label: 'Irish Dance', value: 'irish' },
-        { id: 'flamenco', label: 'Flamenco', value: 'flamenco' },
         { id: 'vals', label: 'Vals', value: 'vals' }
       ];
       setDanceStyles(defaultStyles);
     } finally {
       setLoadingStyles(false);
     }
-  }, [danceStyles.length]);
+  }, []);
 
   useEffect(() => {
     fetchDanceStyles();
@@ -242,11 +297,8 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             location: '',
             photoURL: userData.photoURL || '',
             gender: userData.gender || '',
-            age: userData.age || undefined,
-            level: userData.level || 'beginner' as DanceLevel,
+            level: userData.level || ('beginner' as DanceLevel),
             city: userData.city || '',
-            height: userData.height || undefined,
-            weight: userData.weight || undefined,
             danceStyles: userData.danceStyles || [],
             availableTimes: userData.availableTimes || [],
             instagram: '',
@@ -256,20 +308,35 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             isActive: true,
-            role: 'instructor',
+            role: userData.role || 'draft-instructor',
             userId: user.id
           };
 
+          if (userData.age !== undefined) newInstructorData.age = userData.age;
+          if (userData.height !== undefined) newInstructorData.height = userData.height;
+          if (userData.weight !== undefined) newInstructorData.weight = userData.weight;
+
           try {
+            const currentRole = userData.role || 'user';
+            const targetRole = ['admin', 'instructor', 'school', 'draft-instructor'].includes(currentRole) ? currentRole : 'draft-instructor';
+            
+            // 1. Önce user rolünü güncelle ki firestore.rules üzerinden get(/users/...) yapan isInstructor() fonksiyonu izin versin
+            if (currentRole !== targetRole || !userData.role) {
+              await updateDoc(userRef, {
+                role: targetRole,
+                updatedAt: new Date().toISOString()
+              });
+            }
+
+            // 2. Şimdi instructor profilini oluştur
             await setDoc(instructorRef, newInstructorData);
+            
             reset(newInstructorData as InstructorProfileFormData);
             setSelectedSpecialties([]);
             setProfilePhotoURL(userData.photoURL || '');
-            await updateDoc(userRef, {
-              role: 'instructor',
-              updatedAt: new Date().toISOString()
-            });
+            
           } catch (error) {
+            console.error('Eğitmen profili oluşturma hatası:', error);
             toast.error('Eğitmen profili oluşturulurken bir hata oluştu');
             throw error;
           }
@@ -740,8 +807,8 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
                     aria-checked={!!watch('isPartnerSearchActive')}
                     onClick={() => setValue('isPartnerSearchActive', !watch('isPartnerSearchActive'), { shouldDirty: true })}
                     className={`relative inline-flex h-7 w-14 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-instructor focus:ring-offset-2 dark:focus:ring-offset-slate-800 ${watch('isPartnerSearchActive')
-                        ? 'bg-instructor'
-                        : 'bg-gray-200 dark:bg-slate-600'
+                      ? 'bg-instructor'
+                      : 'bg-gray-200 dark:bg-slate-600'
                       }`}
                   >
                     <span

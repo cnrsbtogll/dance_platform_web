@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthError } from 'firebase/auth';
 import { signUp, getAuthErrorMessage } from './services/authService';
 import Button from '../../common/components/ui/Button';
 import PasswordInput from '../../common/components/ui/PasswordInput';
 import { UserRole } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import useAuthHook from '../../common/hooks/useAuth';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../api/firebase/firebase';
 
 // Google Logo SVG
 const GoogleIcon = () => (
@@ -19,18 +22,35 @@ const GoogleIcon = () => (
 
 const SignUp: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signInWithGoogle } = useAuth();
+  // common/hooks/useAuth'dan user state'ini al (role bilgisi Firestore snapshot'tan geliyor)
+  const { user: authUser } = useAuthHook();
+  const isInstructorSignup = (location.state as any)?.role === 'instructor';
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
     displayName: '',
-    role: 'student' as UserRole,
+    role: (isInstructorSignup ? 'draft-instructor' : 'student') as UserRole,
   });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  // Firestore'dan role güncellemesini bekliyoruz
+  const [waitingForRole, setWaitingForRole] = useState(false);
+
+  // Instructor signup sonrası role 'draft-instructor' olunca navigate et
+  useEffect(() => {
+    if (
+      waitingForRole &&
+      authUser?.role &&
+      (authUser.role === 'draft-instructor' || authUser.role === 'instructor')
+    ) {
+      navigate('/instructor');
+    }
+  }, [waitingForRole, authUser?.role, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -61,7 +81,13 @@ const SignUp: React.FC = () => {
     setLoading(true);
     try {
       await signUp(formData.email, formData.password, formData.displayName, formData.role);
-      navigate('/signin', { state: { message: 'Kayıt başarılı. Lütfen giriş yapın.' } });
+
+      if (isInstructorSignup) {
+        // Navigate'i hemen yapma: useAuth'un Firestore snapshot'tan role'u okumasını bekle
+        setWaitingForRole(true);
+      } else {
+        navigate('/signin', { state: { message: 'Kayıt başarılı. Lütfen giriş yapın.' } });
+      }
     } catch (err) {
       setError(getAuthErrorMessage(err as AuthError));
     } finally {
@@ -73,8 +99,23 @@ const SignUp: React.FC = () => {
     setError('');
     setGoogleLoading(true);
     try {
-      await signInWithGoogle();
-      navigate('/');
+      const result = await signInWithGoogle();
+
+      // If instructor signup via Google, set pending flag
+      if (isInstructorSignup && result?.credential?.user?.uid) {
+        try {
+          const userRef = doc(db, 'users', result.credential.user.uid);
+          await updateDoc(userRef, {
+            role: 'draft-instructor',
+            updatedAt: serverTimestamp(),
+          });
+        } catch (updateErr) {
+          console.error('Error setting instructor role:', updateErr);
+        }
+        navigate('/instructor');
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       if (
         err?.code === 'auth/popup-closed-by-user' ||
