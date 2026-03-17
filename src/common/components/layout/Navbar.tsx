@@ -447,7 +447,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
               {/* Kullanıcının rolüne göre butonları göster */}
               <div className="flex space-x-2">
                 {/* 'Eğitmen Ol' butonu */}
-                {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
+                {!hasInstructorRole && !(hasSchoolRole && !hasDraftSchoolRole) && !hasSchoolAdminRole && (
                   <Link
                     to="/become-instructor"
                     className="inline-flex items-center px-2 py-1.5 lg:px-3 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-teal-800 to-cyan-900 hover:from-teal-700 hover:to-cyan-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow"
@@ -706,7 +706,7 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
             <div className={`pt-2 pb-3 border-t border-gray-200 dark:border-gray-700 ${hasInstructorRole ? 'bg-instructor-bg/40' : 'bg-gray-50 dark:bg-slate-900/80 dark:bg-gray-800/80'} backdrop-blur-sm`}>
               {/* Her durumda gösterilecek butonlar */}
               <div className="px-4 space-y-2">
-                {!hasInstructorRole && !hasSchoolRole && !hasSchoolAdminRole && (
+                {!hasInstructorRole && !(hasSchoolRole && !hasDraftSchoolRole) && !hasSchoolAdminRole && (
                   <Link
                     to="/become-instructor"
                     className="block w-full px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-teal-800 to-cyan-900 hover:from-teal-700 hover:to-cyan-800 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:ring-offset-1 shadow-sm transition-all duration-200"
