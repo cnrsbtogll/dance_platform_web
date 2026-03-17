@@ -28,6 +28,7 @@ import ProfileGuide from './pages/help/ProfileGuide';
 import CourseEnrollGuide from './pages/help/CourseEnrollGuide';
 import InstructorGuide from './pages/help/InstructorGuide';
 import SchoolAdminGuide from './pages/help/SchoolAdminGuide';
+import PrivacyPolicyPage from './pages/legal/PrivacyPolicyPage';
 import { auth } from './api/firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { AuthProvider } from './contexts/AuthContext';
@@ -508,6 +509,7 @@ function AppContent(): JSX.Element {
                 <Route path="/yardim/kurs-kayit" element={<CourseEnrollGuide />} />
                 <Route path="/yardim/egitmen-paneli" element={<InstructorGuide />} />
                 <Route path="/yardim/okul-paneli" element={<SchoolAdminGuide />} />
+                <Route path="/gizlilik-politikasi" element={<PrivacyPolicyPage />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </div>
@@ -590,8 +592,15 @@ function AppContent(): JSX.Element {
                   </div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-gray-700 text-gray-400 text-sm text-center">
-                  &copy; {new Date().getFullYear()} Feriha. Tüm hakları saklıdır.
+                <div className="mt-8 pt-6 border-t border-gray-700 text-gray-400 text-sm text-center flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <span>&copy; {new Date().getFullYear()} Feriha. Tüm hakları saklıdır.</span>
+                  <span className="hidden sm:inline text-gray-600">·</span>
+                  <a
+                    href="/gizlilik-politikasi"
+                    className="text-gray-400 hover:text-white underline underline-offset-2 transition-colors"
+                  >
+                    Gizlilik Politikası
+                  </a>
                 </div>
               </div>
             </footer>
