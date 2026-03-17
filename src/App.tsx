@@ -542,8 +542,6 @@ function AppContent(): JSX.Element {
                       <li><a href="/yardim/kurs-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Kursa Nasıl Kaydolunur?</a></li>
                       <li><a href="/yardim/egitmen-paneli" className="text-gray-300 hover:text-white transition-colors">Rehber: Eğitmen Paneli Nasıl Kullanılır?</a></li>
                       <li><a href="/yardim/okul-paneli" className="text-gray-300 hover:text-white transition-colors">Rehber: Okul Paneli Nasıl Kullanılır?</a></li>
-                      <li><a href="/become-instructor" className="text-gray-300 hover:text-white transition-colors">Eğitmen Ol</a></li>
-                      <li><a href="/become-school" className="text-gray-300 hover:text-white transition-colors">Okul Ekle</a></li>
                     </ul>
                   </div>
 
