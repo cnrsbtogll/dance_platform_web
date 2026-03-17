@@ -272,7 +272,11 @@ export const useAuth = (): AuthState => {
                   user: {
                     ...userData,
                     id: firebaseUser.uid,
-                    createdAt: userData.createdAt ? userData.createdAt.toDate() : new Date(),
+                    createdAt: userData.createdAt 
+                      ? (typeof userData.createdAt.toDate === 'function' 
+                          ? userData.createdAt.toDate() 
+                          : new Date(userData.createdAt as any)) 
+                      : new Date(),
                     displayName: userData.displayName || firebaseUser.displayName || '',
                     email: userData.email || firebaseUser.email || '',
                     photoURL: userData.photoURL || firebaseUser.photoURL || ''
@@ -329,7 +333,11 @@ export const useAuth = (): AuthState => {
                     user: {
                       ...userData,
                       id: firebaseUser.uid,
-                      createdAt: userData.createdAt ? userData.createdAt.toDate() : new Date(),
+                      createdAt: userData.createdAt 
+                        ? (typeof userData.createdAt.toDate === 'function' 
+                            ? userData.createdAt.toDate() 
+                            : new Date(userData.createdAt as any)) 
+                        : new Date(),
                       displayName: userData.displayName || firebaseUser.displayName || '',
                       email: userData.email || firebaseUser.email || '',
                       photoURL: userData.photoURL || firebaseUser.photoURL || ''

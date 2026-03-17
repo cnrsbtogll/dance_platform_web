@@ -109,8 +109,8 @@ export const updateUserProfile = async (userId: string, userData: Partial<User>)
     return {
       id: updatedUserDoc.id,
       ...data,
-      createdAt: data.createdAt?.toDate(),
-      updatedAt: data.updatedAt?.toDate()
+      createdAt: typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt as any) : undefined),
+      updatedAt: typeof data.updatedAt?.toDate === 'function' ? data.updatedAt.toDate() : (data.updatedAt ? new Date(data.updatedAt as any) : undefined)
     } as User;
   } catch (error) {
     console.error('Error updating user profile:', error);
@@ -171,7 +171,8 @@ export const fetchAllInstructors = async (): Promise<Array<Instructor & { user: 
         email: rawData.email || '',
         photoURL: rawData.photoURL,
         phoneNumber: rawData.phoneNumber || '',
-        role: ['instructor'],
+        role: 'instructor',
+        bio: rawData.bio || '',
         // Handle specialties array correctly
         specialties: Array.isArray(rawData.specialties) ? rawData.specialties :
           rawData.uzmanlık ? [rawData.uzmanlık] : [],
@@ -233,7 +234,7 @@ export const fetchAllInstructors = async (): Promise<Array<Instructor & { user: 
             id: instructorData.userId,
             email: instructorData.email,
             displayName: instructorData.displayName,
-            role: ['instructor'],
+            role: 'instructor',
             createdAt: new Date(instructorData.createdAt),
             updatedAt: new Date(instructorData.updatedAt)
           } as unknown as UserWithProfile
