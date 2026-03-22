@@ -40,6 +40,24 @@ const retry = async <T>(
   throw lastError;
 };
 
+// Firestore'dan veya local cache'den gelen tarih verisini güvenli bir şekilde Date nesnesine çevirir
+const parseDateSafe = (val: any): Date => {
+  if (!val) return new Date();
+  if (val instanceof Date) return val;
+  if (val && typeof val.toDate === 'function') {
+    try {
+      return val.toDate();
+    } catch (e) {
+      console.warn('Error extracting date via toDate():', e);
+    }
+  }
+  if (typeof val === 'object' && val !== null && 'seconds' in val) {
+    return new Date(val.seconds * 1000);
+  }
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? new Date() : d;
+};
+
 export const useAuth = (): AuthState => {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -272,11 +290,7 @@ export const useAuth = (): AuthState => {
                   user: {
                     ...userData,
                     id: firebaseUser.uid,
-                    createdAt: userData.createdAt 
-                      ? (typeof userData.createdAt.toDate === 'function' 
-                          ? userData.createdAt.toDate() 
-                          : new Date(userData.createdAt as any)) 
-                      : new Date(),
+                    createdAt: parseDateSafe(userData.createdAt),
                     displayName: userData.displayName || firebaseUser.displayName || '',
                     email: userData.email || firebaseUser.email || '',
                     photoURL: userData.photoURL || firebaseUser.photoURL || ''
@@ -333,11 +347,7 @@ export const useAuth = (): AuthState => {
                     user: {
                       ...userData,
                       id: firebaseUser.uid,
-                      createdAt: userData.createdAt 
-                        ? (typeof userData.createdAt.toDate === 'function' 
-                            ? userData.createdAt.toDate() 
-                            : new Date(userData.createdAt as any)) 
-                        : new Date(),
+                      createdAt: parseDateSafe(userData.createdAt),
                       displayName: userData.displayName || firebaseUser.displayName || '',
                       email: userData.email || firebaseUser.email || '',
                       photoURL: userData.photoURL || firebaseUser.photoURL || ''

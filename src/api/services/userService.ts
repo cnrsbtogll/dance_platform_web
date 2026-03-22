@@ -22,6 +22,24 @@ export const fetchUserProfile = async (userId: string): Promise<UserWithProfile>
   }
 };
 
+// Firestore'dan veya local cache'den gelen tarih verisini güvenli bir şekilde Date nesnesine çevirir
+const parseDateSafe = (val: any): Date | undefined => {
+  if (!val) return undefined;
+  if (val instanceof Date) return val;
+  if (val && typeof val.toDate === 'function') {
+    try {
+      return val.toDate();
+    } catch (e) {
+      console.warn('Error extracting date via toDate():', e);
+    }
+  }
+  if (typeof val === 'object' && val !== null && 'seconds' in val) {
+    return new Date(val.seconds * 1000);
+  }
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? undefined : d;
+};
+
 /**
  * Utility function to resize an image to a specified maximum width/height
  * Also applies compression to reduce file size
@@ -109,8 +127,8 @@ export const updateUserProfile = async (userId: string, userData: Partial<User>)
     return {
       id: updatedUserDoc.id,
       ...data,
-      createdAt: typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt as any) : undefined),
-      updatedAt: typeof data.updatedAt?.toDate === 'function' ? data.updatedAt.toDate() : (data.updatedAt ? new Date(data.updatedAt as any) : undefined)
+      createdAt: parseDateSafe(data.createdAt),
+      updatedAt: parseDateSafe(data.updatedAt)
     } as User;
   } catch (error) {
     console.error('Error updating user profile:', error);
