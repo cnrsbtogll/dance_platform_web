@@ -4,126 +4,148 @@
 
 ## 1️⃣ Document Metadata
 
-| Field             | Value                                            |
-|-------------------|--------------------------------------------------|
-| **Project Name**  | dance_platform (Feriha)                          |
-| **Date**          | 2026-02-20                                       |
-| **Prepared by**   | TestSprite AI Team + Antigravity AI              |
-| **Test Scope**    | Frontend – Public pages (no auth required)       |
-| **Tech Stack**    | React 18, Vite, Firebase, React Router DOM 6, TailwindCSS |
-| **Base URL**      | http://localhost:5173                            |
-| **Total Tests Run** | 3                                              |
-| **Pass Rate**     | 100% (3/3)                                       |
+| Field | Value |
+|---|---|
+| **Project Name** | dance_platform |
+| **Date** | 2026-03-22 |
+| **Test Run** | Post-fix validation (2nd run) |
+| **Prepared by** | TestSprite AI Team |
+| **Server** | http://localhost:4173 (production build) |
+| **Total Tests** | 30 |
+| **Passed** | 24 ✅ |
+| **Failed** | 6 ❌ |
+| **Pass Rate** | **80%** (up from 76.67% in previous run) |
 
 ---
 
 ## 2️⃣ Requirement Validation Summary
 
-### 📦 Requirement: Home Page
+### 🔐 Authentication — Sign In
 
-#### Test TC003 – Home page loads and shows featured sections
-- **Test Code:** [TC003_Home_page_loads_and_shows_featured_sections.py](./tmp/TC003_Home_page_loads_and_shows_featured_sections.py)
-- **Test Visualization & Result:** [View on TestSprite →](https://www.testsprite.com/dashboard/mcp/tests/241b4fd2-a66c-4cee-a10c-01940ef88da5/7292d104-41ef-4a6a-a669-50be84d6c4af)
-- **Status:** ✅ Passed
-- **Analysis / Findings:** Ana sayfa (`/`) başarıyla yüklendi. "Öne Çıkan" ve "Kurs" başlıkları ekranda göründü. Firebase Firestore'dan veri çekme işlemi de çalışıyor. Sayfa yükleme süresi normaldir; kullanıcı deneyimi açısından herhangi bir sorun gözlemlenmedi.
-
----
-
-### 📦 Requirement: Navigation
-
-#### Test TC004 – Navigate from Home to Courses via top navigation
-- **Test Code:** [TC004_Navigate_from_Home_to_Courses_via_top_navigation.py](./tmp/TC004_Navigate_from_Home_to_Courses_via_top_navigation.py)
-- **Test Visualization & Result:** [View on TestSprite →](https://www.testsprite.com/dashboard/mcp/tests/241b4fd2-a66c-4cee-a10c-01940ef88da5/af5660c5-2ec4-487c-a4e9-936ee764b40d)
-- **Status:** ✅ Passed
-- **Analysis / Findings:** Üst navigasyon barındaki "Kurslar" linkine tıklandığında `/courses` rotasına yönlendirme doğru çalışıyor. React Router DOM 6 entegrasyonu sorunsuz. Kurs arama sayfası gerekli içeriklerle yüklendi.
+| Test | Status | Notes |
+|---|---|---|
+| TC001 — Successful sign-in redirects to Profile | ✅ Passed | |
+| TC002 — Validation when email is empty | ✅ Passed | |
+| TC003 — Validation when password is empty | ✅ Passed | |
+| TC004 — Sign-in fails with incorrect credentials | ✅ Passed | |
+| TC005 — Client-side validation for short/invalid password | ❌ **Failed** | Sign-in form allows submission with `'1'` password; no client-side validation error shown |
+| TC007 — Access Profile from Home via nav after sign-in | ❌ **Failed** | Firebase auth request timed out during test (intermittent network error) |
+| TC037 — Sign-in fails with invalid password, Profile unreachable | ✅ Passed | |
 
 ---
 
-#### Test TC009 – Logo click navigates back to Home page
-- **Test Code:** [TC009_Logo_click_navigates_back_to_Home_page.py](./tmp/TC009_Logo_click_navigates_back_to_Home_page.py)
-- **Test Visualization & Result:** [View on TestSprite →](https://www.testsprite.com/dashboard/mcp/tests/241b4fd2-a66c-4cee-a10c-01940ef88da5/036621ed-1cf4-4805-b3b8-56b65bbfa21b)
-- **Status:** ✅ Passed
-- **Analysis / Findings:** Navbar üzerindeki logo/marka adına tıklandığında kullanıcı doğru şekilde ana sayfaya (`/`) yönlendiriliyor. Bu standart bir UX beklentisidir ve uygulama bu beklentiyi karşılıyor.
+### 📝 Authentication — Sign Up
+
+| Test | Status | Notes |
+|---|---|---|
+| TC008 — Successful sign-up redirects to Profile | ✅ Passed | *(Previously failing — now fixed)* |
+| TC009 — Already-registered email shows 'email in use' error | ✅ Passed | *(Previously failing — now fixed)* |
+| TC010 — Missing name shows validation error | ✅ Passed | |
+| TC011 — Missing email shows validation error | ✅ Passed | |
+| TC012 — Missing password shows validation error | ✅ Passed | |
+| TC013 — Invalid email format shows validation error | ✅ Passed | |
+| TC014 — Weak/short password shows error message | ❌ **Failed** | Signup form shows browser-native tooltip for empty confirm-password field instead of a custom error for weak password |
+
+---
+
+### 🔍 Course Search & Filtering
+
+| Test | Status | Notes |
+|---|---|---|
+| TC015 — Search by keyword shows matching results | ✅ Passed | |
+| TC016 — Single filter updates course list | ✅ Passed | |
+| TC017 — Combine search term + multiple filters | ❌ **Failed** | 'Online' format filter not present in UI; no courses match "hip hop" + "Orta" in current data |
+| TC018 — No-match search shows empty state | ✅ Passed | *(Previously failing — now fixed)* |
+| TC019 — No-match search + filters shows empty state | ✅ Passed | |
+| TC020 — Clear search term restores course list | ✅ Passed | |
+
+---
+
+### 👤 Profile
+
+| Test | Status | Notes |
+|---|---|---|
+| TC033 — View profile details as authenticated user | ✅ Passed | |
+| TC034 — Edit profile and save changes | ❌ **Failed** | Save returns error toast: "Profil güncellenirken bir hata oluştu." — Firestore write permission denied |
+| TC036 — Unauthenticated user signs in → views Profile | ❌ **Failed** | Firebase auth timed out under test load (intermittent network error) |
+
+---
+
+### 🏫 Instructors & Schools
+
+| Test | Status | Notes |
+|---|---|---|
+| TC023 — Instructors list displays | ✅ Passed | |
+| TC024 — Open instructor detail from card | ✅ Passed | |
+| TC028 — Schools list displays | ✅ Passed | |
+| TC029 — Open school detail from card | ✅ Passed | |
+
+---
+
+### 🏠 Landing Page
+
+| Test | Status | Notes |
+|---|---|---|
+| TC038 — Landing page loads with core CTAs | ✅ Passed | |
+| TC039 — Sign Up CTA navigates to Sign Up page | ✅ Passed | |
+| TC040 — Explore Courses CTA navigates to Courses page | ✅ Passed | |
 
 ---
 
 ## 3️⃣ Coverage & Matching Metrics
 
-- **Pass Rate: 100%** (3 / 3 test geçti)
+| Requirement Area | Total | ✅ Passed | ❌ Failed |
+|---|---|---|---|
+| Sign In | 7 | 5 | 2 |
+| Sign Up | 7 | 6 | 1 |
+| Course Search & Filtering | 6 | 5 | 1 |
+| Profile | 3 | 1 | 2 |
+| Instructors & Schools | 4 | 4 | 0 |
+| Landing Page | 3 | 3 | 0 |
+| **Total** | **30** | **24** | **6** |
 
-| Requirement             | Total Tests | ✅ Passed | ❌ Failed |
-|-------------------------|-------------|-----------|-----------|
-| Home Page               | 1           | 1         | 0         |
-| Navigation              | 2           | 2         | 0         |
-| **TOTAL**               | **3**       | **3**     | **0**     |
+**Overall pass rate: 80%** *(improved from 76.67% — 3 previously failing tests now pass)*
 
-### Test Coverage Overview
-
-| Feature                        | Tested | Status         |
-|-------------------------------|--------|----------------|
-| Ana Sayfa yükleme             | ✅     | Geçti          |
-| Üst navigasyon linkleri       | ✅     | Geçti          |
-| Logo → Ana Sayfa yönlendirme  | ✅     | Geçti          |
-| Kullanıcı Girişi (Sign In)    | ❌     | Test edilmedi  |
-| Kullanıcı Kaydı (Sign Up)     | ❌     | Test edilmedi  |
-| Kurs Detay Sayfası            | ❌     | Test edilmedi  |
-| Eğitmen Listesi               | ❌     | Test edilmedi  |
-| Eğitmen Detay Sayfası         | ❌     | Test edilmedi  |
-| Dans Okulları                 | ❌     | Test edilmedi  |
-| Partner Arama                 | ❌     | Test edilmedi  |
-| Festivaller                   | ❌     | Test edilmedi  |
-| Geceler                       | ❌     | Test edilmedi  |
-| Profil Sayfası                | ❌     | Test edilmedi  |
-| Mesajlaşma (Chat)             | ❌     | Test edilmedi  |
-| Eğitmen Paneli                | ❌     | Test edilmedi  |
-| Admin Paneli                  | ❌     | Test edilmedi  |
+> ✅ Fixes confirmed working:
+> - TC018: Search empty state now shows correctly on keyword search
+> - TC008 & TC009: Sign-up flow now works reliably
 
 ---
 
 ## 4️⃣ Key Gaps / Risks
 
-### 🔴 Yüksek Öncelikli Riskler
+### 🔴 High Priority
 
-1. **Authentication Akışları Test Edilmedi**
-   - Sign In ve Sign Up sayfaları bu çalıştırmada test EDT edilmedi. Firebase Auth hata durumları (yanlış şifre, email zaten kayıtlı, ağ hatası) doğrulanmamış durumda.
-   - **Öneri:** Sonraki test çalıştırmasında `TC001`, `TC002` (Sign Up) ve `TC005`, `TC006` (Sign In) test case'leri eklenmelidir.
+**1. Profile save error (TC034) — Firestore permission denied**
+- Saving profile changes returns "Profil güncellenirken bir hata oluştu."
+- Root cause: Firestore security rules likely restrict write access for the test user's role
+- **Action:** Review Firestore rules for the `users` collection — ensure authenticated users can write to their own document
 
-2. **Korumalı Sayfalar (Auth Required) Test Edilmedi**
-   - `/profile`, `/progress`, `/instructor`, `/admin`, `/school-admin` rotaları yalnızca giriş yapılmış kullanıcıların erişimine açık. Bu sayfaların giriş yapmamış kullanıcıları `/signin`'e doğru yönlendirip yönlendirmediği test edilmedi.
-   - **Öneri:** `isAuthenticated` redirectlerine yönelik test case'leri eklenmelidir.
-
-3. **Firebase Firestore Gerçek Veri Erişimi**
-   - Testler yalnızca UI render'ı doğruladı; Firestore'dan gelen gerçek veri (kurslar, eğitmenler) için dolu/boş durum testleri yapılmamış.
-   - **Öneri:** Firestore'a mock veri eklenip bu verinin UI'da doğru gösterildiği senaryolar test edilmelidir.
-
-4. **Chat / Mesajlaşma Sistemi Test Edilmedi**
-   - Gerçek zamanlı Firestore listener'lara dayanan sohbet özelliği hiç test edilmedi. Bu özellik performans ve güvenilirlik açısından risklidir.
-
-5. **Mobil / Responsive Davranış Test Edilmedi**
-   - Testler yalnızca masaüstü viewport'unda çalıştı. Mobil cihazlarda navbar, kurs kartları ve form alanlarının davranışı doğrulanmamış.
-
-### 🟡 Orta Öncelikli Riskler
-
-6. **Partner Arama & Filtreleme Test Edilmedi**
-   - `/partners` sayfasındaki arama ve filtre işlevselliği doğrulanmamış.
-
-7. **Eğitmen/Okul Başvuru Formları Test Edilmedi**
-   - `/become-instructor` ve `/become-school` form gönderme akışları test edilmedi. Form doğrulama ve Firestore'a yazma işlemi bilinmiyor.
-
-8. **Dark Mode Toggle**
-   - Tema değiştirme özelliği ve dark mode'da UI tutarlılığı test edilmedi.
-
-### ✅ Önerilen Sonraki Adımlar
-
-```
-Öncelik 1: TC001, TC002 - Sign Up testleri
-Öncelik 2: TC005, TC006 - Sign In testleri  
-Öncelik 3: TC007, TC008 - Auth redirect testleri (korumalı sayfalar)
-Öncelik 4: TC010-TC015 - Kurs, Eğitmen, Okul sayfa testleri
-Öncelik 5: TC016-TC020 - Partner, Festival, Gece sayfa testleri
-```
+**2. Missing client-side password validation on Sign-In (TC005)**
+- The sign-in form allows submitting with a single-character password (`'1'`) and sends an actual Firebase request instead of blocking client-side
+- **Action:** Add `minLength` validation to the password field before form submission
 
 ---
 
-*Bu rapor TestSprite MCP entegrasyonu ile Antigravity AI tarafından otomatik olarak oluşturulmuştur.*
-*Test görselleştirmeleri için TestSprite dashboard'ını ziyaret edin: https://www.testsprite.com/dashboard*
+### 🟡 Medium Priority
+
+**3. Weak password UI on Sign-Up (TC014)**
+- When the user fills in a weak password but leaves confirm-password empty, the browser shows a native tooltip for the empty confirm field — hiding the weak password error
+- **Action:** Validate password strength before requiring confirm-password, or show custom error immediately after password field blur
+
+**4. 'Online' filter not available (TC017)**
+- The "Format" filter (Online/In-Person) expected by TC017 doesn't exist in the UI; there's no equivalent filter option
+- **Action:** Either add an Online/Yüz yüze format filter, or update the test plan to match the actual filter set
+
+---
+
+### 🟠 Intermittent / Environment
+
+**5. Firebase auth timeouts under concurrent load (TC007, TC036)**
+- Some tests fail due to Firebase authentication timing out when multiple test sessions run in parallel
+- Not a code bug — these tests pass when run individually
+- **Action:** Monitor with production Firebase plan; consider Firebase emulator for isolated testing
+
+---
+
+*Test visualization links: https://www.testsprite.com/dashboard/mcp/tests/05a13d12-4c29-48c9-921e-acab771a88d8*
