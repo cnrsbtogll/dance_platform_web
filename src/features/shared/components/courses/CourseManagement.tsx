@@ -1977,16 +1977,37 @@ function CourseManagement({
     };
   };
 
+  // Adım geçişi ve doğrulama
+  const handleNextStep = () => {
+    const form = document.getElementById('course-form') as HTMLFormElement;
+    if (form && !form.reportValidity()) {
+      return;
+    }
+
+    // 3. Adım: Eğitmen seçimi zorunlu
+    if (currentStep === 3 && formData.instructorIds.length === 0) {
+      setError('Lütfen ilerlemeden önce bu kurs için en az bir eğitmen seçin.');
+      return;
+    }
+
+    setError(null);
+    setCurrentStep(prev => prev + 1);
+  };
+
   // Form gönderimi
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
     // Eğer son adımda değilsek, "Enter" tuşu bir sonraki adıma geçirmeli
     if (currentStep < totalSteps) {
-      const form = document.getElementById('course-form') as HTMLFormElement;
-      if (form && form.reportValidity()) {
-        setCurrentStep(prev => prev + 1);
-      }
+      handleNextStep();
+      return;
+    }
+
+    // Eğitmen zorunluluğu (son on-top kontrol)
+    if (formData.instructorIds.length === 0) {
+      setError('Lütfen kurs için en az bir eğitmen seçin.');
+      setCurrentStep(3);
       return;
     }
 
@@ -2209,16 +2230,7 @@ function CourseManagement({
                 <Button
                   type="button"
                   variant={isAdmin ? 'indigo' : colorVariant}
-                  onClick={() => {
-                    const form = document.getElementById('course-form') as HTMLFormElement;
-                    if (form && form.reportValidity()) {
-                      setError(null);
-                      setCurrentStep(prev => prev + 1);
-                    } else if (!form) {
-                      setError(null);
-                      setCurrentStep(prev => prev + 1);
-                    }
-                  }}
+                  onClick={handleNextStep}
                 >
                   İleri
                 </Button>
@@ -2248,11 +2260,7 @@ function CourseManagement({
             if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.type !== 'textarea') {
               e.preventDefault();
               if (currentStep < totalSteps) {
-                const form = document.getElementById('course-form') as HTMLFormElement;
-                if (form && form.reportValidity()) {
-                  setError(null);
-                  setCurrentStep(prev => prev + 1);
-                }
+                handleNextStep();
               }
             }
           }}
