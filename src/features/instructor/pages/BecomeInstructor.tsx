@@ -12,7 +12,7 @@ import {
   orderBy,
   setDoc
 } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { db, auth } from '../../../api/firebase/firebase';
 import { useAuth } from '../../../contexts/AuthContext';
 import CustomSelect from '../../../common/components/ui/CustomSelect';
@@ -291,6 +291,13 @@ function BecomeInstructor() {
             formData.email,
             formData.password || ''
           );
+
+          // E-posta doğrulama gönder
+          try {
+            await sendEmailVerification(userCredential.user);
+          } catch (e) {
+            console.error('Doğrulama maili gönderilemedi:', e);
+          }
 
           await updateProfile(userCredential.user, {
             displayName: `${formData.firstName} ${formData.lastName}`,

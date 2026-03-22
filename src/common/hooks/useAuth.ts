@@ -162,14 +162,6 @@ export const useAuth = (): AuthState => {
     }));
   }, []);
 
-  // Update state object with memoized setUser function
-  useMemo(() => {
-    setState(prev => ({
-      ...prev,
-      setUser
-    }));
-  }, [setUser]);
-
   // Network durumunu izleme
   useEffect(() => {
     const handleOnline = () => {
@@ -458,7 +450,7 @@ export const useAuth = (): AuthState => {
     }
   }, [handleUser]);
 
-  return state;
+  return { ...state, setUser };
 }
 
 export default useAuth; 
