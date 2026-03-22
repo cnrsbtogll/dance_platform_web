@@ -347,6 +347,7 @@ function CourseManagement({
   const [quickAddInstructorData, setQuickAddInstructorData] = useState({ displayName: '', email: '', password: 'feriha123', phoneNumber: '' });
   const [isQuickAddingInstructor, setIsQuickAddingInstructor] = useState(false);
   const [instructorToRemove, setInstructorToRemove] = useState<{ id: string, name: string, courseId: string } | null>(null);
+  const [showActivationModal, setShowActivationModal] = useState<boolean>(false);
 
   const sectionBorderColor = isAdmin ? 'border-indigo-600' : colorVariant === 'school' ? 'border-school' : 'border-instructor';
   const inputFocusRing = colorVariant === 'school' ? 'focus:ring-school focus:border-school' : 'focus:ring-instructor focus:border-instructor';
@@ -1850,6 +1851,12 @@ function CourseManagement({
 
   // Yeni kurs ekleme
   const addNewCourse = () => {
+    // Taslak eğitmenler en fazla 3 kurs ekleyebilir
+    if (isInstructorPending && courses.length >= 3) {
+      setShowActivationModal(true);
+      return;
+    }
+
     setSelectedCourse(null);
     setFormData({
       name: '',
@@ -3027,6 +3034,38 @@ function CourseManagement({
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-300">
             Eğitmen bu kurstan çıkarıldığında artık derslere katılamayacak ve kurs listesinde görünmeyecektir.
+          </p>
+        </div>
+      </SimpleModal>
+
+      {/* Profil Aktifleştirme Modal */}
+      <SimpleModal
+        open={showActivationModal}
+        onClose={() => setShowActivationModal(false)}
+        title="Maksimum Taslak Kurs Sınırı"
+        colorVariant={colorVariant}
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => setShowActivationModal(false)}>Kapat</Button>
+            <Button variant="primary" onClick={() => {
+              setShowActivationModal(false);
+              navigate('/instructor/profile');
+            }}>Profili Aktifleştir</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+            <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-center text-gray-900 dark:text-white">Daha Fazla Kurs Açın!</h3>
+          <p className="text-gray-600 dark:text-gray-300 text-center">
+            Taslak eğitmen olarak en fazla <strong>3 adet</strong> kurs oluşturabilirsiniz. Limitiniz doldu.
+          </p>
+          <p className="text-gray-600 dark:text-gray-300 text-center mt-2">
+            Zaten oluşturduğunuz bu kursları yayınlamak ve sınırsız kurs açma hakkı kazanmak için eğitmen profilinizi aktifleştirmelisiniz.
           </p>
         </div>
       </SimpleModal>
