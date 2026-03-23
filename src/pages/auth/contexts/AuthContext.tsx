@@ -62,8 +62,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // Rol bazlı yönlendirme
                 console.log('🎯 Starting role-based redirection...');
                 if (userWithId.role.includes('instructor')) {
-                  console.log('👨‍🏫 User is an instructor, redirecting to /instructor/management');
-                  navigate('/instructor/management');
+                  console.log('👨‍🏫 User is an instructor, redirecting to /instructor');
+                  navigate('/instructor');
                 } else if (userWithId.role.includes('school')) {
                   console.log('🏫 User is a school, redirecting to /school/dashboard');
                   navigate('/school/dashboard');
@@ -85,9 +85,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: firebaseUser.email || '',
               displayName: firebaseUser.displayName || '',
               photoURL: firebaseUser.photoURL || '',
-              role: ['student'] as UserRole[],
-              createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
-              updatedAt: firebaseUser.metadata.lastSignInTime || new Date().toISOString(),
+              role: 'student' as UserRole,
+              createdAt: firebaseUser.metadata.creationTime ? new Date(firebaseUser.metadata.creationTime) : new Date(),
+              updatedAt: firebaseUser.metadata.lastSignInTime ? new Date(firebaseUser.metadata.lastSignInTime) : new Date(),
             };
 
             // Firestore'a yeni kullanıcıyı kaydet
