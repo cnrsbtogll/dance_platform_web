@@ -47,7 +47,7 @@ const CourseSearchPage: React.FC = () => {
     arama: '',
     dansTuru: '',
     gun: '',
-    ulke: '',
+    ulke: 'TR',
     sehir: ''
   });
 
@@ -190,7 +190,7 @@ const CourseSearchPage: React.FC = () => {
       arama: '',
       dansTuru: '',
       gun: '',
-      ulke: '',
+      ulke: 'TR',
       sehir: ''
     });
   };

@@ -32,7 +32,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
   const [arama, setArama] = useState<string>('');
   const [dansTuru, setDansTuru] = useState<string>('');
   const [gun, setGun] = useState<string>('');
-  const [ulke, setUlke] = useState<string>('');
+  const [ulke, setUlke] = useState<string>('TR');
   const [sehir, setSehir] = useState<string>('');
   const [danceStyles, setDanceStyles] = useState<DanceStyle[]>([]);
   const [loadingStyles, setLoadingStyles] = useState(true);
@@ -56,25 +56,25 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
           const data = doc.data();
           const countryName = data.country || doc.id;
           const cities = data.cities || [];
-          
+
           if (countryName) {
-              countriesList.push({ label: countryName, value: countryName });
-              if (Array.isArray(cities)) {
-                  citiesMap[countryName] = cities.map((c: string) => ({ label: c, value: c })).sort((a, b) => a.label.localeCompare(b.label));
-              }
+            countriesList.push({ label: countryName, value: countryName });
+            if (Array.isArray(cities)) {
+              citiesMap[countryName] = cities.map((c: string) => ({ label: c, value: c })).sort((a, b) => a.label.localeCompare(b.label));
+            }
           }
         });
 
         countriesList.sort((a, b) => a.label.localeCompare(b.label));
-        
+
         if (countriesList.length === 0) {
-           countriesList.push({ label: 'Türkiye', value: 'Türkiye' });
-           citiesMap['Türkiye'] = [
-             { label: 'İstanbul', value: 'İstanbul' },
-             { label: 'Ankara', value: 'Ankara' },
-             { label: 'İzmir', value: 'İzmir' },
-             { label: 'Bursa', value: 'Bursa' }
-           ].sort((a, b) => a.label.localeCompare(b.label));
+          countriesList.push({ label: 'Türkiye', value: 'Türkiye' });
+          citiesMap['Türkiye'] = [
+            { label: 'İstanbul', value: 'İstanbul' },
+            { label: 'Ankara', value: 'Ankara' },
+            { label: 'İzmir', value: 'İzmir' },
+            { label: 'Bursa', value: 'Bursa' }
+          ].sort((a, b) => a.label.localeCompare(b.label));
         }
 
         setCountries(countriesList);
@@ -174,7 +174,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
     setArama('');
     setDansTuru('');
     setGun('');
-    setUlke('');
+    setUlke('TR');
     setSehir('');
     onFilterChange({
       seviye: '',
@@ -182,7 +182,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
       arama: '',
       dansTuru: '',
       gun: '',
-      ulke: '',
+      ulke: 'TR',
       sehir: ''
     });
   };
