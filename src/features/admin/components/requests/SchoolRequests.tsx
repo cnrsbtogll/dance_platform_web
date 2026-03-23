@@ -23,22 +23,30 @@ interface SchoolRequest {
   lastName?: string;
   schoolName: string;
   schoolDescription?: string;
-  schoolAddress?: string;  // Firestore'da schoolAddress olarak geçiyor
-  address?: string;        // eski alan fallback
+  description?: string;          // alias
+  schoolAddress?: string;
+  address?: string;
   city?: string;
   zipCode?: string;
   country?: string;
-  contactNumber?: string;  // Firestore'da contactNumber
-  contactPhone?: string;   // fallback
+  contactNumber?: string;
+  contactPhone?: string;
   contactPerson?: string;
   contactEmail?: string;
   instagramHandle?: string;
   website?: string;
   danceStyles?: string[];
   establishedYear?: string;
+  photoURL?: string;             // okul fotoğrafı
+  document_url?: string;         // belge URL (activation akışı)
+  document_name?: string;
   userId: string;
   userEmail: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'draft' | 'pending' | 'approved' | 'rejected';
+  type?: 'activation' | 'new_school';
+  schoolId?: string;
+  schoolDocument?: string;
+  schoolDocumentName?: string;
   createdAt: Timestamp;
   documents?: string[];
   idDocumentUrl?: string;
@@ -52,13 +60,13 @@ function SchoolRequests(): JSX.Element {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<SchoolRequest | null>(null);
   const [contactRequest, setContactRequest] = useState<SchoolRequest | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'pending' | 'approved' | 'rejected'>('pending');
 
   useEffect(() => {
     fetchRequests(statusFilter);
   }, [statusFilter]);
 
-  const fetchRequests = async (status: 'all' | 'pending' | 'approved' | 'rejected' = 'pending') => {
+  const fetchRequests = async (status: 'all' | 'draft' | 'pending' | 'approved' | 'rejected' = 'pending') => {
     setLoading(true);
     setError(null);
 
@@ -99,38 +107,78 @@ function SchoolRequests(): JSX.Element {
     setProcessingId(requestId);
 
     try {
-      // 1. Get the request document
       const requestDocRef = doc(db, 'schoolRequests', requestId);
       const requestDoc = await getDoc(requestDocRef);
 
-      if (!requestDoc.exists()) {
-        throw new Error('Talep bulunamadı');
-      }
+      if (!requestDoc.exists()) throw new Error('Talep bulunamadı');
 
       const requestData = requestDoc.data() as SchoolRequest;
 
-      // 2. Get the user document
-      const userDocRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userDocRef);
+      // ── Aktivasyon talebi (yeni akış): schoolRequests → schools ──
+      if (requestData.type === 'activation') {
+        // 1. schoolRequests verisinden yeni aktif okul oluştur
+        const newSchoolData = {
+          name: requestData.schoolName,
+          displayName: requestData.schoolName,
+          description: requestData.schoolDescription || requestData.description || '',
+          contactPerson: requestData.contactPerson,
+          contactEmail: requestData.contactEmail,
+          contactPhone: requestData.contactPhone || '',
+          address: requestData.address || '',
+          photoURL: requestData.photoURL || null,
+          document_url: requestData.schoolDocument || requestData.document_url || null,
+          document_name: requestData.schoolDocumentName || requestData.document_name || null,
+          userId: userId,
+          status: 'active',
+          documentStatus: 'approved',
+          approvedAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
 
-      if (!userDoc.exists()) {
-        throw new Error('Kullanıcı bulunamadı');
+        const newSchoolDoc = await addDoc(collection(db, 'schools'), newSchoolData);
+
+        // 2. Kullanıcıyı güncelle: schoolId ekle, schoolRequestId'yi temizle
+        const userDocRef = doc(db, 'users', userId);
+        await updateDoc(userDocRef, {
+          schoolId: newSchoolDoc.id,
+          schoolRequestId: null,
+          is_school_pending: false,
+          role: 'school',
+          isSchool: true,
+          schoolApprovedAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+
+        // 3. schoolRequests kaydını approved yap
+        await updateDoc(requestDocRef, {
+          status: 'approved',
+          approvedBy: 'admin',
+          schoolId: newSchoolDoc.id,
+          updatedAt: serverTimestamp()
+        });
+
+        setRequests(prev => prev.filter(r => r.id !== requestId));
+        alert('Okul aktivasyon talebi onaylandı! Okul artık aktif ve platformda görünür.');
+        return;
       }
 
-      // 3. Update the user document to add the school role
-      const userData = userDoc.data();
+      // ── Eski akış: Yeni okul oluştur ──
+      const userDocRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userDocRef);
+      if (!userDoc.exists()) throw new Error('Kullanıcı bulunamadı');
 
-      // Add school-specific data to the user document
       await updateDoc(userDocRef, {
-        role: 'school', // Artık array değil, string
+        role: 'school',
         isSchool: true,
+        is_school_pending: false,
         schoolApprovedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 
-      // 4. Add school to the schools collection
       const schoolData = {
         name: requestData.schoolName,
+        displayName: requestData.schoolName,
         description: requestData.schoolDescription,
         address: requestData.address,
         city: requestData.city,
@@ -151,19 +199,16 @@ function SchoolRequests(): JSX.Element {
       const schoolsCollectionRef = collection(db, 'schools');
       const newSchoolDoc = await addDoc(schoolsCollectionRef, schoolData);
 
-      // 5. Update the request status
+      await updateDoc(userDocRef, { schoolId: newSchoolDoc.id });
+
       await updateDoc(requestDocRef, {
         status: 'approved',
         updatedAt: serverTimestamp(),
-        approvedBy: 'admin', // Ideally, this would be the admin user ID
+        approvedBy: 'admin',
         schoolId: newSchoolDoc.id
       });
 
-      // 6. Update the local state
-      setRequests(prev =>
-        prev.filter(req => req.id !== requestId)
-      );
-
+      setRequests(prev => prev.filter(req => req.id !== requestId));
       alert('Okul talebi başarıyla onaylandı. Okul, okullar listesine eklendi ve kullanıcı bilgileri güncellendi.');
 
     } catch (err) {
@@ -235,10 +280,17 @@ function SchoolRequests(): JSX.Element {
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200">Okul Başvuruları</h2>
         {/* Scrollable filter bar — stays one line on all screen sizes */}
         <div className="flex overflow-x-auto pb-1 gap-2 scrollbar-hide">
-          {(['all', 'pending', 'approved', 'rejected'] as const).map((s) => {
-            const labels = { all: 'Tümü', pending: 'Bekleyen', approved: 'Onaylandı', rejected: 'Reddedildi' };
-            const colors = {
+          {(['all', 'draft', 'pending', 'approved', 'rejected'] as const).map((s) => {
+            const labels: Record<string, string> = {
+              all: 'Tümü',
+              draft: 'Taslak',
+              pending: 'Bekleyen',
+              approved: 'Onaylandı',
+              rejected: 'Reddedildi'
+            };
+            const colors: Record<string, string> = {
               all: statusFilter === s ? 'bg-gray-700 text-white border-gray-700' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700',
+              draft: statusFilter === s ? 'bg-slate-500 text-white border-slate-500' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700',
               pending: statusFilter === s ? 'bg-yellow-500 text-white border-yellow-500' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20',
               approved: statusFilter === s ? 'bg-green-600 text-white border-green-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-green-50 dark:hover:bg-green-900/20',
               rejected: statusFilter === s ? 'bg-red-600 text-white border-red-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/20',
@@ -304,8 +356,15 @@ function SchoolRequests(): JSX.Element {
                           />
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {request.schoolName}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {request.schoolName}
+                            </span>
+                            {request.type === 'activation' && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                                Aktivasyon
+                              </span>
+                            )}
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400 sm:hidden">
                             {request.contactPerson || `${request.firstName || ''} ${request.lastName || ''}`.trim() || '-'}
@@ -351,7 +410,7 @@ function SchoolRequests(): JSX.Element {
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
                       <div className="flex justify-end items-center space-x-2">
-                        {(request.idDocumentUrl || request.certDocumentUrl || (request.documents && request.documents.length > 0)) && (
+                        {(request.idDocumentUrl || request.certDocumentUrl || request.schoolDocument || (request.documents && request.documents.length > 0)) && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" title="Yüklü belge var">
                             <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -580,7 +639,7 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
                   {/* Yüklü Dökümanlar */}
                   <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">Yüklü Dökümanlar</h4>
-                    {(request.idDocumentUrl || request.certDocumentUrl || (request.documents && request.documents.length > 0)) ? (
+                    {(request.idDocumentUrl || request.certDocumentUrl || request.schoolDocument || (request.documents && request.documents.length > 0)) ? (
                       <div className="space-y-2">
                         {request.idDocumentUrl && (
                           <a
@@ -617,6 +676,27 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
                               <p className="text-xs text-gray-500 dark:text-gray-400">Görüntülemek için tıklayın</p>
                             </div>
                           </a>
+                        )}
+                        {request.schoolDocument && (
+                          <div className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-purple-50 dark:bg-purple-900/20">
+                            <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900 flex items-center justify-center mr-3">
+                              <svg className="h-4 w-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">Okul Resmi Belgesi</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{request.schoolDocumentName || 'Belge yüklendi'}</p>
+                            </div>
+                            <a
+                              href={request.schoolDocument}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 text-xs text-purple-600 dark:text-purple-400 hover:underline whitespace-nowrap"
+                            >
+                              Görüntüle →
+                            </a>
+                          </div>
                         )}
                         {(request.documents || []).map((doc, idx) => (
                           <a

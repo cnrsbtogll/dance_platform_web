@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthError } from 'firebase/auth';
 import { signUp, getAuthErrorMessage } from './services/authService';
@@ -6,9 +6,7 @@ import Button from '../../common/components/ui/Button';
 import PasswordInput from '../../common/components/ui/PasswordInput';
 import { UserRole } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
-import useAuthHook from '../../common/hooks/useAuth';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../api/firebase/firebase';
+
 
 // Google Logo SVG
 const GoogleIcon = () => (
@@ -24,16 +22,16 @@ const SignUp: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { signInWithGoogle } = useAuth();
-  // common/hooks/useAuth'dan user state'ini al (role bilgisi Firestore snapshot'tan geliyor)
-  const { user: authUser } = useAuthHook();
-  const isInstructorSignup = (location.state as any)?.role === 'instructor';
+
+  // Dans Okulu Aç akdı ile gelindiyse draft-school modu
+  const isDraftSchoolMode = (location.state as any)?.role === 'draft-school';
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
     displayName: '',
-    role: (isInstructorSignup ? 'draft-instructor' : 'student') as UserRole,
+    role: (isDraftSchoolMode ? 'draft-school' : 'student') as UserRole,
   });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -81,10 +79,9 @@ const SignUp: React.FC = () => {
     setLoading(true);
     try {
       await signUp(formData.email, formData.password, formData.displayName, formData.role);
-
-      if (isInstructorSignup) {
-        // Navigate'i hemen yapma: useAuth'un Firestore snapshot'tan role'u okumasını bekle
-        setWaitingForRole(true);
+      if (isDraftSchoolMode) {
+        // Dans Okulu akışı: direkt okul admin paneline yönlendir
+        navigate('/school-admin', { replace: true });
       } else {
         navigate('/signin', { state: { message: 'Kayıt başarılı. Lütfen giriş yapın.' } });
       }
@@ -129,9 +126,25 @@ const SignUp: React.FC = () => {
     }
   };
 
+
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-xl">
-      <h2 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">Hesap Oluştur</h2>
+      {/* Dans Okulu modu ise özel başlık bannerı */}
+      {isDraftSchoolMode && (
+        <div className="mb-5 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg flex items-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Dans Okulu Açıyor</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400">Hesabınız taslak okul olarak oluşturulacak. Kaydolduktan sonra okul panelinize yönlendirileceksiniz.</p>
+          </div>
+        </div>
+      )}
+
+      <h2 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">
+        {isDraftSchoolMode ? 'Dans Okulu Hesabı Oluştur' : 'Hesap Oluştur'}
+      </h2>
 
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md dark:bg-red-900/30 dark:text-red-400">

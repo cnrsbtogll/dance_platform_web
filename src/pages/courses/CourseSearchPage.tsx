@@ -60,11 +60,10 @@ const CourseSearchPage: React.FC = () => {
 
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          // Sadece aktif kursları göster; taslak (draft) ve pasif kurslar öğrencilere görünmesin
           if (data.status === 'active') {
             fetchedCourses.push({
               ...data,
-              id: doc.id,        // doc.id her zaman kazansın, içerideki id field'ını ezmeli
+              id: doc.id,
             } as DanceClass);
           }
         });

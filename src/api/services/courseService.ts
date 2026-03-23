@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { DanceClass, DanceStyle, DanceLevel } from '../../types';
+import { getAllDanceSchools } from './schoolService';
 
 // Koleksiyon adı
 const COURSES_COLLECTION = 'courses';
@@ -81,6 +82,9 @@ export const getDanceCourseById = async (courseId: string): Promise<DanceClass |
  */
 export const getAllDanceCourses = async (): Promise<DanceClass[]> => {
   try {
+    const activeSchools = await getAllDanceSchools();
+    const activeSchoolIds = new Set(activeSchools.map(school => school.id));
+
     const coursesQuery = query(
       collection(db, COURSES_COLLECTION),
       orderBy('createdAt', 'desc')
@@ -91,9 +95,11 @@ export const getAllDanceCourses = async (): Promise<DanceClass[]> => {
 
     coursesSnapshot.forEach((doc) => {
       const data = doc.data();
-      // Filter active courses client-side to avoid composite index requirement
-      if (data.status === 'active') {
-        courses.push(data as DanceClass);
+      if (data.status === 'active' && activeSchoolIds.has(data.schoolId)) {
+        courses.push({
+          id: doc.id,
+          ...data
+        } as DanceClass);
       }
     });
 
@@ -120,19 +126,19 @@ export const getSchoolDanceCourses = async (schoolId: string): Promise<DanceClas
 
     coursesSnapshot.forEach((doc) => {
       const data = doc.data();
-      courses.push({
-        ...data,
-        id: doc.id
-      } as DanceClass);
+      if (data.status === 'active') {
+        courses.push({
+          ...data,
+          id: doc.id
+        } as DanceClass);
+      }
     });
 
     courses.sort((a, b) => {
-      const getMs = (date: any) => {
-        if (date instanceof Date) return date.getTime();
-        if (date && typeof date === 'object' && 'seconds' in date) return (date as any).seconds * 1000;
-        return 0;
-      };
-      return getMs(b.createdAt) - getMs(a.createdAt);
+      if (a.createdAt && b.createdAt) {
+        return (b.createdAt as any).seconds - (a.createdAt as any).seconds;
+      }
+      return 0;
     });
 
     return courses;
@@ -319,12 +325,14 @@ export const deleteDanceCourse = async (courseId: string): Promise<void> => {
  */
 export const getFeaturedDanceCourses = async (count: number = 4): Promise<DanceClass[]> => {
   try {
-    // Only orderBy + limit to avoid composite index requirement.
-    // Filter by status on the client side.
+    const activeSchools = await getAllDanceSchools();
+    const activeSchoolIds = new Set(activeSchools.map(school => school.id));
+
+    // Limit(50) fetch to have enough courses to filter local active ones, then pick count
     const coursesQuery = query(
       collection(db, COURSES_COLLECTION),
       orderBy('createdAt', 'desc'),
-      limit(count * 5) // fetch more to account for non-active ones
+      limit(50)
     );
 
     const coursesSnapshot = await getDocs(coursesQuery);
@@ -332,7 +340,7 @@ export const getFeaturedDanceCourses = async (count: number = 4): Promise<DanceC
 
     coursesSnapshot.forEach((doc) => {
       const data = doc.data();
-      if (data.status === 'active') {
+      if (data.status === 'active' && activeSchoolIds.has(data.schoolId)) {
         courses.push({
           id: doc.id,
           ...data
@@ -340,6 +348,7 @@ export const getFeaturedDanceCourses = async (count: number = 4): Promise<DanceC
       }
     });
 
+    // We only return the requested count
     return courses.slice(0, count);
   } catch (error) {
     console.error('Öne çıkan dans kursları getirilirken hata:', error);
