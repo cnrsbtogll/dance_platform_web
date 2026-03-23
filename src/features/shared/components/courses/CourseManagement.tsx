@@ -165,6 +165,7 @@ interface CourseManagementProps {
   schoolId?: string;
   isAdmin?: boolean;
   colorVariant?: 'instructor' | 'school';
+  isInstructorPending?: boolean;
 }
 
 // İletişim Modal bileşeni
@@ -271,7 +272,13 @@ const timestampToDate = (timestamp: any): string => {
   }
 };
 
-function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVariant = 'instructor' }: CourseManagementProps): JSX.Element {
+function CourseManagement({
+  instructorId,
+  schoolId,
+  isAdmin = false,
+  colorVariant = 'instructor',
+  isInstructorPending = false
+}: CourseManagementProps): JSX.Element {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
   const [editMode, setEditMode] = useState<boolean>(false);
@@ -468,7 +475,8 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         if (!isAdmin) {
           // If a schoolId prop is provided, prioritize it. Otherwise use the specific target (instructorId or schoolId)
           const targetSchoolId = schoolId || (userRole === 'school' ? currentUser.uid : null);
-          const targetInstructorId = instructorId || (userRole === 'instructor' ? currentUser.uid : null);
+          const isInstructorRole = userRole === 'instructor' || userRole === 'draft-instructor';
+          const targetInstructorId = instructorId || (isInstructorRole ? currentUser.uid : null);
 
           if (targetSchoolId) {
             console.log('School: Okula ait kurslar getiriliyor -', targetSchoolId);
@@ -479,9 +487,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
             );
           } else if (targetInstructorId) {
             console.log('Instructor: Eğitmene ait kurslar getiriliyor -', targetInstructorId);
+            // instructorIds (array) kullan — instructorId tekil yerine
             q = query(
               coursesRef,
-              where('instructorId', '==', targetInstructorId),
+              where('instructorIds', 'array-contains', targetInstructorId),
               orderBy('createdAt', 'desc')
             );
           }
@@ -666,65 +675,51 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     // Both admins and instructors can see the school list for course affiliation
     if (!isAdmin && colorVariant !== 'instructor') return;
 
+    setLoadingSchools(true);
     try {
       console.log('Okullar getiriliyor...');
       const schoolsRef = collection(db, 'schools');
-      console.log('Schools koleksiyonu referansı:', schoolsRef);
-
-      const q = query(schoolsRef);
-      console.log('Oluşturulan query:', q);
-
-      const querySnapshot = await getDocs(q);
-      console.log('Query sonuçları:', {
-        empty: querySnapshot.empty,
-        size: querySnapshot.size,
-        docs: querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          data: doc.data()
-        }))
-      });
+      const querySnapshot = await getDocs(schoolsRef);
 
       const schoolsList = querySnapshot.docs
         .map(doc => {
           const data = doc.data();
-          console.log('Okul verisi işleniyor:', {
-            id: doc.id,
-            data: data,
-            displayName: data.displayName,
-            name: data.name,
-            ad: data.ad,
-            status: data.status,
-            userId: data.userId,
-            email: data.email
-          });
-
-          // Sadece aktif okulları al
-          if (data.status === 'active') {
-            return {
-              label: data.displayName || data.name || data.ad || data.email || 'İsimsiz Okul',
-              value: doc.id
-            };
-          }
-          return null;
+          return {
+            label: data.displayName || data.name || data.ad || data.email || 'İsimsiz Okul',
+            value: doc.id
+          };
         })
-        .filter((school): school is { label: string; value: string } => school !== null)
+        .filter(s => !!s.label)
         .sort((a, b) => a.label.localeCompare(b.label));
 
-      console.log('İşlenmiş okul listesi:', schoolsList);
-      setSchools(schoolsList);
-    } catch (error) {
-      console.error('Okullar yüklenirken hata detayı:', {
-        error,
-        message: error instanceof Error ? error.message : 'Bilinmeyen hata',
-        code: error instanceof Error ? (error as any).code : undefined,
-        stack: error instanceof Error ? error.stack : undefined
-      });
+      if (schoolsList.length > 0) {
+        console.log('Schools koleksiyonundan yüklendi:', schoolsList.length);
+        setSchools(schoolsList);
+        return;
+      }
 
-      // Varsayılan okul listesi
-      setSchools([
-        { label: 'Test Okul 1', value: 'test-school-1' },
-        { label: 'Test Okul 2', value: 'test-school-2' }
-      ]);
+      // Fallback: users koleksiyonunda role=school olan kayıtları ara
+      console.log('schools koleksiyonu boş, users koleksiyonundaki okullar aranıyor...');
+      const usersRef = collection(db, 'users');
+      const usersSnap = await getDocs(usersRef);
+      const usersSchoolList = usersSnap.docs
+        .filter(d => {
+          const role = d.data().role;
+          return role === 'school' || role === 'draft-school' ||
+            (Array.isArray(role) && (role.includes('school') || role.includes('draft-school')));
+        })
+        .map(d => ({
+          label: d.data().displayName || d.data().schoolName || d.data().name || d.data().email || 'İsimsiz Okul',
+          value: d.id
+        }))
+        .filter(s => !!s.label)
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+      console.log('Users koleksiyonundan okullar:', usersSchoolList.length);
+      setSchools(usersSchoolList);
+    } catch (error) {
+      console.error('Okullar yüklenirken hata:', error);
+      setSchools([]);
     } finally {
       setLoadingSchools(false);
     }
@@ -1449,6 +1444,10 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                           schoolAddress: type === 'custom' ? '' : formData.schoolAddress,
                           customAddress: type === 'school' ? '' : formData.customAddress
                         });
+                        // Okullar yüklenmemişse yükle
+                        if (type === 'school' && schools.length === 0) {
+                          fetchSchools();
+                        }
                       }}
                       colorVariant={colorVariant}
                       required
@@ -1472,6 +1471,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                           }}
                           placeholder="Okul Seçin"
                           colorVariant={colorVariant}
+                          required
                         />
                         <p className="text-[10px] text-gray-500 mt-1 pl-1 italic">
                           Seçtiğiniz dans okulunun kayıtlı adresi kurs detaylarında öğrencilere gösterilecektir.
@@ -1829,7 +1829,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         }
 
         try {
-          if (isAdmin) {
+          if (isAdmin || colorVariant === 'instructor') {
             await fetchSchools();
           }
         } catch (e) {
@@ -2007,22 +2007,55 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     };
   };
 
+  // Adım geçişi ve doğrulama
+  const handleNextStep = () => {
+    const form = document.getElementById('course-form') as HTMLFormElement;
+    if (form && !form.reportValidity()) {
+      return;
+    }
+
+    // 3. Adım: Eğitmen seçimi zorunlu
+    if (currentStep === 3 && formData.instructorIds.length === 0) {
+      setError('Lütfen ilerlemeden önce bu kurs için en az bir eğitmen seçin.');
+      return;
+    }
+
+    setError(null);
+    setCurrentStep(prev => prev + 1);
+  };
+
   // Form gönderimi
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
     // Eğer son adımda değilsek, "Enter" tuşu bir sonraki adıma geçirmeli
     if (currentStep < totalSteps) {
-      const form = document.getElementById('course-form') as HTMLFormElement;
-      if (form && form.reportValidity()) {
-        setCurrentStep(prev => prev + 1);
-      }
+      handleNextStep();
+      return;
+    }
+
+    // Eğitmen zorunluluğu (son on-top kontrol)
+    if (formData.instructorIds.length === 0) {
+      setError('Lütfen kurs için en az bir eğitmen seçin.');
+      setCurrentStep(3);
       return;
     }
 
     // Kurs programı kontrolü
     if (formData.schedule.length === 0) {
       setError('Lütfen en az bir ders günü seçerek kurs programını oluşturun.');
+      return;
+    }
+
+    // Dans okulu seçimi zorunluluğu
+    if (formData.locationType === 'school' && !formData.schoolId) {
+      setError('Lütfen "Hangi Dans Okulunda?" alanından bir okul seçin.');
+      return;
+    }
+
+    // Özel adres zorunluluğu
+    if (formData.locationType === 'custom' && !formData.customAddress?.trim()) {
+      setError('Lütfen kursun yapılacağı adresi girin.');
       return;
     }
 
@@ -2071,6 +2104,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
         location: finalLocation,
         recurring: true,
         schedule: formData.schedule,
+        status: isInstructorPending ? 'draft' : cleanedData.status,
         updatedAt: serverTimestamp()
       };
 
@@ -2260,16 +2294,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                 <Button
                   type="button"
                   variant={isAdmin ? 'indigo' : colorVariant}
-                  onClick={() => {
-                    const form = document.getElementById('course-form') as HTMLFormElement;
-                    if (form && form.reportValidity()) {
-                      setError(null);
-                      setCurrentStep(prev => prev + 1);
-                    } else if (!form) {
-                      setError(null);
-                      setCurrentStep(prev => prev + 1);
-                    }
-                  }}
+                  onClick={handleNextStep}
                 >
                   İleri
                 </Button>
@@ -2299,11 +2324,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
             if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.type !== 'textarea') {
               e.preventDefault();
               if (currentStep < totalSteps) {
-                const form = document.getElementById('course-form') as HTMLFormElement;
-                if (form && form.reportValidity()) {
-                  setError(null);
-                  setCurrentStep(prev => prev + 1);
-                }
+                handleNextStep();
               }
             }
           }}
@@ -3085,6 +3106,38 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-300">
             Eğitmen bu kurstan çıkarıldığında artık derslere katılamayacak ve kurs listesinde görünmeyecektir.
+          </p>
+        </div>
+      </SimpleModal>
+
+      {/* Profil Aktifleştirme Modal */}
+      <SimpleModal
+        open={showActivationModal}
+        onClose={() => setShowActivationModal(false)}
+        title="Maksimum Taslak Kurs Sınırı"
+        colorVariant={colorVariant}
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => setShowActivationModal(false)}>Kapat</Button>
+            <Button variant="primary" onClick={() => {
+              setShowActivationModal(false);
+              navigate('/instructor/profile');
+            }}>Profili Aktifleştir</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+            <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-center text-gray-900 dark:text-white">Daha Fazla Kurs Açın!</h3>
+          <p className="text-gray-600 dark:text-gray-300 text-center">
+            Taslak eğitmen olarak en fazla <strong>3 adet</strong> kurs oluşturabilirsiniz. Limitiniz doldu.
+          </p>
+          <p className="text-gray-600 dark:text-gray-300 text-center mt-2">
+            Zaten oluşturduğunuz bu kursları yayınlamak ve sınırsız kurs açma hakkı kazanmak için eğitmen profilinizi aktifleştirmelisiniz.
           </p>
         </div>
       </SimpleModal>

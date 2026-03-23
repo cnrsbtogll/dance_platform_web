@@ -36,6 +36,19 @@ const SignUp: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  // Firestore'dan role güncellemesini bekliyoruz
+  const [waitingForRole, setWaitingForRole] = useState(false);
+
+  // Instructor signup sonrası role 'draft-instructor' olunca navigate et
+  useEffect(() => {
+    if (
+      waitingForRole &&
+      authUser?.role &&
+      (authUser.role === 'draft-instructor' || authUser.role === 'instructor')
+    ) {
+      navigate('/instructor');
+    }
+  }, [waitingForRole, authUser?.role, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -83,8 +96,23 @@ const SignUp: React.FC = () => {
     setError('');
     setGoogleLoading(true);
     try {
-      await signInWithGoogle();
-      navigate('/');
+      const result = await signInWithGoogle();
+
+      // If instructor signup via Google, set pending flag
+      if (isInstructorSignup && result?.credential?.user?.uid) {
+        try {
+          const userRef = doc(db, 'users', result.credential.user.uid);
+          await updateDoc(userRef, {
+            role: 'draft-instructor',
+            updatedAt: serverTimestamp(),
+          });
+        } catch (updateErr) {
+          console.error('Error setting instructor role:', updateErr);
+        }
+        navigate('/instructor');
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       if (
         err?.code === 'auth/popup-closed-by-user' ||

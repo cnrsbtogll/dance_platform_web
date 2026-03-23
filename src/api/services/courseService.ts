@@ -110,6 +110,7 @@ export const getAllDanceCourses = async (): Promise<DanceClass[]> => {
   }
 };
 
+
 /**
  * Bir okulun tüm kurslarını getirir
  */
@@ -353,4 +354,4 @@ export const getFeaturedDanceCourses = async (count: number = 4): Promise<DanceC
     console.error('Öne çıkan dans kursları getirilirken hata:', error);
     throw error;
   }
-}; 
+};
