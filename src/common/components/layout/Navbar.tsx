@@ -623,7 +623,15 @@ function Navbar({ isAuthenticated, user }: NavbarProps) {
                                 İlerleme Durumum
                               </button>
                             </>
-                          ) : null}
+                          ) : (
+                            <Link
+                              to="/profile"
+                              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-gray-700 hover:text-brand-pink transition-colors duration-150"
+                              onClick={() => setIsProfileMenuOpen(false)}
+                            >
+                              Profilim
+                            </Link>
+                          )}
                           <button
                             onClick={() => {
                               handleLogout();

@@ -161,7 +161,11 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
           <input
             type="text"
             value={arama}
-            onChange={(e) => setArama(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setArama(val);
+              onFilterChange({ seviye, fiyatAralik, arama: val, dansTuru, gun });
+            }}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
             placeholder="Dans kursu veya eğitmen ara..."
