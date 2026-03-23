@@ -15,6 +15,8 @@ interface FilterValues {
   arama: string;
   dansTuru: string;
   gun: string;
+  ulke?: string;
+  sehir?: string;
 }
 
 // Dans stili interface
@@ -30,9 +32,64 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
   const [arama, setArama] = useState<string>('');
   const [dansTuru, setDansTuru] = useState<string>('');
   const [gun, setGun] = useState<string>('');
+  const [ulke, setUlke] = useState<string>('');
+  const [sehir, setSehir] = useState<string>('');
   const [danceStyles, setDanceStyles] = useState<DanceStyle[]>([]);
   const [loadingStyles, setLoadingStyles] = useState(true);
   const [searchFocused, setSearchFocused] = useState(false);
+
+  const [countries, setCountries] = useState<{ label: string; value: string; }[]>([]);
+  const [citiesByCountry, setCitiesByCountry] = useState<Record<string, { label: string; value: string; }[]>>({});
+  const [loadingLocations, setLoadingLocations] = useState<boolean>(true);
+
+  // Fetch locations from Firestore
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const locationsRef = collection(db, 'locations');
+        const querySnapshot = await getDocs(locationsRef);
+
+        const countriesList: { label: string; value: string; }[] = [];
+        const citiesMap: Record<string, { label: string; value: string; }[]> = {};
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const countryName = data.country || doc.id;
+          const cities = data.cities || [];
+          
+          if (countryName) {
+              countriesList.push({ label: countryName, value: countryName });
+              if (Array.isArray(cities)) {
+                  citiesMap[countryName] = cities.map((c: string) => ({ label: c, value: c })).sort((a, b) => a.label.localeCompare(b.label));
+              }
+          }
+        });
+
+        countriesList.sort((a, b) => a.label.localeCompare(b.label));
+        
+        if (countriesList.length === 0) {
+           countriesList.push({ label: 'Türkiye', value: 'Türkiye' });
+           citiesMap['Türkiye'] = [
+             { label: 'İstanbul', value: 'İstanbul' },
+             { label: 'Ankara', value: 'Ankara' },
+             { label: 'İzmir', value: 'İzmir' },
+             { label: 'Bursa', value: 'Bursa' }
+           ].sort((a, b) => a.label.localeCompare(b.label));
+        }
+
+        setCountries(countriesList);
+        setCitiesByCountry(citiesMap);
+      } catch (error) {
+        console.error('Lokasyonlar yüklenirken hata:', error);
+        setCountries([{ label: 'Türkiye', value: 'Türkiye' }]);
+        setCitiesByCountry({ 'Türkiye': [] });
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
 
   // Fetch dance styles from Firestore
   useEffect(() => {
@@ -117,12 +174,16 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
     setArama('');
     setDansTuru('');
     setGun('');
+    setUlke('');
+    setSehir('');
     onFilterChange({
       seviye: '',
       fiyatAralik: '',
       arama: '',
       dansTuru: '',
-      gun: ''
+      gun: '',
+      ulke: '',
+      sehir: ''
     });
   };
 
@@ -130,7 +191,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
     setArama('');
     if (arama) {
       onFilterChange({
-        ...{ seviye, fiyatAralik, dansTuru, gun },
+        ...{ seviye, fiyatAralik, dansTuru, gun, ulke, sehir },
         arama: ''
       });
     }
@@ -192,7 +253,7 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
               onClick={() => {
                 setArama(term);
                 onFilterChange({
-                  ...{ seviye, fiyatAralik, dansTuru, gun },
+                  ...{ seviye, fiyatAralik, dansTuru, gun, ulke, sehir },
                   arama: term
                 });
               }}
@@ -204,7 +265,55 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div>
+          <CustomSelect
+            name="ulke"
+            options={countries}
+            value={ulke}
+            onChange={(val) => {
+              const value = Array.isArray(val) ? val[0] : val;
+              setUlke(value);
+              setSehir('');
+              onFilterChange({
+                seviye,
+                fiyatAralik,
+                arama,
+                dansTuru,
+                gun,
+                ulke: value,
+                sehir: ''
+              });
+            }}
+            placeholder="Tüm ülkeler"
+            label="Ülke"
+          />
+        </div>
+
+        <div>
+          <CustomSelect
+            name="sehir"
+            options={ulke ? (citiesByCountry[ulke] || []) : []}
+            value={sehir}
+            onChange={(val) => {
+              const value = Array.isArray(val) ? val[0] : val;
+              setSehir(value);
+              onFilterChange({
+                seviye,
+                fiyatAralik,
+                arama,
+                dansTuru,
+                gun,
+                ulke,
+                sehir: value
+              });
+            }}
+            placeholder="Tüm şehirler"
+            label="Şehir"
+            disabled={!ulke}
+          />
+        </div>
+
         <div>
           {loadingStyles ? (
             <div className="p-3 flex items-center">
@@ -227,7 +336,9 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
                   fiyatAralik,
                   arama,
                   dansTuru: value,
-                  gun
+                  gun,
+                  ulke,
+                  sehir
                 });
               }}
               placeholder="Tüm dans türleri"
@@ -252,7 +363,9 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
                 fiyatAralik,
                 arama,
                 dansTuru,
-                gun
+                gun,
+                ulke,
+                sehir
               });
             }}
             placeholder="Tüm seviyeler"
@@ -273,7 +386,9 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
                 fiyatAralik: value,
                 arama,
                 dansTuru,
-                gun
+                gun,
+                ulke,
+                sehir
               });
             }}
             placeholder="Tüm fiyatlar"
@@ -297,7 +412,9 @@ function SearchFilters({ onFilterChange }: SearchFiltersProps): JSX.Element {
                 fiyatAralik,
                 arama,
                 dansTuru,
-                gun: value
+                gun: value,
+                ulke,
+                sehir
               });
             }}
             placeholder="Tüm günler"

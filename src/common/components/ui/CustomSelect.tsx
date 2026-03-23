@@ -21,6 +21,7 @@ interface CustomSelectProps {
   fullWidth?: boolean;
   allowEmpty?: boolean;
   colorVariant?: 'default' | 'school' | 'instructor' | 'student';
+  disabled?: boolean;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -36,6 +37,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   fullWidth = true,
   allowEmpty = true,
   colorVariant = 'default',
+  disabled = false,
 }) => {
   const { isDark } = useTheme();
   const [open, setOpen] = useState(false);
@@ -67,6 +69,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       fullWidth={fullWidth}
       error={!!error}
       required={required}
+      disabled={disabled}
       sx={{
         minWidth: 120,
         margin: 0,
@@ -107,6 +110,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         onOpen={handleOpen}
         onClose={handleClose}
         displayEmpty={true}
+        disabled={disabled}
         MenuProps={{
           PaperProps: {
             sx: {

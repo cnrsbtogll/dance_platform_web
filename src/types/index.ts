@@ -130,6 +130,8 @@ export interface DanceClass {
   locationType?: 'school' | 'custom';
   customAddress?: string;
   schoolAddress?: string;
+  country?: string;
+  city?: string;
   createdAt: Date;
   updatedAt: Date;
 }
