@@ -1,14 +1,15 @@
 import React, { useState, useRef } from 'react';
-import { Box, IconButton, Button, Typography } from '@mui/material';
-import { AddAPhoto, Edit, DeleteOutline, Check, Close } from '@mui/icons-material';
+import { Box, IconButton, Typography } from '@mui/material';
+import { AddAPhoto, Edit, Check, Close } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { generateInitialsAvatar } from '../../utils/imageUtils';
+import { uploadToMinio as uploadToMinioService, generateObjectPath } from '../../../api/services/minioUploadService';
 
 type UserType = 'school' | 'instructor' | 'student';
 
 interface ImageUploaderProps {
   currentPhotoURL?: string;
-  onImageChange: (base64Image: string | null) => void;
+  onImageChange: (imageUrl: string | null) => void;
   displayName?: string;
   userType?: UserType;
   maxSizeKB?: number;
@@ -17,6 +18,10 @@ interface ImageUploaderProps {
   shape?: 'circle' | 'square';
   width?: number;
   height?: number;
+  /** If true, upload image to MinIO S3 and pass the public URL to onImageChange */
+  uploadToMinio?: boolean;
+  /** MinIO object path prefix, e.g. "public/avatars/user123" */
+  minioObjectPath?: string;
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -29,8 +34,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   maxHeight = 2160,
   shape = 'circle',
   width = 150,
-  height = 150
+  height = 150,
+  uploadToMinio = false,
+  minioObjectPath,
 }) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewURL, setPreviewURL] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -212,15 +220,24 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         return;
       }
 
-      const compressedBase64 = await compressImage(file);
-      const finalSize = calculateBase64Size(compressedBase64);
+      if (uploadToMinio) {
+        // MinIO mode: just show a preview via object URL, don't compress to base64
+        const objectUrl = URL.createObjectURL(file);
+        setPreviewURL(objectUrl);
+        setSelectedFile(file);
+      } else {
+        // Firestore/base64 mode (legacy)
+        const compressedBase64 = await compressImage(file);
+        const finalSize = calculateBase64Size(compressedBase64);
 
-      if (finalSize > 1000000) {
-        setError('Görüntü boyutu çok büyük. Lütfen daha küçük bir görüntü seçin.');
-        return;
+        if (finalSize > 1000000) {
+          setError('Görüntü boyutu çok büyük. Lütfen daha küçük bir görüntü seçin.');
+          return;
+        }
+
+        setPreviewURL(compressedBase64);
       }
 
-      setPreviewURL(compressedBase64);
       setError(null);
 
     } catch (err) {
@@ -253,14 +270,41 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     fileInputRef.current?.click();
   };
 
-  const handleConfirmUpload = (e: React.MouseEvent) => {
+  const handleConfirmUpload = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (previewURL) {
+    if (!previewURL) return;
+
+    if (uploadToMinio && selectedFile) {
+      // Upload to MinIO S3
+      try {
+        setIsUploading(true);
+        setError(null);
+
+        const objectPath = minioObjectPath
+          ? `${minioObjectPath}/${Date.now()}.jpg`
+          : generateObjectPath('public/avatars', 'unknown');
+
+        const { publicUrl } = await uploadToMinioService(selectedFile, objectPath);
+        onImageChange(publicUrl);
+        setUploadSuccess(true);
+        setSelectedFile(null);
+        setTimeout(() => {
+          setUploadSuccess(false);
+          setResetState(true);
+        }, 2000);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'MinIO yükleme hatası';
+        setError(errorMessage);
+        console.error('MinIO upload error:', err);
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      // Legacy base64 mode
       onImageChange(previewURL);
       setUploadSuccess(true);
-      
       setTimeout(() => {
         setUploadSuccess(false);
         setResetState(true);
