@@ -76,12 +76,45 @@ const statusOptions = [
 ];
 
 // Stil bazlı görsel eşleşmeleri (Dinamik asset yapısı için)
+const MINIO_LESSONS_BASE = 'https://minio-sdk.cnrsbtogll.store/feriha-danceapp/public/lessons';
+
 const STYLE_IMAGES: Record<string, string[]> = {
-  'salsa': ['salsa-1.jpeg', 'salsa-2.jpeg', 'salsa-3.jpeg', 'salsa-4.jpeg'],
-  'bachata': ['bachata-1.jpeg', 'bachata-2.jpeg', 'bachata-3.jpeg', 'bachata-4.jpeg'],
-  'kizomba': ['kizomba-1.jpeg', 'kizomba-2.jpeg', 'kizomba-3.jpeg', 'kizomba-4.jpeg'],
-  'tango': ['tango-1.jpeg', 'tango-2.jpeg', 'tango-3.jpeg', 'tango-4.jpeg'],
-  'moderndance': ['moderndance-1.jpeg', 'moderndance-2.jpeg', 'moderndance-3.jpeg', 'moderndance-4.jpeg']
+  'salsa': [
+    `${MINIO_LESSONS_BASE}/salsa/salsa-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/salsa/salsa-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/salsa/salsa-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/salsa/salsa-4.jpeg`,
+  ],
+  'bachata': [
+    `${MINIO_LESSONS_BASE}/bachata/bachata-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/bachata/bachata-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/bachata/bachata-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/bachata/bachata-4.jpeg`,
+  ],
+  'kizomba': [
+    `${MINIO_LESSONS_BASE}/kizomba/kizomba-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/kizomba/kizomba-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/kizomba/kizomba-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/kizomba/kizomba-4.jpeg`,
+  ],
+  'tango': [
+    `${MINIO_LESSONS_BASE}/tango/tango-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/tango/tango-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/tango/tango-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/tango/tango-4.jpeg`,
+  ],
+  'moderndance': [
+    `${MINIO_LESSONS_BASE}/moderndance/moderndance-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/moderndance/moderndance-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/moderndance/moderndance-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/moderndance/moderndance-4.jpeg`,
+  ],
+  'vals': [
+    `${MINIO_LESSONS_BASE}/vals/vals-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/vals/vals-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/vals/vals-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/vals/vals-4.jpeg`,
+  ],
 };
 
 interface Location {
@@ -1300,8 +1333,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {images.map((img) => {
-          const folder = selectedStyle;
-          const fullPath = `/assets/images/lessons/${folder}/${img}`;
+          const fullPath = img; // zaten tam MinIO URL
           const isSelected = formData.imageUrl === fullPath;
           return (
             <button
@@ -1354,8 +1386,7 @@ function CourseManagement({ instructorId, schoolId, isAdmin = false, colorVarian
                     danceStyle: style,
                     // Stil değişince otomatik ilk resmi seçelim (varsa)
                     imageUrl: STYLE_IMAGES[style.toLowerCase().replace(/\s/g, '')]?.[0]
-                      ? `/assets/images/lessons/${style.toLowerCase().replace(/\s/g, '')}/${STYLE_IMAGES[style.toLowerCase().replace(/\s/g, '')][0]}`
-                      : prev.imageUrl
+                      ?? prev.imageUrl
                   }));
                 }}
                 placeholder="Dans Stili Seçin"
