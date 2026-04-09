@@ -21,5 +21,9 @@ function spaFallbackPlugin(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), spaFallbackPlugin()],
+  plugins: [react()],
+  server: {
+    port: 3000,
+    strictPort: true,
+  }
 })

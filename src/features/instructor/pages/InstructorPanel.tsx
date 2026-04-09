@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from '@mui/material/styles';
 import createInstructorTheme from '../../../styles/instructorTheme';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import InstructorProfileForm from '../components/InstructorProfileForm';
 import CourseManagement from '../../../features/shared/components/courses/CourseManagement';
 import { StudentManagement } from '../../../features/shared/components/students/StudentManagement';
-import { query, where, collection, getDocs } from 'firebase/firestore';
-import { db } from '../../../api/firebase/firebase';
+import { query, where, collection, getDocs, doc, getDoc, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { db, storage } from '../../../api/firebase/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { toast } from 'react-hot-toast';
 import ScheduleManagement from '../../../features/shared/components/schedule/ScheduleManagement';
 import AttendanceManagement from '../../../features/shared/components/attendance/AttendanceManagement';
 import ProgressTracking from '../../../features/shared/components/progress/ProgressTracking';
@@ -28,7 +30,8 @@ type TabType =
   | 'attendance'
   | 'progress'
   | 'badges'
-  | 'earnings';
+  | 'earnings'
+  | 'activation';
 
 interface Course {
   id: string;
@@ -141,6 +144,11 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   ),
+  Timer: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
 };
 
 // ─── Navigation items ─────────────────────────────────────────────────────────
@@ -168,9 +176,10 @@ interface DashboardProps {
   courses: Course[];
   loadingStats: boolean;
   onNavigate: (tab: TabType) => void;
+  isPending: boolean;
 }
 
-function DashboardOverview({ user, stats, courses, loadingStats, onNavigate }: DashboardProps) {
+function DashboardOverview({ user, stats, courses, loadingStats, onNavigate, isPending }: DashboardProps) {
   const statCards = [
     {
       title: 'Aktif Kurslar',
@@ -249,6 +258,21 @@ function DashboardOverview({ user, stats, courses, loadingStats, onNavigate }: D
             </p>
           </div>
         </div>
+
+        {isPending && (
+          <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-teal-600/10 to-cyan-600/10 border border-teal-200/50 dark:border-teal-700/30">
+            <h3 className="text-teal-800 dark:text-teal-300 font-bold text-sm mb-1">🚀 Demo Moduna Hoş Geldiniz!</h3>
+            <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+              Şu an panelin tüm özelliklerini serbestçe inceleyebilirsiniz. Kendi kurslarınızı oluşturun, öğrencilerinizle nasıl iletişim kuracağınızı görün. Hazır olduğunuzda profilinizi doğrulayarak gerçek satışlara başlayabilirsiniz.
+            </p>
+            <button
+              onClick={() => onNavigate('activation')}
+              className="mt-3 text-xs font-bold text-instructor dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              Hemen Nasıl Başlanır? <Icons.ArrowRight />
+            </button>
+          </div>
+        )}
       </motion.div>
 
       {/* Stat Cards */}
@@ -405,17 +429,230 @@ function InstructorPanel({ user }: InstructorPanelProps) {
   const { isDark } = useTheme();
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const instructorTheme = createInstructorTheme(isDark ? 'dark' : 'light');
 
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  // Read initial tab from URL if present
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab') as TabType;
+    return tabParam && navItems.some(item => item.id === tabParam) || tabParam === 'activation' 
+      ? tabParam 
+      : 'dashboard';
+  });
+
+  // Sync tab state when URL changes (e.g., clicking 'Aktif Et' banner button)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab') as TabType;
+    if (tabParam && (navItems.some(item => item.id === tabParam) || tabParam === 'activation')) {
+      setActiveTab(tabParam);
+    }
+  }, [location.search]);
+
+  // Handle manual tab changes and keep URL in sync so external links always work
+  const handleTabChange = (tabId: TabType) => {
+    setActiveTab(tabId);
+    navigate(`/instructor?tab=${tabId}`, { replace: true });
+  };
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [stats, setStats] = useState<StatsState>({ courses: 0, students: 0, upcomingLessons: 0, earnings: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('instructor_sidebar_collapsed') === 'true'; } catch { return false; }
   });
+
+  // Dual-path activation state
+  const [activationPath, setActivationPath] = useState<'school' | 'admin' | null>(null);
+  const [schools, setSchools] = useState<{ id: string; name: string; city?: string }[]>([]);
+  const [loadingSchools, setLoadingSchools] = useState(false);
+  const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [schoolRequestSent, setSchoolRequestSent] = useState(false);
+  // Admin path form
+  const [adminForm, setAdminForm] = useState({ bio: '', yearsExp: '', danceStyles: '' });
+  const [uploadedDocs, setUploadedDocs] = useState<{ name: string; url: string }[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if instructor is in pending/demo mode
+  useEffect(() => {
+    const checkPendingStatus = async () => {
+      if (!user?.id) return;
+      try {
+        const userRef = doc(db, 'users', user.id);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          // Draft-instructor role OR is_instructor_pending flag
+          const isDraft =
+            data.is_instructor_pending === true ||
+            data.role === 'draft-instructor' ||
+            user.role === 'draft-instructor';
+          setIsPending(isDraft);
+        }
+
+        // Check for activation requests
+        const requestsRef = collection(db, 'instructorRequests');
+        const q = query(requestsRef, where('userId', '==', user.id));
+        const qSnap = await getDocs(q);
+
+        if (!qSnap.empty) {
+          const latestRequest = qSnap.docs.sort((a, b) => b.data().createdAt?.seconds - a.data().createdAt?.seconds)[0];
+          setRequestStatus(latestRequest.data().status || 'pending');
+        } else {
+          setRequestStatus('none');
+        }
+      } catch (err) {
+        console.error('Error checking status:', err);
+      }
+    };
+    checkPendingStatus();
+  }, [user?.id, user?.role]);
+
+  const handleSendActivationRequest = async () => {
+    if (!user?.id) return;
+    setIsSubmittingRequest(true);
+    try {
+      await addDoc(collection(db, 'instructorRequests'), {
+        userId: user.id,
+        userEmail: user.email,
+        displayName: user.displayName,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        type: 'activation',
+        source: 'instructor_panel_demo'
+      });
+      setRequestStatus('pending');
+      toast.success('Aktivasyon talebiniz başarıyla gönderildi!');
+    } catch (error) {
+      console.error('Error sending request:', error);
+      toast.error('Talep gönderilirken bir hata oluştu.');
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
+  // Okul listesini Firestore'dan çek
+  const fetchSchools = async () => {
+    setLoadingSchools(true);
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      const schoolList = snap.docs
+        .filter(d => d.data().role === 'school' || d.data().role?.includes?.('school'))
+        .map(d => ({ id: d.id, name: d.data().displayName || d.data().schoolName || 'İsimsiz Okul', city: d.data().city || d.data().location || '' }));
+      setSchools(schoolList);
+    } catch (e) {
+      console.error('Schools fetch error:', e);
+      toast.error('Okullar yüklenemedi.');
+    } finally {
+      setLoadingSchools(false);
+    }
+  };
+
+  // Dosya yükleme (Firebase Storage)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !user?.id) return;
+    if (uploadedDocs.length >= 3) { toast.error('En fazla 3 dosya yükleyebilirsiniz.'); return; }
+
+    setUploadingDoc(true);
+    try {
+      const file = files[0];
+      const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      if (!allowed.includes(file.type)) { toast.error('Sadece PDF, JPG veya PNG dosyası yükleyebilirsiniz.'); return; }
+      if (file.size > 5 * 1024 * 1024) { toast.error('Dosya boyutu 5MB\'dan küçük olmalıdır.'); return; }
+
+      const fileRef = storageRef(storage, `instructor-docs/${user.id}/${Date.now()}_${file.name}`);
+      await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(fileRef);
+      setUploadedDocs(prev => [...prev, { name: file.name, url }]);
+      toast.success('Dosya yüklendi!');
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error('Dosya yüklenirken hata oluştu.');
+    } finally {
+      setUploadingDoc(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Okul yolu: Seçilen okula istek gönder
+  const handleSchoolActivationRequest = async () => {
+    if (!user?.id || !selectedSchoolId) { toast.error('Lütfen bir okul seçin.'); return; }
+    setIsSubmittingRequest(true);
+    try {
+      await addDoc(collection(db, 'instructorRequests'), {
+        userId: user.id,
+        userEmail: user.email,
+        displayName: user.displayName,
+        status: 'pending',
+        type: 'school_activation',
+        targetSchoolId: selectedSchoolId,
+        targetSchoolName: schools.find(s => s.id === selectedSchoolId)?.name || '',
+        createdAt: serverTimestamp(),
+      });
+      setSchoolRequestSent(true);
+      setRequestStatus('pending');
+      toast.success('Okula aktivasyon isteği gönderildi!');
+    } catch (err) {
+      console.error(err);
+      toast.error('İstek gönderilirken hata oluştu.');
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
+  // Admin yolu: Belge + form ile admin'e başvur
+  const handleAdminActivationRequest = async () => {
+    if (!user?.id) return;
+    if (!adminForm.bio.trim()) { toast.error('Lütfen kısa biyografinizi yazın.'); return; }
+    setIsSubmittingRequest(true);
+    try {
+      await addDoc(collection(db, 'instructorRequests'), {
+        userId: user.id,
+        userEmail: user.email,
+        displayName: user.displayName,
+        status: 'pending',
+        type: 'admin_activation',
+        bio: adminForm.bio,
+        yearsExp: adminForm.yearsExp,
+        danceStyles: adminForm.danceStyles,
+        documents: uploadedDocs,
+        createdAt: serverTimestamp(),
+      });
+      // Kullanıcı belgesini de güncelle
+      await updateDoc(doc(db, 'users', user.id), { is_instructor_pending: true, updatedAt: serverTimestamp() });
+      setRequestStatus('pending');
+      toast.success('Admin başvurunuz alındı! İnceleme sürecindeyiz.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Başvuru gönderilirken hata oluştu.');
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
+  // Build navigation items dynamically based on pending status
+  const currentNavItems = isPending
+    ? [
+      ...navItems,
+      {
+        id: 'activation' as TabType,
+        label: 'Rehber & Aktivasyon',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        ),
+      },
+    ]
+    : navItems;
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(prev => {
@@ -524,7 +761,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
     return (
       <div key={item.id} className="relative group">
         <button
-          onClick={() => { setActiveTab(item.id); onClick?.(); }}
+          onClick={() => { handleTabChange(item.id); onClick?.(); }}
           className={`flex items-center w-full rounded-lg transition-colors text-left ${isSidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'
             } ${isActive
               ? 'bg-teal-50 text-instructor dark:bg-teal-900/30 dark:text-teal-400 font-medium'
@@ -598,7 +835,7 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                   <Icons.ChevronRight />
                 </button>
               )}
-              {navItems.map(item => renderNavItem(item))}
+              {currentNavItems.map(item => renderNavItem(item))}
             </nav>
 
             {/* Logout + Delete */}
@@ -693,12 +930,12 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                   </div>
 
                   <nav className="flex flex-col flex-1 px-4 py-6 gap-1 overflow-y-auto">
-                    {navItems.map(item => {
+                    {currentNavItems.map(item => {
                       const isActive = activeTab === item.id;
                       return (
                         <button
                           key={item.id}
-                          onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
+                          onClick={() => { handleTabChange(item.id); setIsMobileMenuOpen(false); }}
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left cursor-pointer ${isActive
                             ? 'bg-teal-50 text-instructor dark:bg-teal-900/30 dark:text-teal-400 font-medium'
                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-instructor dark:hover:text-teal-400'
@@ -736,6 +973,23 @@ function InstructorPanel({ user }: InstructorPanelProps) {
 
           {/* ── Main Content ──────────────────────────────────────────────────── */}
           <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+            {isPending && (
+              <div className="shrink-0 mt-16 h-12 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 flex items-center justify-between px-3 sm:px-5 z-40 shadow-sm relative">
+                <div className="flex items-center gap-2 text-white min-w-0">
+                  <svg className="w-4 h-4 flex-shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span className="text-xs font-bold uppercase tracking-wider whitespace-nowrap">Taslak Eğitmen Modu</span>
+                  <span className="hidden sm:inline text-[11px] opacity-80 truncate">— Kurslarınız pasif modda, diğer kullanıcılar göremez</span>
+                </div>
+                <button
+                  onClick={() => handleTabChange('activation')}
+                  className="flex-shrink-0 ml-2 bg-white text-amber-600 hover:bg-amber-50 text-[11px] sm:text-xs px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer shadow-sm whitespace-nowrap"
+                >
+                  🚀 Aktif Et
+                </button>
+              </div>
+            )}
             {/* Mobile header */}
             <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shrink-0 sticky top-0 z-30">
               <div className="flex items-center gap-3">
@@ -771,16 +1025,17 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                       stats={stats}
                       courses={courses}
                       loadingStats={loadingStats}
-                      onNavigate={setActiveTab}
+                      onNavigate={handleTabChange}
+                      isPending={isPending}
                     />
                   )}
                   {activeTab === 'profile' && <InstructorProfileForm user={user} />}
-                  {activeTab === 'courses' && <CourseManagement instructorId={user.id} />}
+                  {activeTab === 'courses' && <CourseManagement instructorId={user.id} isInstructorPending={isPending} />}
                   {activeTab === 'students' && <StudentManagement isAdmin={false} />}
                   {activeTab === 'schedule' && (
                     <ScheduleManagement
                       courses={courses}
-                      onAddCourse={() => setActiveTab('courses')}
+                      onAddCourse={() => handleTabChange('courses')}
                       isAdmin={false}
                     />
                   )}
@@ -795,6 +1050,224 @@ function InstructorPanel({ user }: InstructorPanelProps) {
                   )}
                   {activeTab === 'earnings' && (
                     <EarningsManagement userId={user.id} role="instructor" colorVariant="instructor" />
+                  )}
+                  {activeTab === 'activation' && (
+                    <div className="space-y-6 pb-20">
+
+                      {/* Başvuru durumu: inceleniyor */}
+                      {requestStatus === 'pending' && (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-2xl p-6 flex items-center gap-4">
+                          <span className="text-3xl">⏳</span>
+                          <div>
+                            <p className="font-bold text-amber-700 dark:text-amber-400 text-lg">Başvurunuz İnceleniyor</p>
+                            <p className="text-sm text-amber-600 dark:text-amber-300 mt-1">Değerlendirme tamamlanınca e-posta ile bildirim alacaksınız.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {requestStatus === 'approved' && (
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/40 rounded-2xl p-6 flex items-center gap-4">
+                          <span className="text-3xl">✅</span>
+                          <div>
+                            <p className="font-bold text-emerald-700 dark:text-emerald-400 text-lg">Hesabınız Aktif!</p>
+                            <p className="text-sm text-emerald-600 dark:text-emerald-300 mt-1">Artık kurslarınızı yayınlayabilirsiniz.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {requestStatus === 'rejected' && (
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 rounded-2xl p-6 flex items-center gap-4">
+                          <span className="text-3xl">❌</span>
+                          <div>
+                            <p className="font-bold text-red-700 dark:text-red-400 text-lg">Başvurunuz Onaylanmadı</p>
+                            <p className="text-sm text-red-600 dark:text-red-300 mt-1">Bilgilerinizi güncelleyip tekrar başvurabilirsiniz.</p>
+                            <button onClick={() => { setRequestStatus('none'); setActivationPath(null); }} className="mt-2 text-sm text-red-600 dark:text-red-400 underline font-medium">Tekrar Başvur</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Ana aktivasyon kartı */}
+                      {requestStatus === 'none' && (
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="text-3xl">🚀</span>
+                            <div>
+                              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Aktif Eğitmen Ol</h3>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">Taslak modundan çıkmak için aşağıdaki yollardan birini seçin.</p>
+                            </div>
+                          </div>
+
+                          {/* Yol seçim kartları */}
+                          {!activationPath && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                              <button
+                                onClick={() => { setActivationPath('school'); fetchSchools(); }}
+                                className="group text-left p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-instructor hover:bg-instructor/5 dark:hover:bg-instructor/10 transition-all cursor-pointer"
+                              >
+                                <span className="text-4xl block mb-3">🏫</span>
+                                <h4 className="font-bold text-slate-800 dark:text-white text-lg group-hover:text-instructor transition-colors">Okul Onayı ile Aktif Ol</h4>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                                  Platformda kayıtlı dans okullarından birine başvurun. Okul sizi onayladığında eğitmen hesabınız aktif olur.
+                                </p>
+                                <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-instructor">Seçmek için tıklayın →</span>
+                              </button>
+
+                              <button
+                                onClick={() => setActivationPath('admin')}
+                                className="group text-left p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all cursor-pointer"
+                              >
+                                <span className="text-4xl block mb-3">📋</span>
+                                <h4 className="font-bold text-slate-800 dark:text-white text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Admin Onayı ile Aktif Ol</h4>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                                  Sertifikalarınızı ve dans geçmişinizi yöneticilerimize gönderin. İnceleme sonrası hesabınız aktif edilir.
+                                </p>
+                                <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">Seçmek için tıklayın →</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {/* OKUL YOLU */}
+                          {activationPath === 'school' && (
+                            <div className="mt-6 space-y-4">
+                              <button onClick={() => setActivationPath(null)} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center gap-1 mb-2">← Geri</button>
+                              <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">🏫 Okul Seçin</h4>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">Aşağıdan bir dans okulu seçin. Seçtiğiniz okula aktivasyon isteği gönderilecektir.</p>
+
+                              {loadingSchools ? (
+                                <div className="flex items-center gap-2 py-6 justify-center">
+                                  <div className="animate-spin w-5 h-5 border-2 border-instructor border-t-transparent rounded-full" />
+                                  <span className="text-sm text-slate-500">Okullar yükleniyor...</span>
+                                </div>
+                              ) : schools.length === 0 ? (
+                                <div className="text-center py-8 text-slate-400 text-sm">Kayıtlı okul bulunamadı.</div>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
+                                  {schools.map(school => (
+                                    <button
+                                      key={school.id}
+                                      type="button"
+                                      onClick={() => setSelectedSchoolId(school.id)}
+                                      className={`text-left p-4 rounded-xl border-2 transition-all ${selectedSchoolId === school.id
+                                        ? 'border-instructor bg-instructor/10 text-instructor'
+                                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-instructor/50'}`}
+                                    >
+                                      <p className="font-semibold text-sm">{school.name}</p>
+                                      {school.city && <p className="text-xs text-slate-400 mt-0.5">📍 {school.city}</p>}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+
+                              {schoolRequestSent ? (
+                                <div className="text-center py-4 text-emerald-600 dark:text-emerald-400 font-semibold">✓ İstek gönderildi! Okulun onayını bekliyorsunuz.</div>
+                              ) : (
+                                <button
+                                  onClick={handleSchoolActivationRequest}
+                                  disabled={!selectedSchoolId || isSubmittingRequest}
+                                  className="w-full py-3 mt-2 bg-instructor text-white font-bold rounded-xl hover:bg-instructor-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-instructor/20"
+                                >
+                                  {isSubmittingRequest ? 'Gönderiliyor...' : '📤 Seçilen Okula İstek Gönder'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* ADMİN YOLU */}
+                          {activationPath === 'admin' && (
+                            <div className="mt-6 space-y-5">
+                              <button onClick={() => setActivationPath(null)} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center gap-1 mb-2">← Geri</button>
+                              <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">📋 Admin Aktivasyon Formu</h4>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">Sertifika, kurs geçmişi veya diploma belgelerinizi yükleyin ve formu doldurun.</p>
+
+                              <div>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Kısa Biyografi <span className="text-red-500">*</span></label>
+                                <textarea
+                                  rows={3}
+                                  value={adminForm.bio}
+                                  onChange={e => setAdminForm(f => ({ ...f, bio: e.target.value }))}
+                                  placeholder="Dans geçmişinizi ve kendinizi kısaca tanıtın..."
+                                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-instructor resize-none"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Deneyim Süresi</label>
+                                  <input
+                                    type="text"
+                                    value={adminForm.yearsExp}
+                                    onChange={e => setAdminForm(f => ({ ...f, yearsExp: e.target.value }))}
+                                    placeholder="Örn: 5 yıl"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-instructor"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Dans Stilleri</label>
+                                  <input
+                                    type="text"
+                                    value={adminForm.danceStyles}
+                                    onChange={e => setAdminForm(f => ({ ...f, danceStyles: e.target.value }))}
+                                    placeholder="Örn: Salsa, Bachata, Tango"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-instructor"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Belge yükleme */}
+                              <div>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                                  Sertifika / Belge Yükle <span className="text-slate-400 font-normal">(Maks. 3 dosya · 5MB · PDF/JPG/PNG)</span>
+                                </label>
+                                <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} className="hidden" id="doc-upload" />
+                                <label
+                                  htmlFor="doc-upload"
+                                  className={`flex items-center justify-center gap-3 w-full py-4 rounded-xl border-2 border-dashed cursor-pointer transition-all
+                                    ${uploadedDocs.length >= 3 ? 'border-slate-200 dark:border-slate-700 opacity-50 cursor-not-allowed' : 'border-amber-300 dark:border-amber-700 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10'}`}
+                                  onClick={(e: React.MouseEvent) => { if (uploadedDocs.length >= 3) e.preventDefault(); }}
+                                >
+                                  {uploadingDoc
+                                    ? <><div className="animate-spin w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full" /><span className="text-sm text-amber-600">Yükleniyor...</span></>
+                                    : <><span className="text-2xl">📎</span><span className="text-sm font-medium text-amber-600 dark:text-amber-400">Dosya Seç</span></>
+                                  }
+                                </label>
+
+                                {uploadedDocs.length > 0 && (
+                                  <div className="mt-3 space-y-2">
+                                    {uploadedDocs.map((d, i) => (
+                                      <div key={i} className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700/40">
+                                        <span className="text-emerald-600 text-lg">✓</span>
+                                        <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-700 dark:text-emerald-400 font-medium truncate flex-1">{d.name}</a>
+                                        <button onClick={() => setUploadedDocs(prev => prev.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500 transition-colors text-lg leading-none">&times;</button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              <button
+                                onClick={handleAdminActivationRequest}
+                                disabled={isSubmittingRequest || !adminForm.bio.trim()}
+                                className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/20"
+                              >
+                                {isSubmittingRequest ? 'Gönderiliyor...' : "📤 Admin'e Aktivasyon Başvurusu Gönder"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Alt tanıtım kartı */}
+                      <div className="bg-slate-900 text-white rounded-xl p-8 overflow-hidden relative group">
+                        <div className="relative z-10">
+                          <h4 className="text-xl font-bold mb-2">Profesyonel Eğitmenlik Yolculuğu</h4>
+                          <p className="text-slate-300 text-sm max-w-md">
+                            Dans eğitmenlerimize en iyi araçları sunuyoruz.
+                            Gelişmiş istatistikler, öğrenci takibi ve güvenli ödeme sistemimizle sadece dansınıza odaklanın.
+                          </p>
+                        </div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full -mr-16 -mt-16 blur-3xl opacity-50" />
+                      </div>
+                    </div>
                   )}
                 </motion.div>
               </AnimatePresence>

@@ -30,7 +30,7 @@ service cloud.firestore {
     
     // Kullanıcı instructor mı?
     function isInstructor() {
-      return isAuthenticated() && hasRole('instructor');
+      return isAuthenticated() && (hasRole('instructor') || hasRole('draft-instructor'));
     }
     
     // Kullanıcı admin mi?
