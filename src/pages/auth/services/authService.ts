@@ -5,7 +5,8 @@ import {
   UserCredential,
   updateProfile,
   AuthError,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 
@@ -21,6 +22,9 @@ export const signUp = async (
   try {
     // Firebase Authentication ile kullanıcı oluştur
     const userCredential: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+    // Doğrulama mailini gönder
+    await sendEmailVerification(userCredential.user);
 
     // Kullanıcı profiline displayName ekle
     await updateProfile(userCredential.user, { displayName });

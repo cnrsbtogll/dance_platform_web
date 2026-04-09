@@ -75,7 +75,7 @@ const SignIn = () => {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         if (userData.role?.includes('instructor')) {
-          navigate('/instructor/management');
+          navigate('/instructor');
         } else if (userData.role?.includes('school')) {
           navigate('/school/dashboard');
         } else if (userData.role?.includes('admin')) {

@@ -130,6 +130,8 @@ interface Course {
   createdAt?: any;
   updatedAt?: any;
   rating?: number;
+  country?: string;
+  city?: string;
 }
 
 interface FormData {
@@ -158,6 +160,8 @@ interface FormData {
   locationType?: 'school' | 'custom';
   customAddress?: string;
   schoolAddress: string;
+  country: string;
+  city: string;
 }
 
 interface CourseManagementProps {
@@ -319,13 +323,19 @@ function CourseManagement({
     tags: [],
     locationType: 'school',
     customAddress: '',
-    schoolAddress: ''
+    schoolAddress: '',
+    country: '',
+    city: ''
   });
   const [currentStep, setCurrentStep] = useState<number>(1);
   const totalSteps = 4;
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [countries, setCountries] = useState<{ label: string; value: string; }[]>([]);
+  const [citiesByCountry, setCitiesByCountry] = useState<Record<string, { label: string; value: string; }[]>>({});
+  const [loadingLocations, setLoadingLocations] = useState<boolean>(true);
+
   const [instructors, setInstructors] = useState<Array<{ label: string; value: string; courseIds?: string[]; photoURL?: string; addedBySchoolName?: string; isCertifiedConfirmed?: boolean }>>([]);
   const [schools, setSchools] = useState<Array<{ label: string; value: string }>>([]);
   const [loadingInstructors, setLoadingInstructors] = useState<boolean>(true);
@@ -566,6 +576,46 @@ function CourseManagement({
       setError(err instanceof Error ? err.message : 'Kurslar yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Lokasyonları getir
+  const fetchLocations = async () => {
+    try {
+      const locationsRef = collection(db, 'locations');
+      const querySnapshot = await getDocs(locationsRef);
+
+      const countriesList: { label: string; value: string; }[] = [];
+      const citiesMap: Record<string, { label: string; value: string; }[]> = {};
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const countryName = data.country || doc.id;
+        const cities = data.cities || [];
+
+        if (countryName) {
+          countriesList.push({ label: countryName, value: countryName });
+          if (Array.isArray(cities)) {
+            citiesMap[countryName] = cities.map((c: string) => ({ label: c, value: c })).sort((a, b) => a.label.localeCompare(b.label));
+          }
+        }
+      });
+
+      countriesList.sort((a, b) => a.label.localeCompare(b.label));
+
+      if (countriesList.length === 0) {
+        countriesList.push({ label: 'Türkiye', value: 'Türkiye' });
+        citiesMap['Türkiye'] = cityOptions.map(c => ({ ...c })).sort((a, b) => a.label.localeCompare(b.label));
+      }
+
+      setCountries(countriesList);
+      setCitiesByCountry(citiesMap);
+    } catch (error) {
+      console.error('Lokasyonlar yüklenirken hata:', error);
+      setCountries([{ label: 'Türkiye', value: 'Türkiye' }]);
+      setCitiesByCountry({ 'Türkiye': cityOptions.sort((a, b) => a.label.localeCompare(b.label)) });
+    } finally {
+      setLoadingLocations(false);
     }
   };
 
@@ -1424,6 +1474,36 @@ function CourseManagement({
                   required
                 />
 
+                {/* Ülke ve Şehir Seçimi */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <CustomSelect
+                    name="country"
+                    label="Ülke"
+                    options={countries}
+                    value={formData.country}
+                    onChange={(value) => {
+                      setFormData({
+                        ...formData,
+                        country: value as string,
+                        city: '' // Ülke değişince şehri sıfırla
+                      });
+                    }}
+                    placeholder="Ülke Seçin"
+                    colorVariant={colorVariant}
+                    required
+                  />
+                  <CustomSelect
+                    name="city"
+                    label="Şehir"
+                    options={formData.country ? (citiesByCountry[formData.country] || []) : []}
+                    value={formData.city}
+                    onChange={(value) => setFormData({ ...formData, city: value as string })}
+                    placeholder="Şehir Seçin"
+                    colorVariant={colorVariant}
+                    required
+                  />
+                </div>
+
                 {/* Konum Tipi Seçimi Geliştirmesi */}
                 {colorVariant === 'instructor' && !isAdmin && (
                   <div className="pt-2 space-y-4">
@@ -1871,7 +1951,9 @@ function CourseManagement({
       time: course.time || '18:00',
       locationType: course.locationType || 'school',
       customAddress: course.customAddress || '',
-      schoolAddress: course.schoolAddress || ''
+      schoolAddress: course.schoolAddress || '',
+      country: course.country || '',
+      city: course.city || ''
     });
     setCurrentStep(1);
     setEditMode(true);
@@ -1925,7 +2007,9 @@ function CourseManagement({
       tags: [],
       locationType: 'school',
       customAddress: '',
-      schoolAddress: ''
+      schoolAddress: '',
+      country: '',
+      city: ''
     });
     setCurrentStep(1);
     setEditMode(true);
