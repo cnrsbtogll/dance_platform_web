@@ -351,6 +351,8 @@ function CourseManagement({
   const [isDraftSchoolUser, setIsDraftSchoolUser] = useState<boolean>(false);
   const [showSchoolRequestModal, setShowSchoolRequestModal] = useState<boolean>(false);
   const [schoolRequestReason, setSchoolRequestReason] = useState<'course-limit' | 'activation' | null>(null);
+  // Activation modal state
+  const [showActivationModal, setShowActivationModal] = useState<boolean>(false);
 
   const sectionBorderColor = isAdmin ? 'border-indigo-600' : colorVariant === 'school' ? 'border-school' : 'border-instructor';
   const inputFocusRing = colorVariant === 'school' ? 'focus:ring-school focus:border-school' : 'focus:ring-instructor focus:border-instructor';
@@ -1877,11 +1879,14 @@ function CourseManagement({
 
   // Yeni kurs ekleme
   const addNewCourse = () => {
-    // Draft school: max 3 kurs limiti
-    if (isDraftSchoolUser && !isAdmin) {
-      const activeCount = courses.length;
-      if (activeCount >= 3) {
-        window.dispatchEvent(new CustomEvent('openActivationWizard'));
+    // Draft school veya pending instructor: max 3 kurs limiti
+    if ((isDraftSchoolUser || isInstructorPending) && !isAdmin) {
+      if (courses.length >= 3) {
+        if (isInstructorPending) {
+          setShowActivationModal(true);
+        } else {
+          window.dispatchEvent(new CustomEvent('openActivationWizard'));
+        }
         return;
       }
     }
@@ -1903,8 +1908,8 @@ function CourseManagement({
       time: '18:00',
       price: 1500,
       currency: 'TRY',
-      // Draft school ise zorunlu pasif
-      status: isDraftSchoolUser ? 'inactive' : 'active',
+      // Draft hesap ise zorunlu pasif (inactive)
+      status: (isDraftSchoolUser || isInstructorPending) ? 'inactive' : 'active',
       recurring: true,
       schedule: [],
       location: {
@@ -2104,7 +2109,7 @@ function CourseManagement({
         location: finalLocation,
         recurring: true,
         schedule: formData.schedule,
-        status: isInstructorPending ? 'draft' : cleanedData.status,
+        status: isInstructorPending ? 'inactive' : cleanedData.status,
         updatedAt: serverTimestamp()
       };
 
@@ -2118,6 +2123,14 @@ function CourseManagement({
           setLoading(false);
           return;
         }
+
+        // Pending instructor: kursu aktif yapamaz
+        if (isInstructorPending && !isAdmin && courseDataToSave.status === 'active') {
+          setShowActivationModal(true);
+          setLoading(false);
+          return;
+        }
+
         // Mevcut kursu güncelle
         const courseRef = doc(db, 'courses', selectedCourse.id);
         await updateDoc(courseRef, courseDataToSave);
@@ -3121,7 +3134,7 @@ function CourseManagement({
             <Button variant="outlined" onClick={() => setShowActivationModal(false)}>Kapat</Button>
             <Button variant="primary" onClick={() => {
               setShowActivationModal(false);
-              navigate('/instructor/profile');
+              navigate('/instructor?tab=activation');
             }}>Profili Aktifleştir</Button>
           </>
         }

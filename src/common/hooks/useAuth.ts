@@ -327,7 +327,7 @@ export const useAuth = (): AuthState => {
               }));
               isAuthProcessingRef.current = false;
               return;
-            }
+            }, MAX_WAIT_MS);
 
             console.log('User document NOT found in Firestore — waiting briefly for race condition...');
 
