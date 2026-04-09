@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthError } from 'firebase/auth';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { signUp, getAuthErrorMessage } from './services/authService';
 import Button from '../../common/components/ui/Button';
 import PasswordInput from '../../common/components/ui/PasswordInput';
 import { UserRole } from '../../types';
-import { useAuth } from '../../contexts/AuthContext';
-
+import { useAuth as useAuthContext } from '../../contexts/AuthContext';
+import { useAuth as useFirebaseAuth } from '../../common/hooks/useAuth';
+import { db } from '../../api/firebase/firebase';
 
 // Google Logo SVG
 const GoogleIcon = () => (
@@ -21,10 +23,12 @@ const GoogleIcon = () => (
 const SignUp: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle } = useAuthContext();
+  const { user: authUser } = useFirebaseAuth();
 
   // Dans Okulu Aç akdı ile gelindiyse draft-school modu
   const isDraftSchoolMode = (location.state as any)?.role === 'draft-school';
+  const isInstructorSignup = (location.state as any)?.role === 'instructor' || (location.state as any)?.role === 'draft-instructor';
 
   const [formData, setFormData] = useState({
     email: '',
@@ -36,6 +40,19 @@ const SignUp: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  // Firestore'dan role güncellemesini bekliyoruz
+  const [waitingForRole, setWaitingForRole] = useState(false);
+
+  // Instructor signup sonrası role 'draft-instructor' olunca navigate et
+  useEffect(() => {
+    if (
+      waitingForRole &&
+      authUser?.role &&
+      (authUser.role === 'draft-instructor' || authUser.role === 'instructor')
+    ) {
+      navigate('/instructor');
+    }
+  }, [waitingForRole, authUser?.role, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -83,8 +100,23 @@ const SignUp: React.FC = () => {
     setError('');
     setGoogleLoading(true);
     try {
-      await signInWithGoogle();
-      navigate('/');
+      const result = await signInWithGoogle();
+
+      // If instructor signup via Google, set pending flag
+      if (isInstructorSignup && result?.credential?.user?.uid) {
+        try {
+          const userRef = doc(db, 'users', result.credential.user.uid);
+          await updateDoc(userRef, {
+            role: 'draft-instructor',
+            updatedAt: serverTimestamp(),
+          });
+        } catch (updateErr) {
+          console.error('Error setting instructor role:', updateErr);
+        }
+        navigate('/instructor');
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       if (
         err?.code === 'auth/popup-closed-by-user' ||

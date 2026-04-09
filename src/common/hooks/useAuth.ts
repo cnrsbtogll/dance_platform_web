@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, Timestamp, enableNetwork, disableNetwork, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, Timestamp, enableNetwork, disableNetwork, collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../../api/firebase/firebase';
 import { User } from '../../types';
 
@@ -40,6 +40,24 @@ const retry = async <T>(
   throw lastError;
 };
 
+// Firestore'dan veya local cache'den gelen tarih verisini güvenli bir şekilde Date nesnesine çevirir
+const parseDateSafe = (val: any): Date => {
+  if (!val) return new Date();
+  if (val instanceof Date) return val;
+  if (val && typeof val.toDate === 'function') {
+    try {
+      return val.toDate();
+    } catch (e) {
+      console.warn('Error extracting date via toDate():', e);
+    }
+  }
+  if (typeof val === 'object' && val !== null && 'seconds' in val) {
+    return new Date(val.seconds * 1000);
+  }
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? new Date() : d;
+};
+
 export const useAuth = (): AuthState => {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -56,6 +74,15 @@ export const useAuth = (): AuthState => {
   const isAuthProcessingRef = useRef(false);
   const userProfileCreatedRef = useRef(false);
   const firebaseCheckedRef = useRef(false);
+  const snapshotUnsubscribeRef = useRef<(() => void) | null>(null);
+
+  // Snapshot listener'ı temizleme fonksiyonu
+  const clearSnapshot = useCallback(() => {
+    if (snapshotUnsubscribeRef.current) {
+      snapshotUnsubscribeRef.current();
+      snapshotUnsubscribeRef.current = null;
+    }
+  }, []);
 
   // Firebase bağlantı durumunu kontrol et - sadece bir kez çalışması için ref kullanıldı
   useEffect(() => {
@@ -261,9 +288,21 @@ export const useAuth = (): AuthState => {
               isOffline: false
             }));
           } else {
-            // Kullanıcı profili daha önce oluşturulmuş mu kontrol et
-            if (userProfileCreatedRef.current) {
-              console.log('⚠️ User profile creation already attempted, skipping...');
+            // Döküman bulunamadı — signup sırasında setDoc henüz tamamlanmamış olabilir.
+            // Hemen yeni doküman oluşturmak yerine, onSnapshot ile bekliyoruz.
+            // Bu, createUserWithEmailAndPassword'dan gelen Auth callback'i ile
+            // authService.signUp'daki setDoc arasındaki race condition'ı çözer.
+            console.log('User document not found — waiting for Firestore write via onSnapshot...');
+
+            // Önce geçici olarak loading: true kalacak, snapshot gelince güncellenecek
+            // Loading'i false yapmadan snapshot bekle
+            clearSnapshot();
+
+            const MAX_WAIT_MS = 8000;
+            const waitTimer = setTimeout(() => {
+              // 8 saniye sonra hala gelmezse fallback: student rolü ile minimal profil
+              console.warn('onSnapshot timeout — creating minimal fallback profile');
+              clearSnapshot();
               setState(prevState => ({
                 ...prevState,
                 user: {
@@ -271,7 +310,7 @@ export const useAuth = (): AuthState => {
                   email: firebaseUser.email || '',
                   displayName: firebaseUser.displayName || '',
                   photoURL: firebaseUser.photoURL || '',
-                  role: 'student', // Varsayılan rol
+                  role: 'student',
                   createdAt: new Date(),
                 } as User,
                 loading: false,
@@ -280,7 +319,7 @@ export const useAuth = (): AuthState => {
               }));
               isAuthProcessingRef.current = false;
               return;
-            }
+            }, MAX_WAIT_MS);
 
             console.log('User document NOT found in Firestore — waiting briefly for race condition...');
 
@@ -394,6 +433,7 @@ export const useAuth = (): AuthState => {
         }
       } else {
         // Kullanıcı giriş yapmamış
+        clearSnapshot();
         setState(prevState => ({
           ...prevState,
           user: null,
@@ -436,8 +476,9 @@ export const useAuth = (): AuthState => {
       const unsubscribe = onAuthStateChanged(auth, handleUser);
 
       return () => {
-        // console.log('Cleaning up auth state listener');
+        // console.log('Cleaning up auth state and snapshot listeners');
         unsubscribe();
+        clearSnapshot();
       };
     } catch (error) {
       console.error('Error setting up auth state listener:', error);
