@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   collection,
@@ -28,6 +28,7 @@ import CustomInput from '../../../../common/components/ui/CustomInput';
 import SimpleModal from '../../../../common/components/ui/SimpleModal';
 import Avatar from '../../../../common/components/ui/Avatar';
 import { generateInitialsAvatar } from '../../../../common/utils/imageUtils';
+import { uploadToMinio, generateObjectPath } from '../../../../api/services/minioUploadService';
 
 // Dans stilleri için interface
 interface DanceStyle {
@@ -76,12 +77,45 @@ const statusOptions = [
 ];
 
 // Stil bazlı görsel eşleşmeleri (Dinamik asset yapısı için)
+const MINIO_LESSONS_BASE = 'https://minio-sdk.cnrsbtogll.store/feriha-danceapp/public/lessons';
+
 const STYLE_IMAGES: Record<string, string[]> = {
-  'salsa': ['salsa-1.jpeg', 'salsa-2.jpeg', 'salsa-3.jpeg', 'salsa-4.jpeg'],
-  'bachata': ['bachata-1.jpeg', 'bachata-2.jpeg', 'bachata-3.jpeg', 'bachata-4.jpeg'],
-  'kizomba': ['kizomba-1.jpeg', 'kizomba-2.jpeg', 'kizomba-3.jpeg', 'kizomba-4.jpeg'],
-  'tango': ['tango-1.jpeg', 'tango-2.jpeg', 'tango-3.jpeg', 'tango-4.jpeg'],
-  'moderndance': ['moderndance-1.jpeg', 'moderndance-2.jpeg', 'moderndance-3.jpeg', 'moderndance-4.jpeg']
+  'salsa': [
+    `${MINIO_LESSONS_BASE}/salsa/salsa-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/salsa/salsa-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/salsa/salsa-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/salsa/salsa-4.jpeg`,
+  ],
+  'bachata': [
+    `${MINIO_LESSONS_BASE}/bachata/bachata-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/bachata/bachata-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/bachata/bachata-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/bachata/bachata-4.jpeg`,
+  ],
+  'kizomba': [
+    `${MINIO_LESSONS_BASE}/kizomba/kizomba-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/kizomba/kizomba-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/kizomba/kizomba-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/kizomba/kizomba-4.jpeg`,
+  ],
+  'tango': [
+    `${MINIO_LESSONS_BASE}/tango/tango-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/tango/tango-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/tango/tango-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/tango/tango-4.jpeg`,
+  ],
+  'moderndance': [
+    `${MINIO_LESSONS_BASE}/moderndance/moderndance-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/moderndance/moderndance-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/moderndance/moderndance-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/moderndance/moderndance-4.jpeg`,
+  ],
+  'vals': [
+    `${MINIO_LESSONS_BASE}/vals/vals-1.jpeg`,
+    `${MINIO_LESSONS_BASE}/vals/vals-2.jpeg`,
+    `${MINIO_LESSONS_BASE}/vals/vals-3.jpeg`,
+    `${MINIO_LESSONS_BASE}/vals/vals-4.jpeg`,
+  ],
 };
 
 interface Location {
@@ -1353,6 +1387,27 @@ function CourseManagement({
   }, []);
 
   // Stil bazlı görsel seçici bileşeni
+  const coverUploadRef = useRef<HTMLInputElement>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setCoverUploading(true);
+      const courseId = `tmp-${Date.now()}`;
+      const objectPath = generateObjectPath('public/course-covers', courseId);
+      const { publicUrl } = await uploadToMinio(file, objectPath);
+      setFormData(prev => ({ ...prev, imageUrl: publicUrl }));
+    } catch (err) {
+      console.error('Kurs kapak yükleme hatası:', err);
+      alert('Görsel yükleme başarısız. Presign sunucusunun çalıştığından emin olun.');
+    } finally {
+      setCoverUploading(false);
+      if (coverUploadRef.current) coverUploadRef.current.value = '';
+    }
+  };
+
   const renderImagePicker = () => {
     const selectedStyle = formData.danceStyle.toLowerCase().replace(/\s/g, '');
     const images = STYLE_IMAGES[selectedStyle] || [];
@@ -1363,39 +1418,86 @@ function CourseManagement({
       </div>
     );
 
-    if (images.length === 0) return (
-      <div className="p-4 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-lg text-center text-sm text-gray-500">
-        Bu stil için ön tanımlı görsel bulunamadı.
-      </div>
-    );
-
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {images.map((img) => {
-          const folder = selectedStyle;
-          const fullPath = `/assets/images/lessons/${folder}/${img}`;
-          const isSelected = formData.imageUrl === fullPath;
-          return (
-            <button
-              key={img}
-              type="button"
-              onClick={() => setFormData(prev => ({ ...prev, imageUrl: fullPath }))}
-              className={`relative rounded-lg overflow-hidden border-2 transition-all h-24 group ${isSelected
-                ? (colorVariant === 'school' ? 'border-school ring-2 ring-school/20' : 'border-instructor ring-2 ring-instructor/20')
-                : 'border-transparent hover:border-gray-300 dark:hover:border-slate-600'
-                }`}
-            >
-              <img src={fullPath} alt={img} className="w-full h-full object-cover" />
-              <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? 'opacity-100 bg-black/30' : 'opacity-0 group-hover:opacity-100 bg-black/10'}`}>
-                {isSelected && (
-                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
-            </button>
-          );
-        })}
+      <div className="space-y-4">
+        {/* Upload custom image button */}
+        <input
+          ref={coverUploadRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={handleCoverUpload}
+        />
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => coverUploadRef.current?.click()}
+            disabled={coverUploading}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 border-dashed transition-all
+              ${
+                colorVariant === 'school'
+                  ? 'border-school text-school hover:bg-school/5'
+                  : 'border-instructor text-instructor hover:bg-instructor/5'
+              } ${coverUploading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+          >
+            {coverUploading ? (
+              <>
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+                Yükleniyor...
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Özel Görsel Yükle
+              </>
+            )}
+          </button>
+          {formData.imageUrl && formData.imageUrl.startsWith('https://minio-sdk.cnrsbtogll.store') && (
+            <div className="relative h-12 w-20 rounded-lg overflow-hidden border border-green-400">
+              <img src={formData.imageUrl} alt="Seçilen kapak" className="w-full h-full object-cover" />
+              <span className="absolute top-0.5 right-0.5 bg-green-500 rounded-full p-0.5">
+                <svg className="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Preset images grid */}
+        {images.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {images.map((img) => {
+              const fullPath = img; // zaten tam MinIO URL
+              const isSelected = formData.imageUrl === fullPath;
+              return (
+                <button
+                  key={img}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, imageUrl: fullPath }))}
+                  className={`relative rounded-lg overflow-hidden border-2 transition-all h-24 group ${isSelected
+                    ? (colorVariant === 'school' ? 'border-school ring-2 ring-school/20' : 'border-instructor ring-2 ring-instructor/20')
+                    : 'border-transparent hover:border-gray-300 dark:hover:border-slate-600'
+                    }`}
+                >
+                  <img src={fullPath} alt={img} className="w-full h-full object-cover" />
+                  <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? 'opacity-100 bg-black/30' : 'opacity-0 group-hover:opacity-100 bg-black/10'}`}>
+                    {isSelected && (
+                      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
@@ -1426,8 +1528,7 @@ function CourseManagement({
                     danceStyle: style,
                     // Stil değişince otomatik ilk resmi seçelim (varsa)
                     imageUrl: STYLE_IMAGES[style.toLowerCase().replace(/\s/g, '')]?.[0]
-                      ? `/assets/images/lessons/${style.toLowerCase().replace(/\s/g, '')}/${STYLE_IMAGES[style.toLowerCase().replace(/\s/g, '')][0]}`
-                      : prev.imageUrl
+                      ?? prev.imageUrl
                   }));
                 }}
                 placeholder="Dans Stili Seçin"

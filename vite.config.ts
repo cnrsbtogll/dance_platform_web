@@ -23,7 +23,12 @@ function spaFallbackPlugin(): Plugin {
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
-    strictPort: true,
-  }
+    proxy: {
+      // Forward MinIO presign requests to local presign server
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
+  },
 })

@@ -437,19 +437,19 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
     }
   };
 
-  const handleImageUploadComplete = async (base64Image: string | null) => {
-    if (!user?.id || !base64Image) return;
+  const handleImageUploadComplete = async (imageUrl: string | null) => {
+    if (!user?.id || !imageUrl) return;
 
     try {
-      setProfilePhotoURL(base64Image);
-      setValue('photoURL', base64Image);
+      setProfilePhotoURL(imageUrl);
+      setValue('photoURL', imageUrl);
 
       const batch = writeBatch(db);
       const instructorRef = doc(db, 'instructors', user.id);
       const userRef = doc(db, 'users', user.id);
 
       const updateTimestamp = new Date().toISOString();
-      const sharedUpdates = { photoURL: base64Image, updatedAt: updateTimestamp };
+      const sharedUpdates = { photoURL: imageUrl, updatedAt: updateTimestamp };
 
       batch.update(instructorRef, sharedUpdates);
       batch.update(userRef, sharedUpdates);
@@ -543,6 +543,8 @@ const InstructorProfileForm: React.FC<InstructorProfileFormProps> = ({ user }) =
                   shape="circle"
                   width={140}
                   height={140}
+                  uploadToMinio={true}
+                  minioObjectPath={`public/avatars/${user.id}`}
                 />
 
                 <div className="mt-4 text-center">

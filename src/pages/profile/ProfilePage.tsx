@@ -118,13 +118,13 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
     markDirty();
   };
 
-  const handlePhotoUploadSuccess = async (base64Image: string | null) => {
-    if (!base64Image || !user) return;
+  const handlePhotoUploadSuccess = async (imageUrl: string | null) => {
+    if (!imageUrl || !user) return;
     try {
-      setFormData(prev => ({ ...prev, photoURL: base64Image }));
+      setFormData(prev => ({ ...prev, photoURL: imageUrl }));
       const batch = writeBatch(db);
       const userRef = doc(db, 'users', user.id);
-      const updates = { photoURL: base64Image, updatedAt: new Date() };
+      const updates = { photoURL: imageUrl, updatedAt: new Date() };
       batch.update(userRef, updates);
       await batch.commit();
       onUpdate({ ...user, ...updates });
@@ -229,6 +229,8 @@ const ProfilePage: React.FC<ProfileEditorProps> = ({ user, onUpdate }) => {
                     shape="circle"
                     width={140}
                     height={140}
+                    uploadToMinio={true}
+                    minioObjectPath={`public/avatars/${user?.id}`}
                   />
                   <div className="mt-4 text-center">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
