@@ -2,22 +2,19 @@
   "status": "commited",
   "type": "frontend",
   "scope": "codebase",
-  "localEndpoint": "http://localhost:5173",
-  "loginUser": "harun@iskar.com",
-  "loginPassword": "123456",
+  "localEndpoint": "http://localhost:4173",
+  "loginUser": "hokelekaziz@gmail.com",
+  "loginPassword": "Kubilay1234",
   "executionArgs": {
     "projectName": "dance_platform",
-    "projectPath": "/Users/aa/Documents/projects/dance_platform",
-    "testIds": [
-      "TC003",
-      "TC004",
-      "TC009"
-    ],
-    "additionalInstruction": "Test only the home page, course search, and instructors list pages. These are public pages that do not require authentication.",
+    "projectPath": "/Users/kubilay/Applications/dance_platform",
+    "testIds": [],
+    "additionalInstruction": "The login credentials are: email=hokelekaziz@gmail.com, password=Kubilay1234. This is a Turkish dance platform. The app is running in production mode at http://localhost:4173.",
+    "serverMode": "production",
     "envs": {
-      "API_KEY": "sk-user-8heVRSBvSOk3esZI6Cv3HkUlTlqCeqSdDdqZjtAR_d9Gmayd6MWaA9cbhS_KxFwun01MMtOD2GS4IqsH4KEXB38PG5PG2WB8EjSW2rxZV4BwkmCfVAl9264gm17c8REb5n4"
+      "API_KEY": "sk-user-FVWsqUa9ecsZixolGbcZIdzZhtI_j4MaZTQ_mKC4x8xcGFsSbeyjZtkUJQ_-OEYpTutEN8x4y1a2rNl_EsOzwDJXX5w6num4DNhhk-LVSjnYCQ2UCuDDT0E9Xvj84uYrUVY"
     }
   },
-  "serverPort": 49954,
-  "proxy": "http://de75a8a7-2b99-4e11-a422-def0d582e726:E0m0fYNgM0ttsyuEGeeStDB9JBCYNd5S@tun.testsprite.com:8080"
+  "serverPort": 59275,
+  "proxy": "http://c841f5a4-9428-4e64-862d-22b28a1fd457:EwQnFKxgO1TaiBA8AM3A70TLak1oEP8l@tun.testsprite.com:8080"
 }

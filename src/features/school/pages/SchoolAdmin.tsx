@@ -49,6 +49,7 @@ import InstructorManagement from '../components/InstructorManagement/InstructorM
 import { SchoolProfile } from '../components/SchoolProfile/SchoolProfile';
 import EarningsManagement from '../../../features/shared/components/earnings/EarningsManagement';
 import DeleteAccountModal from '../../../features/shared/components/profile/DeleteAccountModal';
+import { SchoolActivationWizard } from '../components/SchoolActivationWizard';
 
 
 interface Course {
@@ -86,6 +87,7 @@ const SchoolAdmin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showActivationWizard, setShowActivationWizard] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('school_sidebar_collapsed') === 'true'; } catch { return false; }
   });
@@ -131,7 +133,6 @@ const SchoolAdmin: React.FC = () => {
 
         if (!userDoc.exists()) {
           setError('Kullanıcı bilgileri bulunamadı.');
-          setLoading(false);
           return;
         }
 
@@ -140,16 +141,22 @@ const SchoolAdmin: React.FC = () => {
 
         const isSchool = userRole
           ? (Array.isArray(userRole)
-            ? userRole.includes('school')
-            : userRole === 'school')
+            ? (userRole.includes('school') || userRole.includes('draft-school'))
+            : (userRole === 'school' || userRole === 'draft-school'))
+          : false;
+
+        const isDraftSchool = userRole
+          ? (Array.isArray(userRole)
+            ? userRole.includes('draft-school')
+            : userRole === 'draft-school')
           : false;
 
         if (!isSchool) {
           setError('Bu sayfaya erişim yetkiniz bulunmamaktadır. Yalnızca dans okulu hesapları için erişilebilir.');
-          setLoading(false);
           return;
         }
 
+        // ── Durum 1: Onaylı okul → schools koleksiyonunda ──
         if (userData.schoolId) {
           const schoolRef = doc(db, 'schools', userData.schoolId);
           const schoolDoc = await getDoc(schoolRef);
@@ -159,29 +166,72 @@ const SchoolAdmin: React.FC = () => {
             setSchoolInfo({
               id: schoolDoc.id,
               displayName: schoolData.displayName || 'İsimsiz Okul',
-              email: schoolData.email || '',
+              email: schoolData.email || userData.email || '',
+              userId: currentUser.uid,
               ...schoolData
             });
+            return;
           }
-        } else {
-          setSchoolInfo({
-            id: userDoc.id,
-            displayName: userData.displayName || 'İsimsiz Okul',
-            email: userData.email || '',
-            ...userData
-          });
         }
 
-        setLoading(false);
+        // ── Durum 2: Aday/taslak okul → schoolRequests koleksiyonunda ──
+        if (userData.schoolRequestId) {
+          const reqRef = doc(db, 'schoolRequests', userData.schoolRequestId);
+          const reqDoc = await getDoc(reqRef);
+
+          if (reqDoc.exists()) {
+            const reqData = reqDoc.data();
+            setSchoolInfo({
+              id: reqDoc.id,              // schoolRequests ID'si
+              _isRequest: true,            // Henüz schools'da değil işareti
+              displayName: reqData.schoolName || userData.displayName || 'İsimsiz Okul',
+              name: reqData.schoolName || userData.displayName || 'İsimsiz Okul',
+              email: reqData.contactEmail || userData.email || '',
+              contactEmail: reqData.contactEmail || userData.email || '',
+              contactPerson: reqData.contactPerson || userData.displayName || '',
+              contactPhone: reqData.contactPhone || '',
+              address: reqData.address || '',
+              description: reqData.schoolDescription || reqData.description || '',
+              photoURL: reqData.photoURL || userData.photoURL || '',
+              status: reqData.status === 'draft' ? 'passive' : (reqData.status || 'passive'),
+              documentStatus: reqData.documentStatus || null,
+              document_url: reqData.document_url || reqData.schoolDocument || null,
+              userId: currentUser.uid,
+            });
+            return;
+          }
+        }
+
+        // ── Durum 3: Fallback — kullanıcı verisi üzerinden göster (draft-school dahil) ──
+        setSchoolInfo({
+          id: userDoc.id,
+          displayName: userData.displayName || 'Taslak Okul',
+          email: userData.email || '',
+          status: 'passive',
+          isDraftSchool: isDraftSchool,
+          userId: currentUser.uid,
+          ...userData
+        });
       } catch (err) {
         console.error('Okul bilgileri yüklenirken hata:', err);
         setError('Okul bilgileri yüklenirken bir hata oluştu.');
+      } finally {
         setLoading(false);
       }
     };
 
     fetchSchoolInfo();
   }, [currentUser]);
+
+  // Listen for activation wizard requests from sub-components
+  useEffect(() => {
+    const handleOpenActivationWizard = () => {
+      setShowActivationWizard(true);
+    };
+
+    window.addEventListener('openActivationWizard', handleOpenActivationWizard);
+    return () => window.removeEventListener('openActivationWizard', handleOpenActivationWizard);
+  }, []);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -399,8 +449,36 @@ const SchoolAdmin: React.FC = () => {
     );
   }
 
+  const isDraftSchool = !!(schoolInfo as any)?.isDraftSchool;
+
   const renderDashboardOverview = () => (
     <div className="space-y-6">
+      {/* Draft School Banner */}
+      {isDraftSchool && (
+        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Taslak Okul Hesabı</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                Hesabınız taslak modunda. En fazla <strong>3 kurs</strong> açabilirsiniz ve kurslar <strong>pasif</strong> olarak yayınlanır.
+                Daha fazla kurs açmak veya kurs aktif etmek için okul doğrulaması gereklidir.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab('courses')}
+            className="flex-shrink-0 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600 rounded-lg transition-colors"
+          >
+            Kurslarımı Gör
+          </button>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div
@@ -821,6 +899,83 @@ const SchoolAdmin: React.FC = () => {
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full">
+              {/* Demo Modu Banner */}
+              {isDraftSchool && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 rounded-xl border border-violet-300 dark:border-violet-700 bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40 px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="text-xl flex-shrink-0">🎮</span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-500"></span>
+                        </span>
+                        <p className="font-bold text-violet-800 dark:text-violet-300 text-sm">
+                          Okul Yönetim Demo Modu
+                        </p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-200 dark:bg-violet-800 text-violet-800 dark:text-violet-200 uppercase tracking-wide">
+                          Demo
+                        </span>
+                      </div>
+                      <p className="text-xs text-violet-700 dark:text-violet-400 mt-0.5 leading-relaxed">
+                        Paneli keşfediyorsunuz. Kurslar pasif yayınlanır ve en fazla <strong>3 kurs</strong> açılabilir. Tüm özellikleri açmak için okulunuzu doğrulayın.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowActivationWizard(true)}
+                    className="flex-shrink-0 px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 dark:bg-violet-700 dark:hover:bg-violet-600 rounded-lg transition-colors whitespace-nowrap shadow-sm"
+                  >
+                    Okulu Doğrula →
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Pasif / Beklemede Okul Aktivasyon Banner */}
+              {schoolInfo && (schoolInfo.status === 'passive' || schoolInfo.status === 'pending') && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mb-4 rounded-xl border p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 ${schoolInfo.status === 'pending'
+                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                    : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                    }`}
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="text-2xl">{schoolInfo.status === 'pending' ? '⏳' : '🔒'}</span>
+                    <div>
+                      <p className={`font-semibold text-sm ${schoolInfo.status === 'pending'
+                        ? 'text-amber-800 dark:text-amber-200'
+                        : 'text-blue-800 dark:text-blue-200'
+                        }`}>
+                        {schoolInfo.status === 'pending'
+                          ? 'Aktivasyon Talebiniz İnceleniyor'
+                          : 'Okulunuz Henüz Aktif Değil'}
+                      </p>
+                      <p className={`text-xs mt-0.5 ${schoolInfo.status === 'pending'
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-blue-600 dark:text-blue-400'
+                        }`}>
+                        {schoolInfo.status === 'pending'
+                          ? 'Belgeniz yönetici tarafından inceleniyor. Onay sonrası okulunuz yayına alınacak.'
+                          : 'Okulunuzu aktifleştirmek için belge yüklemeniz gerekiyor. Aktif olmayan okullar aramada görünmez.'}
+                      </p>
+                    </div>
+                  </div>
+                  {schoolInfo.status === 'passive' && (
+                    <button
+                      onClick={() => setShowActivationWizard(true)}
+                      className="shrink-0 px-4 py-2 bg-school text-white text-sm font-bold rounded-lg hover:bg-school-dark transition-colors shadow-sm whitespace-nowrap"
+                    >
+                      🚀 Aktif Et
+                    </button>
+                  )}
+                </motion.div>
+              )}
               <motion.div
                 key={activeTab}
                 initial={{ opacity: 0, y: 10 }}
@@ -951,6 +1106,21 @@ const SchoolAdmin: React.FC = () => {
         colorVariant="school"
         schoolId={schoolInfo?.id}
       />
+
+      {/* Aktivasyon Sihirbazı */}
+      <AnimatePresence>
+        {showActivationWizard && schoolInfo && (
+          <SchoolActivationWizard
+            schoolInfo={schoolInfo}
+            onClose={() => setShowActivationWizard(false)}
+            onActivationRequested={() => {
+              setShowActivationWizard(false);
+              // Okul bilgisini güncelle (pending durumuna geç)
+              setSchoolInfo(prev => prev ? { ...prev, status: 'pending', documentStatus: 'pending' } : prev);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 };

@@ -7,7 +7,7 @@ import ProgressPage from './pages/progress/ProgressPage';
 import AdminPanel from './features/admin/pages/AdminPanel';
 import InstructorPanel from './features/instructor/pages/InstructorPanel';
 import BecomeInstructor from './features/instructor/pages/BecomeInstructor';
-import BecomeSchool from './features/school/pages/BecomeSchool';
+
 import Navbar from './common/components/layout/Navbar';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
@@ -24,6 +24,11 @@ import Festivals from './pages/festivals/Festivals';
 import Nights from './pages/nights/Nights';
 import useAuth from './common/hooks/useAuth';
 import AuthGuide from './pages/help/AuthGuide';
+import ProfileGuide from './pages/help/ProfileGuide';
+import CourseEnrollGuide from './pages/help/CourseEnrollGuide';
+import InstructorGuide from './pages/help/InstructorGuide';
+import SchoolAdminGuide from './pages/help/SchoolAdminGuide';
+import PrivacyPolicyPage from './pages/legal/PrivacyPolicyPage';
 import { auth } from './api/firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { AuthProvider } from './contexts/AuthContext';
@@ -458,7 +463,7 @@ function AppContent(): JSX.Element {
                 <Route
                   path="/school-admin"
                   element={
-                    isAuthenticated && currentUser?.role?.includes('school') ?
+                    isAuthenticated ?
                       <SchoolAdmin /> : <Navigate to="/signin" />
                   }
                 />
@@ -468,21 +473,7 @@ function AppContent(): JSX.Element {
                 />
                 <Route
                   path="/become-school"
-                  element={
-                    <BecomeSchool
-                      onMount={() => {
-                        console.log('🎯 /become-school route render:', {
-                          isAuthenticated,
-                          user: {
-                            id: currentUser?.id,
-                            email: currentUser?.email,
-                            role: currentUser?.role
-                          },
-                          timestamp: new Date().toISOString()
-                        });
-                      }}
-                    />
-                  }
+                  element={<Navigate to="/signup" replace />}
                 />
                 <Route path="/profile" element={
                   isAuthenticated ? (
@@ -500,6 +491,11 @@ function AppContent(): JSX.Element {
                 <Route path="/signup" element={isAuthenticated ? <Navigate to="/" /> : <SignUp />} />
                 <Route path="/complete-profile" element={isAuthenticated ? <CompleteProfile /> : <Navigate to="/signin" />} />
                 <Route path="/yardim/giris-kayit" element={<AuthGuide />} />
+                <Route path="/yardim/profil-duzenleme" element={<ProfileGuide />} />
+                <Route path="/yardim/kurs-kayit" element={<CourseEnrollGuide />} />
+                <Route path="/yardim/egitmen-paneli" element={<InstructorGuide />} />
+                <Route path="/yardim/okul-paneli" element={<SchoolAdminGuide />} />
+                <Route path="/gizlilik-politikasi" element={<PrivacyPolicyPage />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </div>
@@ -528,8 +524,10 @@ function AppContent(): JSX.Element {
                     <h3 className="text-lg font-semibold mb-3">Yardım & Destek</h3>
                     <ul className="space-y-2">
                       <li><a href="/yardim/giris-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Siteye Nasıl Giriş Yapılır?</a></li>
-                      <li><a href="/become-instructor" className="text-gray-300 hover:text-white transition-colors">Eğitmen Ol</a></li>
-                      <li><a href="/become-school" className="text-gray-300 hover:text-white transition-colors">Okul Ekle</a></li>
+                      <li><a href="/yardim/profil-duzenleme" className="text-gray-300 hover:text-white transition-colors">Rehber: Avatar &amp; Profil Nasıl Düzenlenir?</a></li>
+                      <li><a href="/yardim/kurs-kayit" className="text-gray-300 hover:text-white transition-colors">Rehber: Kursa Nasıl Kaydolunur?</a></li>
+                      <li><a href="/yardim/egitmen-paneli" className="text-gray-300 hover:text-white transition-colors">Rehber: Eğitmen Paneli Nasıl Kullanılır?</a></li>
+                      <li><a href="/yardim/okul-paneli" className="text-gray-300 hover:text-white transition-colors">Rehber: Okul Paneli Nasıl Kullanılır?</a></li>
                     </ul>
                   </div>
 
@@ -578,8 +576,15 @@ function AppContent(): JSX.Element {
                   </div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-gray-700 text-gray-400 text-sm text-center">
-                  &copy; {new Date().getFullYear()} Feriha. Tüm hakları saklıdır.
+                <div className="mt-8 pt-6 border-t border-gray-700 text-gray-400 text-sm text-center flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <span>&copy; {new Date().getFullYear()} Feriha. Tüm hakları saklıdır.</span>
+                  <span className="hidden sm:inline text-gray-600">·</span>
+                  <a
+                    href="/gizlilik-politikasi"
+                    className="text-gray-400 hover:text-white underline underline-offset-2 transition-colors"
+                  >
+                    Gizlilik Politikası
+                  </a>
                 </div>
               </div>
             </footer>

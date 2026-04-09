@@ -5,13 +5,14 @@ import {
   UserCredential,
   updateProfile,
   AuthError,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+
 import { auth, db } from '../../../api/firebase/firebase';
 import { User, UserRole } from '../../../types';
 
-// Kullanıcı kaydı işlemini gerçekleştiren fonksiyon
 export const signUp = async (
   email: string,
   password: string,
@@ -21,6 +22,9 @@ export const signUp = async (
   try {
     // Firebase Authentication ile kullanıcı oluştur
     const userCredential: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+    // Doğrulama mailini gönder
+    await sendEmailVerification(userCredential.user);
 
     // Kullanıcı profiline displayName ekle
     await updateProfile(userCredential.user, { displayName });
@@ -36,17 +40,29 @@ export const signUp = async (
       createdAt: new Date(),
     };
 
-    // Firestore'a kullanıcı bilgilerini kaydet
-    await setDoc(doc(db, 'users', newUser.id), {
+    const userData = {
       ...newUser,
       createdAt: Timestamp.fromDate(newUser.createdAt ?? new Date())
-    });
+    };
+
+    // Firestore'a kullanıcı bilgilerini kaydet
+    await setDoc(doc(db, 'users', newUser.id), userData);
+
+    // Yazma doğrulaması: useAuth.ts'deki race condition'ın üzerine gelecek şekilde
+    // kısa bir gecikme sonra tekrar kontrol et, eksikse yeniden yaz
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const verification = await getDoc(doc(db, 'users', newUser.id));
+    if (!verification.exists() || verification.data()?.role !== role) {
+      console.warn('⚠️ signUp: Firestore doğrulama başarısız, yeniden yazılıyor...', { role });
+      await setDoc(doc(db, 'users', newUser.id), userData, { merge: false });
+    }
 
     return newUser;
   } catch (error) {
     throw error;
   }
 };
+
 
 // Kullanıcı girişi işlemini gerçekleştiren fonksiyon
 export const signIn = async (email: string, password: string): Promise<UserCredential> => {

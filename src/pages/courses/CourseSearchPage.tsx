@@ -15,6 +15,8 @@ interface FilterValues {
   arama: string;
   dansTuru: string;
   gun: string;
+  ulke?: string;
+  sehir?: string;
 }
 
 const CourseSearchPage: React.FC = () => {
@@ -44,7 +46,9 @@ const CourseSearchPage: React.FC = () => {
     fiyatAralik: '',
     arama: '',
     dansTuru: '',
-    gun: ''
+    gun: '',
+    ulke: 'TR',
+    sehir: ''
   });
 
   // Kursları Firestore'dan çekiyoruz
@@ -59,10 +63,13 @@ const CourseSearchPage: React.FC = () => {
         const fetchedCourses: DanceClass[] = [];
 
         querySnapshot.forEach((doc) => {
-          fetchedCourses.push({
-            ...doc.data(),
-            id: doc.id,        // doc.id her zaman kazansın, içerideki id field'ını ezmeli
-          } as DanceClass);
+          const data = doc.data();
+          if (data.status === 'active') {
+            fetchedCourses.push({
+              ...data,
+              id: doc.id,
+            } as DanceClass);
+          }
         });
 
         setCourses(fetchedCourses);
@@ -105,6 +112,20 @@ const CourseSearchPage: React.FC = () => {
     if (activeFilters.seviye) {
       result = result.filter(
         (course) => course.level?.toLowerCase() === activeFilters.seviye.toLowerCase()
+      );
+    }
+
+    // Ülke filtreleme
+    if (activeFilters.ulke) {
+      result = result.filter(
+        (course) => course.country === activeFilters.ulke
+      );
+    }
+
+    // Şehir filtreleme
+    if (activeFilters.sehir) {
+      result = result.filter(
+        (course) => course.city === activeFilters.sehir
       );
     }
 
@@ -159,7 +180,8 @@ const CourseSearchPage: React.FC = () => {
   const clearFilter = (filterType: keyof FilterValues) => {
     setActiveFilters({
       ...activeFilters,
-      [filterType]: ''
+      [filterType]: '',
+      ...(filterType === 'ulke' ? { sehir: '' } : {})
     });
   };
 
@@ -170,7 +192,9 @@ const CourseSearchPage: React.FC = () => {
       fiyatAralik: '',
       arama: '',
       dansTuru: '',
-      gun: ''
+      gun: '',
+      ulke: 'TR',
+      sehir: ''
     });
   };
 
@@ -322,6 +346,38 @@ const CourseSearchPage: React.FC = () => {
                     className="flex-shrink-0 ml-1 h-5 w-5 rounded-full inline-flex items-center justify-center text-pink-400 hover:bg-pink-200 hover:text-pink-600 focus:outline-none"
                   >
                     <span className="sr-only">Günü kaldır</span>
+                    <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+
+              {activeFilters.ulke && (
+                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                  Ülke: {activeFilters.ulke}
+                  <button
+                    type="button"
+                    onClick={() => clearFilter('ulke')}
+                    className="flex-shrink-0 ml-1 h-5 w-5 rounded-full inline-flex items-center justify-center text-purple-400 hover:bg-purple-200 hover:text-purple-600 focus:outline-none"
+                  >
+                    <span className="sr-only">Ülkeyi kaldır</span>
+                    <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+
+              {activeFilters.sehir && (
+                <span className="inline-flex rounded-full items-center py-1 pl-3 pr-1 text-sm font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
+                  Şehir: {activeFilters.sehir}
+                  <button
+                    type="button"
+                    onClick={() => clearFilter('sehir')}
+                    className="flex-shrink-0 ml-1 h-5 w-5 rounded-full inline-flex items-center justify-center text-yellow-400 hover:bg-yellow-200 hover:text-yellow-600 focus:outline-none"
+                  >
+                    <span className="sr-only">Şehri kaldır</span>
                     <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>

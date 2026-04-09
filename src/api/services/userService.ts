@@ -91,9 +91,14 @@ export const updateUserProfile = async (userId: string, userData: Partial<User>)
   try {
     const userRef = doc(db, 'users', userId);
     
+    // Strip undefined values — Firestore rejects them in updateDoc
+    const cleanedData = Object.fromEntries(
+      Object.entries(userData).filter(([, v]) => v !== undefined)
+    );
+
     // Add timestamps
     const dataToUpdate = {
-      ...userData,
+      ...cleanedData,
       updatedAt: Timestamp.now()
     };
     
