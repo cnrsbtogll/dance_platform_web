@@ -174,9 +174,13 @@ export const UserManagement: React.FC = () => {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [page, setPage] = useState(0);
   const [rowsPerPage] = useState(25);
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ field: '', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'createdAt', direction: 'desc' });
   const [filterConfig, setFilterConfig] = useState<FilterConfig>({ roles: [] });
   const [selectedUserType, setSelectedUserType] = useState<'student' | 'instructor' | 'school' | null>(null);
+  const [levelFilter, setLevelFilter] = useState<string>('');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [bulkLevel, setBulkLevel] = useState<string>('');
+  const [bulkRole, setBulkRole] = useState<string>('');
 
   // Check if current user is super admin
   useEffect(() => {
@@ -901,6 +905,137 @@ export const UserManagement: React.FC = () => {
     }
   };
 
+  // Bulk Delete Users
+  const handleBulkDelete = async (): Promise<void> => {
+    if (selectedUserIds.length === 0) return;
+
+    if (!window.confirm(`Seçilen ${selectedUserIds.length} kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const batch = writeBatch(db);
+
+      for (const studentId of selectedUserIds) {
+        const studentToDelete = students.find(s => s.id === studentId);
+        if (!studentToDelete) continue;
+
+        const roles = Array.isArray(studentToDelete.role) ? studentToDelete.role : [studentToDelete.role];
+
+        // Delete from role-specific collections
+        if (roles.includes('instructor')) {
+          const instructorsRef = collection(db, 'instructors');
+          const q = query(instructorsRef, where('userId', '==', studentId));
+          const querySnapshot = await getDocs(q);
+          querySnapshot.docs.forEach(docSnap => {
+            batch.delete(docSnap.ref);
+          });
+        }
+
+        if (roles.includes('school')) {
+          batch.delete(doc(db, 'schools', studentId));
+        }
+
+        // Delete from main users collection
+        batch.delete(doc(db, 'users', studentId));
+      }
+
+      await batch.commit();
+
+      // Remove from state
+      setStudents(prev => prev.filter(s => !selectedUserIds.includes(s.id)));
+      setSelectedUserIds([]);
+      setSuccess('Seçilen kullanıcılar başarıyla silindi.');
+    } catch (err) {
+      console.error('Toplu silme sırasında hata oluştu:', err);
+      setError('Toplu silme işlemi sırasında bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Bulk Update Level
+  const handleBulkUpdateLevel = async (newLevel: DanceLevel): Promise<void> => {
+    if (selectedUserIds.length === 0) return;
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const batch = writeBatch(db);
+
+      for (const studentId of selectedUserIds) {
+        const userRef = doc(db, 'users', studentId);
+        batch.update(userRef, {
+          level: newLevel,
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      await batch.commit();
+
+      // Update state
+      setStudents(prev =>
+        prev.map(s =>
+          selectedUserIds.includes(s.id)
+            ? { ...s, level: newLevel }
+            : s
+        )
+      );
+      setSelectedUserIds([]);
+      setSuccess('Seçilen kullanıcıların seviyeleri başarıyla güncellendi.');
+    } catch (err) {
+      console.error('Toplu seviye güncelleme sırasında hata oluştu:', err);
+      setError('Toplu seviye güncelleme işlemi sırasında bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Bulk Update Role
+  const handleBulkUpdateRole = async (newRole: UserRole): Promise<void> => {
+    if (selectedUserIds.length === 0) return;
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const batch = writeBatch(db);
+
+      for (const studentId of selectedUserIds) {
+        const userRef = doc(db, 'users', studentId);
+        batch.update(userRef, {
+          role: newRole,
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      await batch.commit();
+
+      // Update state
+      setStudents(prev =>
+        prev.map(s =>
+          selectedUserIds.includes(s.id)
+            ? { ...s, role: newRole }
+            : s
+        )
+      );
+      setSelectedUserIds([]);
+      setSuccess('Seçilen kullanıcıların rolleri başarıyla güncellendi.');
+    } catch (err) {
+      console.error('Toplu rol güncelleme sırasında hata oluştu:', err);
+      setError('Toplu rol güncelleme işlemi sırasında bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Get role badge color
   const getRoleBadgeColor = (role: string): string => {
     switch (role) {
@@ -1053,6 +1188,7 @@ export const UserManagement: React.FC = () => {
       field,
       direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
+    setPage(0);
   };
 
   // Handle role filter change
@@ -1074,8 +1210,9 @@ export const UserManagement: React.FC = () => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(student =>
-        student.displayName.toLowerCase().includes(term) ||
-        student.email.toLowerCase().includes(term)
+        (student.displayName || '').toLowerCase().includes(term) ||
+        (student.email || '').toLowerCase().includes(term) ||
+        (student.phoneNumber || '').toLowerCase().includes(term)
       );
     }
 
@@ -1084,11 +1221,31 @@ export const UserManagement: React.FC = () => {
       result = result.filter(student => filterConfig.roles.includes(student.role));
     }
 
+    // Apply level filter
+    if (levelFilter) {
+      result = result.filter(student => student.level === levelFilter);
+    }
+
     // Apply sorting
     if (sortConfig.field) {
       result.sort((a: any, b: any) => {
         let aValue = a[sortConfig.field];
         let bValue = b[sortConfig.field];
+
+        // Format dates or Firestore timestamps to comparison values
+        if (aValue && typeof aValue.toDate === 'function') {
+          aValue = aValue.toDate().getTime();
+        } else if (aValue instanceof Date) {
+          aValue = aValue.getTime();
+        }
+        if (bValue && typeof bValue.toDate === 'function') {
+          bValue = bValue.toDate().getTime();
+        } else if (bValue instanceof Date) {
+          bValue = bValue.getTime();
+        }
+
+        if (aValue === undefined || aValue === null) return 1;
+        if (bValue === undefined || bValue === null) return -1;
 
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -1097,7 +1254,7 @@ export const UserManagement: React.FC = () => {
     }
 
     return result;
-  }, [students, searchTerm, sortConfig, filterConfig]);
+  }, [students, searchTerm, sortConfig, filterConfig, levelFilter]);
 
   // Get current page data
   const paginatedStudents = useMemo(() => {
@@ -1291,32 +1448,114 @@ export const UserManagement: React.FC = () => {
                 </svg>
                 <input
                   type="text"
-                  placeholder="Ad veya e-posta ile ara..."
+                  placeholder="Ad, e-posta veya telefon ile ara..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
-            <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden text-sm h-9 self-start">
-              {[
-                { value: 'student', label: 'Öğrenci', color: 'bg-emerald-600' },
-                { value: 'instructor', label: 'Eğitmen', color: 'bg-blue-600' },
-                { value: 'school', label: 'Okul', color: 'bg-indigo-600' },
-              ].map(({ value, label, color }) => (
-                <button
-                  key={value}
-                  onClick={() => handleRoleFilter(value)}
-                  className={`px-3 py-1.5 font-medium transition-colors whitespace-nowrap ${filterConfig.roles.includes(value)
-                    ? `${color} text-white`
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
-                    }`}
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-2 items-center">
+              <select
+                value={levelFilter}
+                onChange={(e) => { setLevelFilter(e.target.value); setPage(0); }}
+                className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-9"
+              >
+                <option value="">Tüm Seviyeler</option>
+                <option value="beginner">Başlangıç</option>
+                <option value="intermediate">Orta</option>
+                <option value="advanced">İleri</option>
+                <option value="professional">Profesyonel</option>
+              </select>
+              <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden text-sm h-9">
+                {[
+                  { value: 'student', label: 'Öğrenci', color: 'bg-emerald-600' },
+                  { value: 'instructor', label: 'Eğitmen', color: 'bg-blue-600' },
+                  { value: 'school', label: 'Okul', color: 'bg-indigo-600' },
+                ].map(({ value, label, color }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => handleRoleFilter(value)}
+                    className={`px-3 py-1.5 font-medium transition-colors whitespace-nowrap ${filterConfig.roles.includes(value)
+                      ? `${color} text-white`
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
+                      }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
+
+          {/* Bulk Actions Toolbar */}
+          {selectedUserIds.length > 0 && (
+            <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 flex flex-col md:flex-row md:items-center justify-between gap-3 animate-fadeIn">
+              <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                {selectedUserIds.length} adet kullanıcı seçildi
+              </span>
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Seviye Güncelle */}
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={bulkLevel}
+                    onChange={(e) => setBulkLevel(e.target.value)}
+                    className="px-2 py-1 text-xs border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300"
+                  >
+                    <option value="">Seviye Seç...</option>
+                    <option value="beginner">Başlangıç</option>
+                    <option value="intermediate">Orta</option>
+                    <option value="advanced">İleri</option>
+                    <option value="professional">Profesyonel</option>
+                  </select>
+                  <button
+                    onClick={() => bulkLevel && handleBulkUpdateLevel(bulkLevel as DanceLevel)}
+                    disabled={!bulkLevel}
+                    className="px-2.5 py-1 bg-indigo-600 text-white text-xs font-semibold rounded hover:bg-indigo-700 transition disabled:opacity-50"
+                  >
+                    Seviye Güncelle
+                  </button>
+                </div>
+
+                {/* Rol Güncelle */}
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={bulkRole}
+                    onChange={(e) => setBulkRole(e.target.value)}
+                    className="px-2 py-1 text-xs border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300"
+                  >
+                    <option value="">Rol Seç...</option>
+                    <option value="student">Öğrenci</option>
+                    <option value="instructor">Eğitmen</option>
+                    <option value="school">Dans Okulu</option>
+                  </select>
+                  <button
+                    onClick={() => bulkRole && handleBulkUpdateRole(bulkRole as UserRole)}
+                    disabled={!bulkRole}
+                    className="px-2.5 py-1 bg-indigo-600 text-white text-xs font-semibold rounded hover:bg-indigo-700 transition disabled:opacity-50"
+                  >
+                    Rol Güncelle
+                  </button>
+                </div>
+
+                <div className="h-6 w-[1px] bg-gray-300 dark:bg-slate-700 hidden md:block" />
+
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded hover:bg-red-700 transition"
+                >
+                  Toplu Sil
+                </button>
+                <button
+                  onClick={() => setSelectedUserIds([])}
+                  className="px-2.5 py-1 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 text-xs rounded hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                >
+                  İptal
+                </button>
+              </div>
+            </div>
+          )}
 
           {loading && (
             <div className="flex justify-center my-4">
@@ -1330,6 +1569,30 @@ export const UserManagement: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50 dark:bg-slate-900">
                     <tr>
+                      <th scope="col" className="relative w-12 px-6 sm:w-16 sm:px-8">
+                        <input
+                          type="checkbox"
+                          className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          checked={
+                            paginatedStudents.length > 0 &&
+                            paginatedStudents.every(student => selectedUserIds.includes(student.id))
+                          }
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const newSelected = [...selectedUserIds];
+                              paginatedStudents.forEach(student => {
+                                if (!newSelected.includes(student.id)) {
+                                  newSelected.push(student.id);
+                                }
+                              });
+                              setSelectedUserIds(newSelected);
+                            } else {
+                              const pageIds = paginatedStudents.map(student => student.id);
+                              setSelectedUserIds(prev => prev.filter(id => !pageIds.includes(id)));
+                            }
+                          }}
+                        />
+                      </th>
                       <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'displayName'}
@@ -1339,7 +1602,7 @@ export const UserManagement: React.FC = () => {
                           Kullanıcı
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap max-w-[160px] truncate">
                         <TableSortLabel
                           active={sortConfig.field === 'email'}
                           direction={sortConfig.field === 'email' ? sortConfig.direction : 'asc'}
@@ -1348,7 +1611,7 @@ export const UserManagement: React.FC = () => {
                           E-posta
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         <TableSortLabel
                           active={sortConfig.field === 'role'}
                           direction={sortConfig.field === 'role' ? sortConfig.direction : 'asc'}
@@ -1357,7 +1620,7 @@ export const UserManagement: React.FC = () => {
                           Roller
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap max-w-[120px] truncate">
                         <TableSortLabel
                           active={sortConfig.field === 'level'}
                           direction={sortConfig.field === 'level' ? sortConfig.direction : 'asc'}
@@ -1366,7 +1629,7 @@ export const UserManagement: React.FC = () => {
                           Dans Seviyesi
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden 2xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap max-w-[150px] truncate">
                         <TableSortLabel
                           active={sortConfig.field === 'instructorName'}
                           direction={sortConfig.field === 'instructorName' ? sortConfig.direction : 'asc'}
@@ -1375,13 +1638,22 @@ export const UserManagement: React.FC = () => {
                           Eğitmen
                         </TableSortLabel>
                       </th>
-                      <th scope="col" className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                      <th scope="col" className="hidden 2xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap max-w-[150px] truncate">
                         <TableSortLabel
                           active={sortConfig.field === 'schoolName'}
                           direction={sortConfig.field === 'schoolName' ? sortConfig.direction : 'asc'}
                           onClick={() => handleSort('schoolName')}
                         >
                           Okul
+                        </TableSortLabel>
+                      </th>
+                      <th scope="col" className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                        <TableSortLabel
+                          active={sortConfig.field === 'createdAt'}
+                          direction={sortConfig.field === 'createdAt' ? sortConfig.direction : 'asc'}
+                          onClick={() => handleSort('createdAt')}
+                        >
+                          Kayıt Tarihi
                         </TableSortLabel>
                       </th>
                       <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
@@ -1392,7 +1664,21 @@ export const UserManagement: React.FC = () => {
                   <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
                     {paginatedStudents.length > 0 ? (
                       paginatedStudents.map((student) => (
-                        <tr key={student.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
+                        <tr key={student.id} className={`hover:bg-gray-50 dark:hover:bg-slate-800 ${selectedUserIds.includes(student.id) ? 'bg-indigo-50/40 dark:bg-indigo-900/10' : ''}`}>
+                          <td className="relative w-12 px-6 sm:w-16 sm:px-8">
+                            <input
+                              type="checkbox"
+                              className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                              checked={selectedUserIds.includes(student.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedUserIds(prev => [...prev, student.id]);
+                                } else {
+                                  setSelectedUserIds(prev => prev.filter(id => id !== student.id));
+                                }
+                              }}
+                            />
+                          </td>
                           <td className="px-4 sm:px-6 py-4">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 relative bg-green-100 rounded-full overflow-hidden">
@@ -1417,21 +1703,28 @@ export const UserManagement: React.FC = () => {
                               </div>
                               <div className="ml-3 sm:ml-4">
                                 <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{student.displayName}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">{student.email}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 md:hidden">{student.email}</div>
                                 {student.phoneNumber && (
                                   <div className="text-xs text-gray-500 dark:text-gray-400">{student.phoneNumber}</div>
+                                )}
+                                {(student.schoolName || student.instructorName) && (
+                                  <div className="text-xs text-indigo-500 dark:text-indigo-400 mt-0.5 2xl:hidden">
+                                    {student.schoolName && <span>Okul: {student.schoolName}</span>}
+                                    {student.schoolName && student.instructorName && <span className="mx-1">•</span>}
+                                    {student.instructorName && <span>Eğitmen: {student.instructorName}</span>}
+                                  </div>
                                 )}
                               </div>
                             </div>
                           </td>
-                          <td className="hidden sm:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">{student.email}</div>
+                          <td className="hidden md:table-cell px-4 sm:px-6 py-4 max-w-[160px] truncate" title={student.email}>
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white truncate">{student.email}</div>
                           </td>
-                          <td className="hidden md:table-cell px-4 sm:px-6 py-4">
+                          <td className="hidden sm:table-cell px-4 sm:px-6 py-4">
                             {renderRoleBadges(student.role)}
                           </td>
-                          <td className="hidden lg:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                          <td className="hidden lg:table-cell px-4 sm:px-6 py-4 max-w-[120px] truncate">
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white truncate">
                               {student.level === 'beginner' && 'Başlangıç'}
                               {student.level === 'intermediate' && 'Orta'}
                               {student.level === 'advanced' && 'İleri'}
@@ -1439,15 +1732,25 @@ export const UserManagement: React.FC = () => {
                               {!student.level && '-'}
                             </div>
                           </td>
-                          <td className="hidden xl:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                          <td className="hidden 2xl:table-cell px-4 sm:px-6 py-4 max-w-[150px] truncate" title={student.instructorName || ''}>
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white truncate">
                               {student.instructorName || '-'}
                             </div>
                           </td>
-                          <td className="hidden xl:table-cell px-4 sm:px-6 py-4">
-                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                          <td className="hidden 2xl:table-cell px-4 sm:px-6 py-4 max-w-[150px] truncate" title={student.schoolName || ''}>
+                            <div className="text-xs sm:text-sm text-gray-900 dark:text-white truncate">
                               {student.schoolName || '-'}
                             </div>
+                          </td>
+                          <td className="hidden lg:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                            {student.createdAt ? (
+                              (() => {
+                                const d = (student.createdAt as any).toDate
+                                  ? (student.createdAt as any).toDate()
+                                  : new Date(student.createdAt as any);
+                                return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                              })()
+                            ) : '-'}
                           </td>
                           <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                             <div className="flex justify-end gap-2">
@@ -1469,8 +1772,8 @@ export const UserManagement: React.FC = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} className="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                          {searchTerm || filterConfig.roles.length > 0
+                        <td colSpan={9} className="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                          {searchTerm || filterConfig.roles.length > 0 || levelFilter
                             ? 'Aramanıza veya seçtiğiniz filtrelere uygun kullanıcı bulunamadı.'
                             : 'Henüz hiç kullanıcı kaydı bulunmuyor.'}
                         </td>
