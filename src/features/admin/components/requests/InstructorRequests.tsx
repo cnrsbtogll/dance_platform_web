@@ -11,11 +11,13 @@ import {
   deleteDoc,
   Timestamp,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../../../../api/firebase/firebase';
 import { Instructor as InstructorType, UserRole } from '../../../../types';
 import Avatar from '../../../../common/components/ui/Avatar';
+import { getMinioUrl, getPresignedUrl } from '../../../../common/utils/imageUtils';
 
 interface InstructorRequest {
   id: string;
@@ -31,7 +33,6 @@ interface InstructorRequest {
   photoURL?: string | null;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: Timestamp;
-  // Gerçek Firestore döküman alanları
   idDocumentUrl?: string;    // Kimlik belgesi URL
   certDocumentUrl?: string;  // Sertifika belgesi URL
   documents?: string[];      // Eski uyumluluk için
@@ -44,10 +45,18 @@ function InstructorRequests() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<InstructorRequest | null>(null);
   const [contactRequest, setContactRequest] = useState<InstructorRequest | null>(null);
+  const [editingRequest, setEditingRequest] = useState<InstructorRequest | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  
+  // Search, sort and bulk states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   useEffect(() => {
     fetchRequests(statusFilter);
+    setSelectedIds([]); // Clear selection when filter changes
   }, [statusFilter]);
 
   const fetchRequests = async (status: 'all' | 'pending' | 'approved' | 'rejected' = 'pending') => {
@@ -70,14 +79,33 @@ function InstructorRequests() {
         } as InstructorRequest);
       });
 
-      // Sort by creation date (newest first)
-      requestsData.sort((a, b) => {
-        const dateA = a.createdAt?.toMillis?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
-        const dateB = b.createdAt?.toMillis?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
-        return dateB - dateA;
-      });
+      const resolvedRequests = await Promise.all(
+        requestsData.map(async (req) => {
+          const resolvedPhoto = await getPresignedUrl(req.photoURL);
+          const resolvedIdDoc = await getPresignedUrl(req.idDocumentUrl);
+          const resolvedCertDoc = await getPresignedUrl(req.certDocumentUrl);
+          
+          let resolvedDocs: string[] = [];
+          if (req.documents && Array.isArray(req.documents)) {
+            resolvedDocs = await Promise.all(
+              req.documents.map(async (docPath) => {
+                const url = await getPresignedUrl(docPath);
+                return url || '';
+              })
+            );
+          }
 
-      setRequests(requestsData);
+          return {
+            ...req,
+            photoURL: resolvedPhoto || undefined,
+            idDocumentUrl: resolvedIdDoc || undefined,
+            certDocumentUrl: resolvedCertDoc || undefined,
+            documents: resolvedDocs.length > 0 ? resolvedDocs : undefined
+          };
+        })
+      );
+
+      setRequests(resolvedRequests);
 
     } catch (err) {
       console.error('Eğitmen talepleri getirilirken hata oluştu:', err);
@@ -87,133 +115,128 @@ function InstructorRequests() {
     }
   };
 
+  // Core approval function reused by single and bulk approve
+  const approveRequestSilent = async (requestId: string, userId: string) => {
+    console.log('🔵 Onaylama işlemi başlatıldı:', { requestId, userId });
+
+    // 1. Get the request document
+    const requestDocRef = doc(db, 'instructorRequests', requestId);
+    const requestDoc = await getDoc(requestDocRef);
+
+    if (!requestDoc.exists()) {
+      throw new Error('Talep bulunamadı');
+    }
+
+    const requestData = requestDoc.data() as InstructorRequest;
+    console.log('✅ Talep verileri alındı:', requestData);
+
+    // 2. Get the user document
+    const userDocRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+      console.log('⚠️ Kullanıcı bulunamadı, yeni kullanıcı oluşturuluyor. User ID:', userId);
+
+      // Kullanıcı yoksa, önce users koleksiyonunda yeni kullanıcı oluştur
+      try {
+        const newUserData = {
+          email: requestData.userEmail,
+          displayName: `${requestData.firstName} ${requestData.lastName}`.trim(),
+          phoneNumber: requestData.contactNumber,
+          role: 'instructor',
+          isInstructor: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          status: 'active',
+          gender: 'Belirtilmemiş',
+          age: 0,
+          city: 'Belirtilmemiş',
+          level: 'beginner',
+          danceStyles: requestData.danceStyles || [],
+          photoURL: requestData.photoURL || ""
+        };
+
+        await setDoc(userDocRef, newUserData);
+        console.log('✅ Yeni kullanıcı oluşturuldu:', newUserData);
+      } catch (createError) {
+        console.error('❌ Kullanıcı oluşturma hatası:', createError);
+        throw new Error('Kullanıcı oluşturulamadı. Lütfen tekrar deneyin.');
+      }
+    }
+
+    // 3. Get fresh user data after potential creation
+    const freshUserDoc = await getDoc(userDocRef);
+    const userData = freshUserDoc.data();
+
+    if (!userData) {
+      console.error('❌ Kullanıcı verileri alınamadı');
+      throw new Error('Kullanıcı verilerine erişilemedi');
+    }
+
+    console.log('✅ Güncel kullanıcı verileri:', userData);
+
+    // 4. Add instructor to the instructors collection
+    const instructorData: Partial<InstructorType> = {
+      userId: userId,
+      displayName: `${requestData.firstName} ${requestData.lastName}`.trim(),
+      email: userData.email || requestData.userEmail,
+      photoURL: requestData.photoURL || userData.photoURL || "",
+      phoneNumber: userData.phoneNumber || requestData.contactNumber,
+      role: 'instructor' as UserRole,
+      specialties: requestData.danceStyles || [],
+      experience: parseInt(requestData.experience) || 0,
+      bio: requestData.bio || '',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    console.log('📝 Eğitmen verileri:', instructorData);
+    const instructorsCollectionRef = collection(db, 'instructors');
+    const instructorDoc = await addDoc(instructorsCollectionRef, instructorData);
+    console.log('✅ Eğitmen dokümanı oluşturuldu. ID:', instructorDoc.id);
+
+    // 5. Update user document with instructor data
+    const userUpdates = {
+      role: 'instructor',
+      isInstructor: true,
+      is_instructor_pending: false,
+      displayName: instructorData.displayName,
+      photoURL: instructorData.photoURL,
+      phoneNumber: instructorData.phoneNumber,
+      instructorSpecialization: requestData.danceStyles || [],
+      instructorExperience: requestData.experience,
+      instructorBio: requestData.bio,
+      instructorApprovedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    console.log('📝 Kullanıcı güncellemeleri:', userUpdates);
+    await updateDoc(userDocRef, userUpdates);
+    console.log('✅ Kullanıcı dokümanı güncellendi');
+
+    // 6. Update the request status
+    const requestUpdates = {
+      status: 'approved',
+      updatedAt: serverTimestamp(),
+      approvedBy: 'admin',
+      instructorDocId: instructorDoc.id
+    };
+
+    console.log('📝 Talep güncellemeleri:', requestUpdates);
+    await updateDoc(requestDocRef, requestUpdates);
+    console.log('✅ Talep dokümanı güncellendi');
+  };
+
   const handleApproveRequest = async (requestId: string, userId: string) => {
     setProcessingId(requestId);
 
     try {
-      console.log('🔵 Onaylama işlemi başlatıldı:', { requestId, userId });
-
-      // 1. Get the request document
-      const requestDocRef = doc(db, 'instructorRequests', requestId);
-      const requestDoc = await getDoc(requestDocRef);
-
-      if (!requestDoc.exists()) {
-        throw new Error('Talep bulunamadı');
-      }
-
-      const requestData = requestDoc.data() as InstructorRequest;
-      console.log('✅ Talep verileri alındı:', requestData);
-
-      // 2. Get the user document
-      const userDocRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userDocRef);
-
-      if (!userDoc.exists()) {
-        console.log('⚠️ Kullanıcı bulunamadı, yeni kullanıcı oluşturuluyor. User ID:', userId);
-
-        // Kullanıcı yoksa, önce users koleksiyonunda yeni kullanıcı oluştur
-        try {
-          const newUserData = {
-            email: requestData.userEmail,
-            displayName: `${requestData.firstName} ${requestData.lastName}`.trim(),
-            phoneNumber: requestData.contactNumber,
-            role: 'instructor',
-            isInstructor: true,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            status: 'active',
-            // Varsayılan değerler ekle
-            gender: 'Belirtilmemiş',
-            age: 0,
-            city: 'Belirtilmemiş',
-            level: 'beginner',
-            danceStyles: requestData.danceStyles || [],
-            photoURL: requestData.photoURL || ""
-          };
-
-          await setDoc(userDocRef, newUserData);
-          console.log('✅ Yeni kullanıcı oluşturuldu:', newUserData);
-        } catch (createError) {
-          console.error('❌ Kullanıcı oluşturma hatası:', createError);
-          throw new Error('Kullanıcı oluşturulamadı. Lütfen tekrar deneyin.');
-        }
-      }
-
-      // 3. Get fresh user data after potential creation
-      const freshUserDoc = await getDoc(userDocRef);
-      const userData = freshUserDoc.data();
-
-      if (!userData) {
-        console.error('❌ Kullanıcı verileri alınamadı');
-        throw new Error('Kullanıcı verilerine erişilemedi');
-      }
-
-      console.log('✅ Güncel kullanıcı verileri:', userData);
-
-      // 4. Add instructor to the instructors collection
-      const instructorData: Partial<InstructorType> = {
-        userId: userId,
-        displayName: `${requestData.firstName} ${requestData.lastName}`.trim(),
-        email: userData.email || requestData.userEmail,
-        photoURL: requestData.photoURL || userData.photoURL || "",
-        phoneNumber: userData.phoneNumber || requestData.contactNumber,
-        role: 'instructor' as UserRole,
-        specialties: requestData.danceStyles || [],
-        experience: parseInt(requestData.experience) || 0,
-        bio: requestData.bio || '',
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      console.log('📝 Eğitmen verileri:', instructorData);
-      const instructorsCollectionRef = collection(db, 'instructors');
-      const instructorDoc = await addDoc(instructorsCollectionRef, instructorData);
-      console.log('✅ Eğitmen dokümanı oluşturuldu. ID:', instructorDoc.id);
-
-      // 5. Update user document with instructor data
-      const userUpdates = {
-        role: 'instructor',
-        isInstructor: true,
-        displayName: instructorData.displayName,
-        photoURL: instructorData.photoURL,
-        phoneNumber: instructorData.phoneNumber,
-        instructorSpecialization: requestData.danceStyles || [],
-        instructorExperience: requestData.experience,
-        instructorBio: requestData.bio,
-        instructorApprovedAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      };
-
-      console.log('📝 Kullanıcı güncellemeleri:', userUpdates);
-      await updateDoc(userDocRef, userUpdates);
-      console.log('✅ Kullanıcı dokümanı güncellendi');
-
-      // 6. Update the request status
-      const requestUpdates = {
-        status: 'approved',
-        updatedAt: serverTimestamp(),
-        approvedBy: 'admin',
-        instructorDocId: instructorDoc.id
-      };
-
-      console.log('📝 Talep güncellemeleri:', requestUpdates);
-      await updateDoc(requestDocRef, requestUpdates);
-      console.log('✅ Talep dokümanı güncellendi');
-
-      // 7. Update the local state
+      await approveRequestSilent(requestId, userId);
       setRequests(prev => prev.filter(req => req.id !== requestId));
-
       alert('Eğitmen talebi başarıyla onaylandı. Eğitmen, eğitmenler listesine eklendi ve kullanıcı bilgileri güncellendi.');
-
     } catch (error: any) {
       console.error('❌ Eğitmen talebi onaylanırken hata oluştu:', error);
-      console.error('Hata detayları:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-        code: error.code
-      });
       alert(`Hata: ${error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu'}`);
     } finally {
       setProcessingId(null);
@@ -224,21 +247,15 @@ function InstructorRequests() {
     setProcessingId(requestId);
 
     try {
-      // Update the request status
       const requestDocRef = doc(db, 'instructorRequests', requestId);
       await updateDoc(requestDocRef, {
         status: 'rejected',
         updatedAt: serverTimestamp(),
-        rejectedBy: 'admin' // Ideally, this would be the admin user ID
+        rejectedBy: 'admin'
       });
 
-      // Update the local state
-      setRequests(prev =>
-        prev.filter(req => req.id !== requestId)
-      );
-
+      setRequests(prev => prev.filter(req => req.id !== requestId));
       alert('Eğitmen talebi reddedildi.');
-
     } catch (err) {
       console.error('Eğitmen talebi reddedilirken hata oluştu:', err);
       alert('Talebiniz reddedilirken bir hata oluştu. Lütfen tekrar deneyin.');
@@ -247,11 +264,216 @@ function InstructorRequests() {
     }
   };
 
-  if (loading) {
+  const handleDeleteRequest = async (requestId: string, userId: string) => {
+    if (!window.confirm('Bu talebi silmek istediğinize emin misiniz?')) return;
+    setProcessingId(requestId);
+
+    try {
+      await deleteDoc(doc(db, 'instructorRequests', requestId));
+      
+      // Clear user's is_instructor_pending flag
+      const userDocRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userDocRef);
+      if (userSnap.exists()) {
+        await updateDoc(userDocRef, {
+          is_instructor_pending: false,
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      setRequests(prev => prev.filter(req => req.id !== requestId));
+      alert('Eğitmen talebi başarıyla silindi ve kullanıcının bekleyen durumları temizlendi.');
+      if (selectedRequest?.id === requestId) {
+        setSelectedRequest(null);
+      }
+    } catch (err) {
+      console.error('Eğitmen talebi silinirken hata oluştu:', err);
+      alert('Talep silinirken bir hata oluştu.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleSaveRequest = async (updatedData: Partial<InstructorRequest>) => {
+    if (!editingRequest) return;
+    setProcessingId(editingRequest.id);
+
+    try {
+      const requestDocRef = doc(db, 'instructorRequests', editingRequest.id);
+      await updateDoc(requestDocRef, {
+        ...updatedData,
+        updatedAt: serverTimestamp()
+      });
+
+      setRequests(prev =>
+        prev.map(req =>
+          req.id === editingRequest.id ? { ...req, ...updatedData } : req
+        )
+      );
+
+      // If details modal is open for the same request, update it
+      if (selectedRequest?.id === editingRequest.id) {
+        setSelectedRequest(prev => prev ? { ...prev, ...updatedData } : null);
+      }
+
+      setEditingRequest(null);
+      alert('Talep başarıyla güncellendi.');
+    } catch (err) {
+      console.error('Talep güncellenirken hata:', err);
+      alert('Talep güncellenemedi. Lütfen tekrar deneyin.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Bulk operation handlers
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length} adet talebi onaylamak istediğinize emin misiniz?`)) return;
+
+    setIsBulkProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of selectedIds) {
+      const req = requests.find(r => r.id === id);
+      if (req) {
+        try {
+          await approveRequestSilent(req.id, req.userId);
+          successCount++;
+        } catch (err) {
+          console.error(`Talep onaylanırken hata (ID: ${id}):`, err);
+          failCount++;
+        }
+      }
+    }
+
+    setRequests(prev => prev.filter(req => !selectedIds.includes(req.id)));
+    setSelectedIds([]);
+    setIsBulkProcessing(false);
+    alert(`${successCount} talep başarıyla onaylandı.${failCount > 0 ? ` ${failCount} talep onaylanamadı.` : ''}`);
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length} adet talebi reddetmek istediğinize emin misiniz?`)) return;
+
+    setIsBulkProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of selectedIds) {
+      try {
+        const requestDocRef = doc(db, 'instructorRequests', id);
+        await updateDoc(requestDocRef, {
+          status: 'rejected',
+          updatedAt: serverTimestamp(),
+          rejectedBy: 'admin'
+        });
+        successCount++;
+      } catch (err) {
+        console.error(`Talep reddedilirken hata (ID: ${id}):`, err);
+        failCount++;
+      }
+    }
+
+    setRequests(prev => prev.filter(req => !selectedIds.includes(req.id)));
+    setSelectedIds([]);
+    setIsBulkProcessing(false);
+    alert(`${successCount} talep başarıyla reddedildi.${failCount > 0 ? ` ${failCount} talep reddedilemedi.` : ''}`);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length} adet talebi kalıcı olarak silmek istediğinize emin misiniz?`)) return;
+
+    setIsBulkProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of selectedIds) {
+      const req = requests.find(r => r.id === id);
+      if (req) {
+        try {
+          await deleteDoc(doc(db, 'instructorRequests', id));
+          
+          const userDocRef = doc(db, 'users', req.userId);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            await updateDoc(userDocRef, {
+              is_instructor_pending: false,
+              updatedAt: serverTimestamp()
+            });
+          }
+          successCount++;
+        } catch (err) {
+          console.error(`Talep silinirken hata (ID: ${id}):`, err);
+          failCount++;
+        }
+      }
+    }
+
+    setRequests(prev => prev.filter(req => !selectedIds.includes(req.id)));
+    setSelectedIds([]);
+    setIsBulkProcessing(false);
+    alert(`${successCount} talep silindi ve kullanıcı bekleyen durumları temizlendi.${failCount > 0 ? ` ${failCount} talep silinemedi.` : ''}`);
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAll = (visibleRequests: InstructorRequest[]) => {
+    if (selectedIds.length === visibleRequests.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(visibleRequests.map(r => r.id));
+    }
+  };
+
+  // Filter and sort requests
+  const filteredRequests = requests.filter(req => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+
+    const fullName = `${req.firstName || ''} ${req.lastName || ''}`.toLowerCase();
+    const email = (req.userEmail || '').toLowerCase();
+    const phone = (req.contactNumber || req.phoneNumber || '').toLowerCase();
+    const bio = (req.bio || '').toLowerCase();
+
+    return fullName.includes(query) || email.includes(query) || phone.includes(query) || bio.includes(query);
+  });
+
+  const sortedRequests = [...filteredRequests].sort((a, b) => {
+    if (sortBy === 'newest') {
+      const dateA = a.createdAt?.toMillis?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
+      const dateB = b.createdAt?.toMillis?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
+      return dateB - dateA;
+    } else if (sortBy === 'oldest') {
+      const dateA = a.createdAt?.toMillis?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
+      const dateB = b.createdAt?.toMillis?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
+      return dateA - dateB;
+    } else if (sortBy === 'name-asc') {
+      const nameA = `${a.firstName || ''} ${a.lastName || ''}`.toLowerCase();
+      const nameB = `${b.firstName || ''} ${b.lastName || ''}`.toLowerCase();
+      return nameA.localeCompare(nameB, 'tr');
+    } else if (sortBy === 'name-desc') {
+      const nameA = `${a.firstName || ''} ${a.lastName || ''}`.toLowerCase();
+      const nameB = `${b.firstName || ''} ${b.lastName || ''}`.toLowerCase();
+      return nameB.localeCompare(nameA, 'tr');
+    }
+    return 0;
+  });
+
+  if (loading || isBulkProcessing) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">
+          {isBulkProcessing ? 'Toplu işlemler gerçekleştiriliyor...' : 'Yükleniyor...'}
+        </span>
       </div>
     );
   }
@@ -270,11 +492,34 @@ function InstructorRequests() {
     );
   }
 
-
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 sm:p-6">
-      <div className="flex flex-col gap-3 mb-6">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200">Eğitmen Başvuruları</h2>
+    <div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6">
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200">Eğitmen Başvuruları</h2>
+          
+          {/* Search and Sort Toolbar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Ad, soyad, e-posta veya telefon ile ara..."
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-full sm:w-64"
+            />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            >
+              <option value="newest">En Yeni (Varsayılan)</option>
+              <option value="oldest">En Eski</option>
+              <option value="name-asc">İsim (A-Z)</option>
+              <option value="name-desc">İsim (Z-A)</option>
+            </select>
+          </div>
+        </div>
+
         {/* Scrollable filter chips */}
         <div className="flex overflow-x-auto pb-1 gap-2 scrollbar-hide">
           {(['all', 'pending', 'approved', 'rejected'] as const).map((s) => {
@@ -298,12 +543,47 @@ function InstructorRequests() {
         </div>
       </div>
 
-      {requests.length === 0 && !loading ? (
+      {/* Bulk actions toolbar */}
+      {selectedIds.length > 0 && (
+        <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 flex items-center justify-between gap-3 animate-fadeIn">
+          <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+            {selectedIds.length} adet talep seçildi
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkApprove}
+              className="px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded hover:bg-green-700 transition"
+            >
+              Toplu Onayla
+            </button>
+            <button
+              onClick={handleBulkReject}
+              className="px-3 py-1.5 bg-yellow-600 text-white text-xs font-semibold rounded hover:bg-yellow-700 transition"
+            >
+              Toplu Reddet
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded hover:bg-red-700 transition"
+            >
+              Toplu Sil
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-2.5 py-1.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 text-xs rounded hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+            >
+              İptal
+            </button>
+          </div>
+        </div>
+      )}
+
+      {sortedRequests.length === 0 && !loading ? (
         <div className="py-12 text-center text-gray-500 dark:text-gray-400">
           <svg className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          <p className="text-sm">Bu filtrede eğitmen başvurusu bulunmamaktadır.</p>
+          <p className="text-sm">Aradığınız kriterlerde eğitmen başvurusu bulunmamaktadır.</p>
         </div>
       ) : null}
 
@@ -313,6 +593,14 @@ function InstructorRequests() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 dark:bg-slate-900">
                 <tr>
+                  <th scope="col" className="px-4 py-3 text-left w-12">
+                    <input
+                      type="checkbox"
+                      checked={sortedRequests.length > 0 && selectedIds.length === sortedRequests.length}
+                      onChange={() => handleToggleSelectAll(sortedRequests)}
+                      className="rounded border-gray-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                    />
+                  </th>
                   <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Eğitmen
                   </th>
@@ -328,13 +616,21 @@ function InstructorRequests() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
-                {Array.isArray(requests) && requests.map((request) => (
+                {Array.isArray(sortedRequests) && sortedRequests.map((request) => (
                   <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(request.id)}
+                        onChange={() => handleToggleSelect(request.id)}
+                        className="rounded border-gray-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                      />
+                    </td>
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0 h-10 w-10">
                           <Avatar
-                            src={request.photoURL || ''}
+                            src={getMinioUrl(request.photoURL)}
                             alt={`${request.firstName} ${request.lastName}`}
                             className="h-10 w-10"
                             userType="instructor"
@@ -399,17 +695,22 @@ function InstructorRequests() {
                         >
                           Detaylar
                         </button>
+                        <button
+                          onClick={() => setEditingRequest(request)}
+                          className="inline-flex items-center px-2.5 py-1.5 border border-yellow-300 dark:border-yellow-700 text-xs font-medium rounded text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/30 hover:bg-yellow-100 dark:hover:bg-yellow-900/60 focus:outline-none"
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRequest(request.id, request.userId)}
+                          className="inline-flex items-center px-2.5 py-1.5 border border-red-300 dark:border-red-700 text-xs font-medium rounded text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/60 focus:outline-none"
+                        >
+                          Sil
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))}
-                {requests.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 sm:px-6 py-4 text-sm text-center text-gray-500 dark:text-gray-400">
-                      Henüz eğitmen başvurusu bulunmamaktadır.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
@@ -430,7 +731,7 @@ function InstructorRequests() {
               </button>
             </div>
             <div className="flex items-center space-x-3 mb-4">
-              <Avatar src={contactRequest.photoURL || ''} alt={`${contactRequest.firstName} ${contactRequest.lastName}`} className="h-12 w-12" userType="instructor" />
+              <Avatar src={getMinioUrl(contactRequest.photoURL)} alt={`${contactRequest.firstName} ${contactRequest.lastName}`} className="h-12 w-12" userType="instructor" />
               <div>
                 <p className="font-semibold text-gray-900 dark:text-white">{contactRequest.firstName} {contactRequest.lastName}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Eğitmen Adayı</p>
@@ -471,22 +772,37 @@ function InstructorRequests() {
           onClose={() => setSelectedRequest(null)}
           onApprove={handleApproveRequest}
           onReject={handleRejectRequest}
+          onEdit={() => setEditingRequest(selectedRequest)}
+          onDelete={() => handleDeleteRequest(selectedRequest.id, selectedRequest.userId)}
           isProcessing={processingId === selectedRequest.id}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {editingRequest && (
+        <InstructorEditModal
+          request={editingRequest}
+          onClose={() => setEditingRequest(null)}
+          onSave={handleSaveRequest}
+          isProcessing={processingId === editingRequest.id}
         />
       )}
     </div>
   );
 }
 
-interface ModalProps {
+// Instructor Details Modal
+interface DetailsModalProps {
   request: InstructorRequest;
   onClose: () => void;
   onApprove: (id: string, userId: string) => void;
   onReject: (id: string) => void;
+  onEdit: () => void;
+  onDelete: () => void;
   isProcessing: boolean;
 }
 
-function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProcessing }: ModalProps) {
+function InstructorDetailsModal({ request, onClose, onApprove, onReject, onEdit, onDelete, isProcessing }: DetailsModalProps) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -502,7 +818,7 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
               <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                 <div className="flex items-center space-x-4 mb-6">
                   <Avatar
-                    src={request.photoURL || ''}
+                    src={getMinioUrl(request.photoURL)}
                     alt={`${request.firstName} ${request.lastName}`}
                     className="h-16 w-16"
                     userType="instructor"
@@ -577,7 +893,7 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                       <div className="space-y-2">
                         {request.idDocumentUrl && (
                           <a
-                            href={request.idDocumentUrl}
+                            href={getMinioUrl(request.idDocumentUrl) || ''}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
@@ -595,7 +911,7 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                         )}
                         {request.certDocumentUrl && (
                           <a
-                            href={request.certDocumentUrl}
+                            href={getMinioUrl(request.certDocumentUrl) || ''}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
@@ -611,10 +927,10 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
                             </div>
                           </a>
                         )}
-                        {(request.documents || []).map((doc, idx) => (
+                        {(request.documents || []).map((docPath, idx) => (
                           <a
                             key={idx}
-                            href={doc}
+                            href={getMinioUrl(docPath) || ''}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center p-2 rounded border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
@@ -650,6 +966,18 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
               Reddet
             </button>
             <button
+              onClick={() => { onClose(); onEdit(); }}
+              className="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-base font-medium focus:outline-none sm:w-auto sm:text-sm"
+            >
+              Düzenle
+            </button>
+            <button
+              onClick={() => { onDelete(); }}
+              className="w-full inline-flex justify-center rounded-md border border-red-300 dark:border-red-700 shadow-sm px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-base font-medium focus:outline-none sm:w-auto sm:text-sm"
+            >
+              Sil
+            </button>
+            <button
               type="button"
               onClick={onClose}
               className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
@@ -657,6 +985,147 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, isProce
               Kapat
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Instructor Edit Modal
+interface EditModalProps {
+  request: InstructorRequest;
+  onClose: () => void;
+  onSave: (updatedData: Partial<InstructorRequest>) => void;
+  isProcessing: boolean;
+}
+
+function InstructorEditModal({ request, onClose, onSave, isProcessing }: EditModalProps) {
+  const [firstName, setFirstName] = useState(request.firstName || '');
+  const [lastName, setLastName] = useState(request.lastName || '');
+  const [contactNumber, setContactNumber] = useState(request.contactNumber || '');
+  const [experience, setExperience] = useState(request.experience || '');
+  const [danceStylesInput, setDanceStylesInput] = useState((request.danceStyles || []).join(', '));
+  const [bio, setBio] = useState(request.bio || '');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const danceStyles = danceStylesInput
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    onSave({
+      firstName,
+      lastName,
+      contactNumber,
+      experience,
+      danceStyles,
+      bio
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 transition-opacity" aria-hidden="true" onClick={onClose}>
+          <div className="absolute inset-0 bg-gray-500 opacity-75 dark:bg-slate-900 dark:opacity-90"></div>
+        </div>
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div className="inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <form onSubmit={handleSubmit}>
+            <div className="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <h3 className="text-lg leading-6 font-bold text-gray-900 dark:text-white mb-4">
+                Başvuruyu Düzenle
+              </h3>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Ad</label>
+                    <input
+                      type="text"
+                      required
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Soyad</label>
+                    <input
+                      type="text"
+                      required
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Telefon</label>
+                  <input
+                    type="text"
+                    required
+                    value={contactNumber}
+                    onChange={(e) => setContactNumber(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Deneyim (Yıl)</label>
+                  <input
+                    type="text"
+                    required
+                    value={experience}
+                    onChange={(e) => setExperience(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Dans Stilleri (Virgülle ayırın)</label>
+                  <input
+                    type="text"
+                    value={danceStylesInput}
+                    onChange={(e) => setDanceStylesInput(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    placeholder="Salsa, Bachata, Kizomba"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Biyografi</label>
+                  <textarea
+                    rows={4}
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-slate-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+              <button
+                type="submit"
+                disabled={isProcessing}
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50"
+              >
+                Kaydet
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isProcessing}
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

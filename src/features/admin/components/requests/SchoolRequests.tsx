@@ -7,7 +7,6 @@ import {
   doc,
   updateDoc,
   getDoc,
-  setDoc,
   deleteDoc,
   Timestamp,
   serverTimestamp,
@@ -15,10 +14,10 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../../../api/firebase/firebase';
 import Avatar from '../../../../common/components/ui/Avatar';
+import { getMinioUrl, getPresignedUrl } from '../../../../common/utils/imageUtils';
 
 interface SchoolRequest {
   id: string;
-  // Gerçek Firestore alanları
   firstName?: string;
   lastName?: string;
   schoolName: string;
@@ -60,13 +59,21 @@ function SchoolRequests(): JSX.Element {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<SchoolRequest | null>(null);
   const [contactRequest, setContactRequest] = useState<SchoolRequest | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [editingRequest, setEditingRequest] = useState<SchoolRequest | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+
+  // Search, sort and bulk states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   useEffect(() => {
     fetchRequests(statusFilter);
+    setSelectedIds([]); // Clear selection when filter changes
   }, [statusFilter]);
 
-  const fetchRequests = async (status: 'all' | 'draft' | 'pending' | 'approved' | 'rejected' = 'pending') => {
+  const fetchRequests = async (status: 'all' | 'pending' | 'approved' | 'rejected' = 'pending') => {
     setLoading(true);
     setError(null);
 
@@ -86,14 +93,35 @@ function SchoolRequests(): JSX.Element {
         } as SchoolRequest);
       });
 
-      // Sort by creation date (newest first)
-      requestsData.sort((a, b) => {
-        const dateA = a.createdAt?.toMillis?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
-        const dateB = b.createdAt?.toMillis?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
-        return dateB - dateA;
-      });
+      const resolvedRequests = await Promise.all(
+        requestsData.map(async (req) => {
+          const resolvedPhoto = await getPresignedUrl(req.photoURL);
+          const resolvedIdDoc = await getPresignedUrl(req.idDocumentUrl);
+          const resolvedCertDoc = await getPresignedUrl(req.certDocumentUrl);
+          const resolvedSchoolDoc = await getPresignedUrl(req.schoolDocument);
+          
+          let resolvedDocs: string[] = [];
+          if (req.documents && Array.isArray(req.documents)) {
+            resolvedDocs = await Promise.all(
+              req.documents.map(async (docPath) => {
+                const url = await getPresignedUrl(docPath);
+                return url || '';
+              })
+            );
+          }
 
-      setRequests(requestsData);
+          return {
+            ...req,
+            photoURL: resolvedPhoto || undefined,
+            idDocumentUrl: resolvedIdDoc || undefined,
+            certDocumentUrl: resolvedCertDoc || undefined,
+            schoolDocument: resolvedSchoolDoc || undefined,
+            documents: resolvedDocs.length > 0 ? resolvedDocs : undefined
+          };
+        })
+      );
+
+      setRequests(resolvedRequests);
 
     } catch (err) {
       console.error('Okul talepleri getirilirken hata oluştu:', err);
@@ -103,114 +131,114 @@ function SchoolRequests(): JSX.Element {
     }
   };
 
-  const handleApproveRequest = async (requestId: string, userId: string) => {
-    setProcessingId(requestId);
+  // Core approval logic reused by single and bulk approve
+  const approveRequestSilent = async (requestId: string, userId: string) => {
+    const requestDocRef = doc(db, 'schoolRequests', requestId);
+    const requestDoc = await getDoc(requestDocRef);
 
-    try {
-      const requestDocRef = doc(db, 'schoolRequests', requestId);
-      const requestDoc = await getDoc(requestDocRef);
+    if (!requestDoc.exists()) throw new Error('Talep bulunamadı');
 
-      if (!requestDoc.exists()) throw new Error('Talep bulunamadı');
+    const requestData = requestDoc.data() as SchoolRequest;
 
-      const requestData = requestDoc.data() as SchoolRequest;
+    // ── Aktivasyon talebi (yeni akış): schoolRequests → schools ──
+    if (requestData.type === 'activation') {
+      // 1. schoolRequests verisinden yeni aktif okul oluştur
+      const newSchoolData = {
+        name: requestData.schoolName,
+        displayName: requestData.schoolName,
+        description: requestData.schoolDescription || requestData.description || '',
+        contactPerson: requestData.contactPerson,
+        contactEmail: requestData.contactEmail,
+        contactPhone: requestData.contactPhone || '',
+        address: requestData.address || '',
+        photoURL: requestData.photoURL || null,
+        document_url: requestData.schoolDocument || requestData.document_url || null,
+        document_name: requestData.schoolDocumentName || requestData.document_name || null,
+        userId: userId,
+        status: 'active',
+        documentStatus: 'approved',
+        approvedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
 
-      // ── Aktivasyon talebi (yeni akış): schoolRequests → schools ──
-      if (requestData.type === 'activation') {
-        // 1. schoolRequests verisinden yeni aktif okul oluştur
-        const newSchoolData = {
-          name: requestData.schoolName,
-          displayName: requestData.schoolName,
-          description: requestData.schoolDescription || requestData.description || '',
-          contactPerson: requestData.contactPerson,
-          contactEmail: requestData.contactEmail,
-          contactPhone: requestData.contactPhone || '',
-          address: requestData.address || '',
-          photoURL: requestData.photoURL || null,
-          document_url: requestData.schoolDocument || requestData.document_url || null,
-          document_name: requestData.schoolDocumentName || requestData.document_name || null,
-          userId: userId,
-          status: 'active',
-          documentStatus: 'approved',
-          approvedAt: serverTimestamp(),
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        };
+      const newSchoolDoc = await addDoc(collection(db, 'schools'), newSchoolData);
 
-        const newSchoolDoc = await addDoc(collection(db, 'schools'), newSchoolData);
-
-        // 2. Kullanıcıyı güncelle: schoolId ekle, schoolRequestId'yi temizle
-        const userDocRef = doc(db, 'users', userId);
-        await updateDoc(userDocRef, {
-          schoolId: newSchoolDoc.id,
-          schoolRequestId: null,
-          is_school_pending: false,
-          role: 'school',
-          isSchool: true,
-          schoolApprovedAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
-
-        // 3. schoolRequests kaydını approved yap
-        await updateDoc(requestDocRef, {
-          status: 'approved',
-          approvedBy: 'admin',
-          schoolId: newSchoolDoc.id,
-          updatedAt: serverTimestamp()
-        });
-
-        setRequests(prev => prev.filter(r => r.id !== requestId));
-        alert('Okul aktivasyon talebi onaylandı! Okul artık aktif ve platformda görünür.');
-        return;
-      }
-
-      // ── Eski akış: Yeni okul oluştur ──
+      // 2. Kullanıcıyı güncelle: schoolId ekle, schoolRequestId'yi temizle
       const userDocRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userDocRef);
-      if (!userDoc.exists()) throw new Error('Kullanıcı bulunamadı');
-
       await updateDoc(userDocRef, {
+        schoolId: newSchoolDoc.id,
+        schoolRequestId: null,
+        is_school_pending: false,
         role: 'school',
         isSchool: true,
-        is_school_pending: false,
         schoolApprovedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 
-      const schoolData = {
-        name: requestData.schoolName,
-        displayName: requestData.schoolName,
-        description: requestData.schoolDescription,
-        address: requestData.address,
-        city: requestData.city,
-        zipCode: requestData.zipCode,
-        country: requestData.country,
-        website: requestData.website || '',
-        danceStyles: requestData.danceStyles,
-        establishedYear: requestData.establishedYear,
-        contactPerson: requestData.contactPerson,
-        contactEmail: requestData.contactEmail,
-        contactPhone: requestData.contactPhone,
-        userId: userId,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        status: 'active'
-      };
-
-      const schoolsCollectionRef = collection(db, 'schools');
-      const newSchoolDoc = await addDoc(schoolsCollectionRef, schoolData);
-
-      await updateDoc(userDocRef, { schoolId: newSchoolDoc.id });
-
+      // 3. schoolRequests kaydını approved yap
       await updateDoc(requestDocRef, {
         status: 'approved',
-        updatedAt: serverTimestamp(),
         approvedBy: 'admin',
-        schoolId: newSchoolDoc.id
+        schoolId: newSchoolDoc.id,
+        updatedAt: serverTimestamp()
       });
+      return;
+    }
 
+    // ── Eski akış: Yeni okul oluştur ──
+    const userDocRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userDocRef);
+    if (!userDoc.exists()) throw new Error('Kullanıcı bulunamadı');
+
+    await updateDoc(userDocRef, {
+      role: 'school',
+      isSchool: true,
+      is_school_pending: false,
+      schoolApprovedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    const schoolData = {
+      name: requestData.schoolName,
+      displayName: requestData.schoolName,
+      description: requestData.schoolDescription || requestData.description || '',
+      address: requestData.address || requestData.schoolAddress || '',
+      city: requestData.city || '',
+      zipCode: requestData.zipCode || '',
+      country: requestData.country || '',
+      website: requestData.website || '',
+      danceStyles: requestData.danceStyles || [],
+      establishedYear: requestData.establishedYear || '',
+      contactPerson: requestData.contactPerson || '',
+      contactEmail: requestData.contactEmail || '',
+      contactPhone: requestData.contactPhone || requestData.contactNumber || '',
+      userId: userId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      status: 'active'
+    };
+
+    const schoolsCollectionRef = collection(db, 'schools');
+    const newSchoolDoc = await addDoc(schoolsCollectionRef, schoolData);
+
+    await updateDoc(userDocRef, { schoolId: newSchoolDoc.id });
+
+    await updateDoc(requestDocRef, {
+      status: 'approved',
+      updatedAt: serverTimestamp(),
+      approvedBy: 'admin',
+      schoolId: newSchoolDoc.id
+    });
+  };
+
+  const handleApproveRequest = async (requestId: string, userId: string) => {
+    setProcessingId(requestId);
+
+    try {
+      await approveRequestSilent(requestId, userId);
       setRequests(prev => prev.filter(req => req.id !== requestId));
       alert('Okul talebi başarıyla onaylandı. Okul, okullar listesine eklendi ve kullanıcı bilgileri güncellendi.');
-
     } catch (err) {
       console.error('Okul talebi onaylanırken hata oluştu:', err);
       alert(`Hata: ${err instanceof Error ? err.message : 'Bilinmeyen bir hata oluştu'}`);
@@ -223,21 +251,15 @@ function SchoolRequests(): JSX.Element {
     setProcessingId(requestId);
 
     try {
-      // Update the request status
       const requestDocRef = doc(db, 'schoolRequests', requestId);
       await updateDoc(requestDocRef, {
         status: 'rejected',
         updatedAt: serverTimestamp(),
-        rejectedBy: 'admin' // Ideally, this would be the admin user ID
+        rejectedBy: 'admin'
       });
 
-      // Update the local state
-      setRequests(prev =>
-        prev.filter(req => req.id !== requestId)
-      );
-
+      setRequests(prev => prev.filter(req => req.id !== requestId));
       alert('Okul talebi reddedildi.');
-
     } catch (err) {
       console.error('Okul talebi reddedilirken hata oluştu:', err);
       alert('Talebiniz reddedilirken bir hata oluştu. Lütfen tekrar deneyin.');
@@ -246,15 +268,219 @@ function SchoolRequests(): JSX.Element {
     }
   };
 
-  const handleViewDetails = (request: SchoolRequest) => {
-    setSelectedRequest(request);
+  const handleDeleteRequest = async (requestId: string, userId: string) => {
+    if (!window.confirm('Bu talebi silmek istediğinize emin misiniz?')) return;
+    setProcessingId(requestId);
+
+    try {
+      await deleteDoc(doc(db, 'schoolRequests', requestId));
+      
+      // Clear user's school-related pending flags
+      const userDocRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userDocRef);
+      if (userSnap.exists()) {
+        await updateDoc(userDocRef, {
+          schoolRequestId: null,
+          is_school_pending: false,
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      setRequests(prev => prev.filter(req => req.id !== requestId));
+      alert('Okul talebi başarıyla silindi ve kullanıcının bekleyen durumları temizlendi.');
+      if (selectedRequest?.id === requestId) {
+        setSelectedRequest(null);
+      }
+    } catch (err) {
+      console.error('Okul talebi silinirken hata oluştu:', err);
+      alert('Talep silinirken bir hata oluştu.');
+    } finally {
+      setProcessingId(null);
+    }
   };
 
-  if (loading) {
+  const handleSaveRequest = async (updatedData: Partial<SchoolRequest>) => {
+    if (!editingRequest) return;
+    setProcessingId(editingRequest.id);
+
+    try {
+      const requestDocRef = doc(db, 'schoolRequests', editingRequest.id);
+      await updateDoc(requestDocRef, {
+        ...updatedData,
+        updatedAt: serverTimestamp()
+      });
+
+      setRequests(prev =>
+        prev.map(req =>
+          req.id === editingRequest.id ? { ...req, ...updatedData } : req
+        )
+      );
+
+      // If details modal is open for the same request, update it
+      if (selectedRequest?.id === editingRequest.id) {
+        setSelectedRequest(prev => prev ? { ...prev, ...updatedData } : null);
+      }
+
+      setEditingRequest(null);
+      alert('Talep başarıyla güncellendi.');
+    } catch (err) {
+      console.error('Talep güncellenirken hata:', err);
+      alert('Talep güncellenemedi. Lütfen tekrar deneyin.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Bulk operation handlers
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length} adet talebi onaylamak istediğinize emin misiniz?`)) return;
+
+    setIsBulkProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of selectedIds) {
+      const req = requests.find(r => r.id === id);
+      if (req) {
+        try {
+          await approveRequestSilent(req.id, req.userId);
+          successCount++;
+        } catch (err) {
+          console.error(`Talep onaylanırken hata (ID: ${id}):`, err);
+          failCount++;
+        }
+      }
+    }
+
+    setRequests(prev => prev.filter(req => !selectedIds.includes(req.id)));
+    setSelectedIds([]);
+    setIsBulkProcessing(false);
+    alert(`${successCount} talep başarıyla onaylandı.${failCount > 0 ? ` ${failCount} talep onaylanamadı.` : ''}`);
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length} adet talebi reddetmek istediğinize emin misiniz?`)) return;
+
+    setIsBulkProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of selectedIds) {
+      try {
+        const requestDocRef = doc(db, 'schoolRequests', id);
+        await updateDoc(requestDocRef, {
+          status: 'rejected',
+          updatedAt: serverTimestamp(),
+          rejectedBy: 'admin'
+        });
+        successCount++;
+      } catch (err) {
+        console.error(`Talep reddedilirken hata (ID: ${id}):`, err);
+        failCount++;
+      }
+    }
+
+    setRequests(prev => prev.filter(req => !selectedIds.includes(req.id)));
+    setSelectedIds([]);
+    setIsBulkProcessing(false);
+    alert(`${successCount} talep başarıyla reddedildi.${failCount > 0 ? ` ${failCount} talep reddedilemedi.` : ''}`);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`${selectedIds.length} adet talebi kalıcı olarak silmek istediğinize emin misiniz?`)) return;
+
+    setIsBulkProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of selectedIds) {
+      const req = requests.find(r => r.id === id);
+      if (req) {
+        try {
+          await deleteDoc(doc(db, 'schoolRequests', id));
+          
+          const userDocRef = doc(db, 'users', req.userId);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            await updateDoc(userDocRef, {
+              schoolRequestId: null,
+              is_school_pending: false,
+              updatedAt: serverTimestamp()
+            });
+          }
+          successCount++;
+        } catch (err) {
+          console.error(`Talep silinirken hata (ID: ${id}):`, err);
+          failCount++;
+        }
+      }
+    }
+
+    setRequests(prev => prev.filter(req => !selectedIds.includes(req.id)));
+    setSelectedIds([]);
+    setIsBulkProcessing(false);
+    alert(`${successCount} talep silindi ve kullanıcı bekleyen durumları temizlendi.${failCount > 0 ? ` ${failCount} talep silinemedi.` : ''}`);
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAll = (visibleRequests: SchoolRequest[]) => {
+    if (selectedIds.length === visibleRequests.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(visibleRequests.map(r => r.id));
+    }
+  };
+
+  // Filter and sort requests
+  const filteredRequests = requests.filter(req => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+
+    const schoolName = (req.schoolName || '').toLowerCase();
+    const contactPerson = (req.contactPerson || `${req.firstName || ''} ${req.lastName || ''}`).toLowerCase();
+    const email = (req.contactEmail || req.userEmail || '').toLowerCase();
+    const phone = (req.contactNumber || req.contactPhone || '').toLowerCase();
+    const address = (req.address || req.schoolAddress || '').toLowerCase();
+
+    return schoolName.includes(query) || contactPerson.includes(query) || email.includes(query) || phone.includes(query) || address.includes(query);
+  });
+
+  const sortedRequests = [...filteredRequests].sort((a, b) => {
+    if (sortBy === 'newest') {
+      const dateA = a.createdAt?.toMillis?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
+      const dateB = b.createdAt?.toMillis?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
+      return dateB - dateA;
+    } else if (sortBy === 'oldest') {
+      const dateA = a.createdAt?.toMillis?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
+      const dateB = b.createdAt?.toMillis?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
+      return dateA - dateB;
+    } else if (sortBy === 'name-asc') {
+      const nameA = (a.schoolName || '').toLowerCase();
+      const nameB = (b.schoolName || '').toLowerCase();
+      return nameA.localeCompare(nameB, 'tr');
+    } else if (sortBy === 'name-desc') {
+      const nameA = (a.schoolName || '').toLowerCase();
+      const nameB = (b.schoolName || '').toLowerCase();
+      return nameB.localeCompare(nameA, 'tr');
+    }
+    return 0;
+  });
+
+  if (loading || isBulkProcessing) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-        <span className="ml-3 text-gray-700 dark:text-gray-300">Yükleniyor...</span>
+        <span className="ml-3 text-gray-700 dark:text-gray-300">
+          {isBulkProcessing ? 'Toplu işlemler gerçekleştiriliyor...' : 'Yükleniyor...'}
+        </span>
       </div>
     );
   }
@@ -273,24 +499,45 @@ function SchoolRequests(): JSX.Element {
     );
   }
 
-
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 sm:p-6">
-      <div className="flex flex-col gap-3 mb-6">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200">Okul Başvuruları</h2>
-        {/* Scrollable filter bar — stays one line on all screen sizes */}
+    <div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6">
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200">Okul Başvuruları</h2>
+          
+          {/* Search and Sort Toolbar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Okul adı, yetkili, e-posta veya telefon ile ara..."
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-full sm:w-64"
+            />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            >
+              <option value="newest">En Yeni (Varsayılan)</option>
+              <option value="oldest">En Eski</option>
+              <option value="name-asc">Okul Adı (A-Z)</option>
+              <option value="name-desc">Okul Adı (Z-A)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Scrollable filter bar */}
         <div className="flex overflow-x-auto pb-1 gap-2 scrollbar-hide">
-          {(['all', 'draft', 'pending', 'approved', 'rejected'] as const).map((s) => {
+          {(['all', 'pending', 'approved', 'rejected'] as const).map((s) => {
             const labels: Record<string, string> = {
               all: 'Tümü',
-              draft: 'Taslak',
               pending: 'Bekleyen',
               approved: 'Onaylandı',
               rejected: 'Reddedildi'
             };
             const colors: Record<string, string> = {
               all: statusFilter === s ? 'bg-gray-700 text-white border-gray-700' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700',
-              draft: statusFilter === s ? 'bg-slate-500 text-white border-slate-500' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700',
               pending: statusFilter === s ? 'bg-yellow-500 text-white border-yellow-500' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20',
               approved: statusFilter === s ? 'bg-green-600 text-white border-green-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-green-50 dark:hover:bg-green-900/20',
               rejected: statusFilter === s ? 'bg-red-600 text-white border-red-600' : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/20',
@@ -308,12 +555,47 @@ function SchoolRequests(): JSX.Element {
         </div>
       </div>
 
-      {requests.length === 0 && !loading ? (
+      {/* Bulk actions toolbar */}
+      {selectedIds.length > 0 && (
+        <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 flex items-center justify-between gap-3 animate-fadeIn">
+          <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+            {selectedIds.length} adet talep seçildi
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkApprove}
+              className="px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded hover:bg-green-700 transition"
+            >
+              Toplu Onayla
+            </button>
+            <button
+              onClick={handleBulkReject}
+              className="px-3 py-1.5 bg-yellow-600 text-white text-xs font-semibold rounded hover:bg-yellow-700 transition"
+            >
+              Toplu Reddet
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded hover:bg-red-700 transition"
+            >
+              Toplu Sil
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-2.5 py-1.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 text-xs rounded hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+            >
+              İptal
+            </button>
+          </div>
+        </div>
+      )}
+
+      {sortedRequests.length === 0 && !loading ? (
         <div className="py-12 text-center text-gray-500 dark:text-gray-400">
           <svg className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          <p className="text-sm">Bu filtrede okul başvurusu bulunmamaktadır.</p>
+          <p className="text-sm">Aradığınız kriterlerde okul başvurusu bulunmamaktadır.</p>
         </div>
       ) : null}
 
@@ -323,6 +605,14 @@ function SchoolRequests(): JSX.Element {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 dark:bg-slate-900">
                 <tr>
+                  <th scope="col" className="px-4 py-3 text-left w-12">
+                    <input
+                      type="checkbox"
+                      checked={sortedRequests.length > 0 && selectedIds.length === sortedRequests.length}
+                      onChange={() => handleToggleSelectAll(sortedRequests)}
+                      className="rounded border-gray-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                    />
+                  </th>
                   <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Okul
                   </th>
@@ -344,15 +634,24 @@ function SchoolRequests(): JSX.Element {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
-                {Array.isArray(requests) && requests.map((request) => (
+                {Array.isArray(sortedRequests) && sortedRequests.map((request) => (
                   <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(request.id)}
+                        onChange={() => handleToggleSelect(request.id)}
+                        className="rounded border-gray-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                      />
+                    </td>
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0 h-10 w-10">
                           <Avatar
-                            src={null}
+                            src={getMinioUrl(request.photoURL)}
                             alt={request.schoolName}
                             className="h-10 w-10 rounded-full"
+                            userType="school"
                           />
                         </div>
                         <div>
@@ -425,22 +724,27 @@ function SchoolRequests(): JSX.Element {
                           İletişim
                         </button>
                         <button
-                          onClick={() => handleViewDetails(request)}
+                          onClick={() => setSelectedRequest(request)}
                           className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 dark:border-slate-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none"
                         >
                           Detaylar
+                        </button>
+                        <button
+                          onClick={() => setEditingRequest(request)}
+                          className="inline-flex items-center px-2.5 py-1.5 border border-yellow-300 dark:border-yellow-700 text-xs font-medium rounded text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/30 hover:bg-yellow-100 dark:hover:bg-yellow-900/60 focus:outline-none"
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRequest(request.id, request.userId)}
+                          className="inline-flex items-center px-2.5 py-1.5 border border-red-300 dark:border-red-700 text-xs font-medium rounded text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/60 focus:outline-none"
+                        >
+                          Sil
                         </button>
                       </div>
                     </td>
                   </tr>
                 ))}
-                {requests.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 sm:px-6 py-4 text-sm text-center text-gray-500 dark:text-gray-400">
-                      Henüz okul başvurusu bulunmamaktadır.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
@@ -461,7 +765,7 @@ function SchoolRequests(): JSX.Element {
               </button>
             </div>
             <div className="flex items-center space-x-3 mb-4">
-              <Avatar src={null} alt={contactRequest.schoolName} className="h-12 w-12 rounded-full" />
+              <Avatar src={getMinioUrl(contactRequest.photoURL)} alt={contactRequest.schoolName} className="h-12 w-12 rounded-full" userType="school" />
               <div>
                 <p className="font-semibold text-gray-900 dark:text-white">{contactRequest.schoolName}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{contactRequest.contactPerson} &bull; Okul Adayı</p>
@@ -515,22 +819,37 @@ function SchoolRequests(): JSX.Element {
           onClose={() => setSelectedRequest(null)}
           onApprove={handleApproveRequest}
           onReject={handleRejectRequest}
+          onEdit={() => setEditingRequest(selectedRequest)}
+          onDelete={() => handleDeleteRequest(selectedRequest.id, selectedRequest.userId)}
           isProcessing={processingId === selectedRequest.id}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {editingRequest && (
+        <SchoolEditModal
+          request={editingRequest}
+          onClose={() => setEditingRequest(null)}
+          onSave={handleSaveRequest}
+          isProcessing={processingId === editingRequest.id}
         />
       )}
     </div>
   );
 }
 
-interface ModalProps {
+// School Details Modal
+interface DetailsModalProps {
   request: SchoolRequest;
   onClose: () => void;
   onApprove: (id: string, userId: string) => void;
   onReject: (id: string) => void;
+  onEdit: () => void;
+  onDelete: () => void;
   isProcessing: boolean;
 }
 
-function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessing }: ModalProps) {
+function SchoolDetailsModal({ request, onClose, onApprove, onReject, onEdit, onDelete, isProcessing }: DetailsModalProps) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -546,9 +865,10 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
               <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                 <div className="flex items-center space-x-4 mb-6">
                   <Avatar
-                    src={null}
+                    src={getMinioUrl(request.photoURL)}
                     alt={request.schoolName}
                     className="h-16 w-16 rounded-full"
+                    userType="school"
                   />
                   <h3 className="text-xl leading-6 font-bold text-gray-900 dark:text-white">
                     {request.schoolName}
@@ -614,7 +934,7 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
                     </div>
                     <div>
                       <span className="block text-xs text-gray-500 dark:text-gray-400">Açıklama</span>
-                      <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{request.schoolDescription || 'Belirtilmemiş'}</p>
+                      <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{request.schoolDescription || request.description || 'Belirtilmemiş'}</p>
                     </div>
                     <div className="flex justify-between text-sm">
                       <div>
@@ -643,7 +963,7 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
                       <div className="space-y-2">
                         {request.idDocumentUrl && (
                           <a
-                            href={request.idDocumentUrl}
+                            href={getMinioUrl(request.idDocumentUrl) || ''}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
@@ -661,14 +981,14 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
                         )}
                         {request.certDocumentUrl && (
                           <a
-                            href={request.certDocumentUrl}
+                            href={getMinioUrl(request.certDocumentUrl) || ''}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
                           >
                             <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
                               <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 00.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138z" />
                               </svg>
                             </div>
                             <div>
@@ -689,7 +1009,7 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
                               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{request.schoolDocumentName || 'Belge yüklendi'}</p>
                             </div>
                             <a
-                              href={request.schoolDocument}
+                              href={getMinioUrl(request.schoolDocument) || ''}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="ml-2 text-xs text-purple-600 dark:text-purple-400 hover:underline whitespace-nowrap"
@@ -698,10 +1018,10 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
                             </a>
                           </div>
                         )}
-                        {(request.documents || []).map((doc, idx) => (
+                        {(request.documents || []).map((docPath, idx) => (
                           <a
                             key={idx}
-                            href={doc}
+                            href={getMinioUrl(docPath) || ''}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center p-2 rounded border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
@@ -737,6 +1057,18 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
               Reddet
             </button>
             <button
+              onClick={() => { onClose(); onEdit(); }}
+              className="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-base font-medium focus:outline-none sm:w-auto sm:text-sm"
+            >
+              Düzenle
+            </button>
+            <button
+              onClick={() => { onDelete(); }}
+              className="w-full inline-flex justify-center rounded-md border border-red-300 dark:border-red-700 shadow-sm px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-base font-medium focus:outline-none sm:w-auto sm:text-sm"
+            >
+              Sil
+            </button>
+            <button
               type="button"
               onClick={onClose}
               className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
@@ -744,6 +1076,216 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, isProcessin
               Kapat
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// School Edit Modal
+interface EditModalProps {
+  request: SchoolRequest;
+  onClose: () => void;
+  onSave: (updatedData: Partial<SchoolRequest>) => void;
+  isProcessing: boolean;
+}
+
+function SchoolEditModal({ request, onClose, onSave, isProcessing }: EditModalProps) {
+  const [schoolName, setSchoolName] = useState(request.schoolName || '');
+  const [schoolDescription, setSchoolDescription] = useState(request.schoolDescription || request.description || '');
+  const [address, setAddress] = useState(request.address || request.schoolAddress || '');
+  const [city, setCity] = useState(request.city || '');
+  const [contactPerson, setContactPerson] = useState(request.contactPerson || '');
+  const [contactEmail, setContactEmail] = useState(request.contactEmail || request.userEmail || '');
+  const [contactPhone, setContactPhone] = useState(request.contactPhone || request.contactNumber || '');
+  const [instagramHandle, setInstagramHandle] = useState(request.instagramHandle || '');
+  const [website, setWebsite] = useState(request.website || '');
+  const [establishedYear, setEstablishedYear] = useState(request.establishedYear || '');
+  const [danceStylesInput, setDanceStylesInput] = useState((request.danceStyles || []).join(', '));
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const danceStyles = danceStylesInput
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    onSave({
+      schoolName,
+      schoolDescription,
+      description: schoolDescription, // Update alias too
+      address,
+      schoolAddress: address, // Update alias too
+      city,
+      contactPerson,
+      contactEmail,
+      contactPhone,
+      contactNumber: contactPhone, // Update alias too
+      instagramHandle,
+      website,
+      establishedYear,
+      danceStyles
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 transition-opacity" aria-hidden="true" onClick={onClose}>
+          <div className="absolute inset-0 bg-gray-500 opacity-75 dark:bg-slate-900 dark:opacity-90"></div>
+        </div>
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div className="inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <form onSubmit={handleSubmit}>
+            <div className="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 max-h-[80vh] overflow-y-auto">
+              <h3 className="text-lg leading-6 font-bold text-gray-900 dark:text-white mb-4">
+                Başvuruyu Düzenle
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Okul Adı</label>
+                  <input
+                    type="text"
+                    required
+                    value={schoolName}
+                    onChange={(e) => setSchoolName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Yetkili Kişi</label>
+                  <input
+                    type="text"
+                    required
+                    value={contactPerson}
+                    onChange={(e) => setContactPerson(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">E-posta</label>
+                    <input
+                      type="email"
+                      required
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Telefon</label>
+                    <input
+                      type="text"
+                      required
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Adres</label>
+                    <input
+                      type="text"
+                      required
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Şehir</label>
+                    <input
+                      type="text"
+                      required
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Instagram (@)</label>
+                    <input
+                      type="text"
+                      value={instagramHandle}
+                      onChange={(e) => setInstagramHandle(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      placeholder="okulkullaniciadi"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Kuruluş Yılı</label>
+                    <input
+                      type="text"
+                      value={establishedYear}
+                      onChange={(e) => setEstablishedYear(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Web Sitesi</label>
+                  <input
+                    type="url"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    placeholder="https://example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Dans Stilleri (Virgülle ayırın)</label>
+                  <input
+                    type="text"
+                    value={danceStylesInput}
+                    onChange={(e) => setDanceStylesInput(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    placeholder="Salsa, Bachata, Kizomba"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Okul Açıklaması</label>
+                  <textarea
+                    rows={4}
+                    value={schoolDescription}
+                    onChange={(e) => setSchoolDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-slate-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+              <button
+                type="submit"
+                disabled={isProcessing}
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50"
+              >
+                Kaydet
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isProcessing}
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
