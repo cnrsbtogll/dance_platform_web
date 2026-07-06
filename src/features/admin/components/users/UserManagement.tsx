@@ -730,19 +730,63 @@ export const UserManagement: React.FC = () => {
           }
           case 'school': {
             const schoolData = formData as SchoolFormData;
-            const schoolRef = doc(db, 'schools', selectedStudent.id);
-            const updateData = {
-              ...commonFields,
-              address: schoolData.address,
-              city: schoolData.city,
-              district: schoolData.district,
-              description: schoolData.description,
-              facilities: schoolData.facilities,
-              contactPerson: schoolData.contactPerson,
-              website: schoolData.website
-            };
-            batch.update(userRef, updateData);
-            batch.update(schoolRef, updateData);
+            
+            try {
+              // 1. Try to find school document ID via schoolId field
+              let schoolDocId = selectedStudent.schoolId;
+              
+              // 2. If not found by schoolId, query by userId (users collection ID)
+              if (!schoolDocId) {
+                const schoolsRef = collection(db, 'schools');
+                const q = query(schoolsRef, where('userId', '==', selectedStudent.id));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                  schoolDocId = querySnapshot.docs[0].id;
+                }
+              }
+
+              const updateData = {
+                ...commonFields,
+                address: schoolData.address,
+                city: schoolData.city,
+                district: schoolData.district,
+                description: schoolData.description,
+                facilities: schoolData.facilities,
+                contactPerson: schoolData.contactPerson,
+                website: schoolData.website
+              };
+
+              // First update the user document
+              batch.update(userRef, updateData);
+
+              if (schoolDocId) {
+                // Check if the school document actually exists to decide update or set
+                const schoolRef = doc(db, 'schools', schoolDocId);
+                const schoolSnap = await getDoc(schoolRef);
+                if (schoolSnap.exists()) {
+                  batch.update(schoolRef, updateData);
+                } else {
+                  batch.set(schoolRef, {
+                    ...updateData,
+                    userId: selectedStudent.id,
+                    createdAt: serverTimestamp()
+                  });
+                }
+              } else {
+                // If it doesn't exist at all, create a new school document
+                const newSchoolRef = doc(collection(db, 'schools'));
+                batch.set(newSchoolRef, {
+                  ...updateData,
+                  userId: selectedStudent.id,
+                  createdAt: serverTimestamp()
+                });
+                // Update user with the new schoolId
+                batch.update(userRef, { schoolId: newSchoolRef.id });
+              }
+            } catch (err) {
+              console.error('Okul belgesi güncellenirken hata:', err);
+              throw new Error('Okul bilgileri güncellenirken hata oluştu. Lütfen tekrar deneyin.');
+            }
             break;
           }
         }
