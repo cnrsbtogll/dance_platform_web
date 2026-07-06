@@ -289,14 +289,6 @@ export const UserManagement: React.FC = () => {
             email: data.email || ''
           });
         }
-
-        if (data.role === 'school') {
-          schoolsData.push({
-            id: doc.id,
-            displayName: data.displayName || 'İsimsiz Okul',
-            email: data.email || ''
-          });
-        }
       });
 
       try {
@@ -459,7 +451,11 @@ export const UserManagement: React.FC = () => {
 
     // Artık role her zaman string
     const userType = student.role;
-    setSelectedUserType(userType as 'student' | 'instructor' | 'school');
+    const normalizedType = 
+      userType === 'draft-school' ? 'school' :
+      userType === 'draft-instructor' ? 'instructor' :
+      userType as 'student' | 'instructor' | 'school';
+    setSelectedUserType(normalizedType);
 
     const baseFormData = {
       id: student.id,
@@ -481,6 +477,7 @@ export const UserManagement: React.FC = () => {
         } as StudentFormData);
         break;
       case 'instructor':
+      case 'draft-instructor':
         setFormData({
           ...baseFormData,
           level: student.level || 'professional',
@@ -492,6 +489,7 @@ export const UserManagement: React.FC = () => {
         } as InstructorFormData);
         break;
       case 'school':
+      case 'draft-school':
         setFormData({
           ...baseFormData,
           address: student.address || '',
@@ -685,7 +683,8 @@ export const UserManagement: React.FC = () => {
             batch.update(userRef, updateData);
             break;
           }
-          case 'instructor': {
+          case 'instructor':
+          case 'draft-instructor': {
             const instructorData = formData as InstructorFormData;
 
             // First update the user document
@@ -728,7 +727,8 @@ export const UserManagement: React.FC = () => {
 
             break;
           }
-          case 'school': {
+          case 'school':
+          case 'draft-school': {
             const schoolData = formData as SchoolFormData;
             
             try {
@@ -747,6 +747,8 @@ export const UserManagement: React.FC = () => {
 
               const updateData = {
                 ...commonFields,
+                name: formData.displayName,
+                schoolName: formData.displayName,
                 address: schoolData.address,
                 city: schoolData.city,
                 district: schoolData.district,
@@ -806,7 +808,7 @@ export const UserManagement: React.FC = () => {
                   instructorId: (formData as StudentFormData).instructorId,
                   schoolId: (formData as StudentFormData).schoolId
                 }),
-                ...(formData.role === 'instructor' && {
+                ...((formData.role === 'instructor' || formData.role === 'draft-instructor') && {
                   level: (formData as InstructorFormData).level,
                   specialties: (formData as InstructorFormData).specialties,
                   experience: (formData as InstructorFormData).experience,
@@ -814,7 +816,7 @@ export const UserManagement: React.FC = () => {
                   availability: (formData as InstructorFormData).availability,
                   schoolId: (formData as InstructorFormData).schoolId
                 }),
-                ...(formData.role === 'school' && {
+                ...((formData.role === 'school' || formData.role === 'draft-school') && {
                   address: (formData as SchoolFormData).address,
                   city: (formData as SchoolFormData).city,
                   district: (formData as SchoolFormData).district,
@@ -956,7 +958,7 @@ export const UserManagement: React.FC = () => {
       const roles = Array.isArray(studentToDelete.role) ? studentToDelete.role : [studentToDelete.role];
 
       // Delete from role-specific collections
-      if (roles.includes('instructor')) {
+      if (roles.includes('instructor') || roles.includes('draft-instructor')) {
         const instructorsRef = collection(db, 'instructors');
         const q = query(instructorsRef, where('userId', '==', studentId));
         const querySnapshot = await getDocs(q);
@@ -964,12 +966,52 @@ export const UserManagement: React.FC = () => {
         await Promise.all(deletePromises);
       }
 
-      if (roles.includes('school')) {
-        await deleteDoc(doc(db, 'schools', studentId));
+      if (roles.includes('school') || roles.includes('draft-school')) {
+        // 1. Delete by schoolId if set
+        if (studentToDelete.schoolId) {
+          try {
+            await deleteDoc(doc(db, 'schools', studentToDelete.schoolId));
+          } catch (err) {
+            console.error('Okul belgesi silinirken hata (schoolId):', err);
+          }
+        }
+        // 2. Also delete by querying userId
+        try {
+          const schoolsRef = collection(db, 'schools');
+          const q = query(schoolsRef, where('userId', '==', studentId));
+          const querySnapshot = await getDocs(q);
+          const deletePromises = querySnapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
+          await Promise.all(deletePromises);
+        } catch (err) {
+          console.error('Okul belgesi silinirken hata (query userId):', err);
+        }
+        // 3. Fallback UID deletion
+        try {
+          await deleteDoc(doc(db, 'schools', studentId));
+        } catch (err) {
+          console.warn('Okul belgesi UID silme uyarısı:', err);
+        }
       }
 
       // Delete from main users collection
       await deleteDoc(doc(db, 'users', studentId));
+
+      // Delete from Firebase Authentication via Vercel serverless function
+      try {
+        const response = await fetch('/api/delete-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ uid: studentId }),
+        });
+        if (!response.ok) {
+          const errData = await response.json();
+          console.warn('Authentication\'dan silinirken uyarı:', errData.error);
+        }
+      } catch (authErr) {
+        console.error('Authentication\'dan silinirken hata oluştu:', authErr);
+      }
 
       // Remove from state
       const updatedStudents = students.filter(student => student.id !== studentId);
@@ -1006,7 +1048,7 @@ export const UserManagement: React.FC = () => {
         const roles = Array.isArray(studentToDelete.role) ? studentToDelete.role : [studentToDelete.role];
 
         // Delete from role-specific collections
-        if (roles.includes('instructor')) {
+        if (roles.includes('instructor') || roles.includes('draft-instructor')) {
           const instructorsRef = collection(db, 'instructors');
           const q = query(instructorsRef, where('userId', '==', studentId));
           const querySnapshot = await getDocs(q);
@@ -1015,7 +1057,20 @@ export const UserManagement: React.FC = () => {
           });
         }
 
-        if (roles.includes('school')) {
+        if (roles.includes('school') || roles.includes('draft-school')) {
+          // 1. Delete by schoolId if set
+          if (studentToDelete.schoolId) {
+            batch.delete(doc(db, 'schools', studentToDelete.schoolId));
+          }
+          // 2. Also delete by querying userId
+          const schoolsRef = collection(db, 'schools');
+          const q = query(schoolsRef, where('userId', '==', studentId));
+          const querySnapshot = await getDocs(q);
+          querySnapshot.docs.forEach(docSnap => {
+            batch.delete(docSnap.ref);
+          });
+
+          // 3. Fallback UID deletion
           batch.delete(doc(db, 'schools', studentId));
         }
 
@@ -1024,6 +1079,25 @@ export const UserManagement: React.FC = () => {
       }
 
       await batch.commit();
+
+      // Delete from Firebase Authentication via Vercel serverless function
+      for (const studentId of selectedUserIds) {
+        try {
+          const response = await fetch('/api/delete-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ uid: studentId }),
+          });
+          if (!response.ok) {
+            const errData = await response.json();
+            console.warn(`Authentication'dan silinirken uyarı (${studentId}):`, errData.error);
+          }
+        } catch (authErr) {
+          console.error(`Authentication'dan silinirken hata oluştu (${studentId}):`, authErr);
+        }
+      }
 
       // Remove from state
       setStudents(prev => prev.filter(s => !selectedUserIds.includes(s.id)));
