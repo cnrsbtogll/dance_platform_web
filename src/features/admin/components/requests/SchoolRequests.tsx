@@ -713,11 +713,14 @@ function SchoolRequests(): JSX.Element {
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Onaylandı</span>
                       )}
                       {request.status === 'rejected' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">Reddedildi</span>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-green-300">Reddedildi</span>
                       )}
                       {request.status === 'pending' && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">Bekliyor</span>
                       )}
+                      <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5 font-medium">
+                        Belge ile
+                      </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
                       <div className="flex justify-end items-center space-x-2">
@@ -735,6 +738,24 @@ function SchoolRequests(): JSX.Element {
                         >
                           İletişim
                         </button>
+                        {request.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleApproveRequest(request.id, request.userId)}
+                              disabled={processingId === request.id}
+                              className="inline-flex items-center px-2.5 py-1.5 border border-green-300 dark:border-green-700 text-xs font-medium rounded text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/60 focus:outline-none disabled:opacity-50"
+                            >
+                              Onayla
+                            </button>
+                            <button
+                              onClick={() => handleRejectRequest(request.id)}
+                              disabled={processingId === request.id}
+                              className="inline-flex items-center px-2.5 py-1.5 border border-red-300 dark:border-red-700 text-xs font-medium rounded text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/60 focus:outline-none disabled:opacity-50"
+                            >
+                              Reddet
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => setSelectedRequest(request)}
                           className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 dark:border-slate-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none"
@@ -871,7 +892,16 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, onEdit, onD
 
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-        <div className="inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="relative inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none"
+            title="Kapat"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
           <div className="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div className="sm:flex sm:items-start">
               <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
@@ -1079,13 +1109,6 @@ function SchoolDetailsModal({ request, onClose, onApprove, onReject, onEdit, onD
               className="w-full inline-flex justify-center rounded-md border border-red-300 dark:border-red-700 shadow-sm px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-base font-medium focus:outline-none sm:w-auto sm:text-sm"
             >
               Sil
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
-            >
-              Kapat
             </button>
           </div>
         </div>

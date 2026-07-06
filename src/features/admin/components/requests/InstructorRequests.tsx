@@ -36,6 +36,9 @@ interface InstructorRequest {
   idDocumentUrl?: string;    // Kimlik belgesi URL
   certDocumentUrl?: string;  // Sertifika belgesi URL
   documents?: string[];      // Eski uyumluluk için
+  verificationMethod?: string;
+  schoolName?: string;
+  schoolId?: string;
 }
 
 function InstructorRequests() {
@@ -684,6 +687,11 @@ function InstructorRequests() {
                       {request.status === 'pending' && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">Bekliyor</span>
                       )}
+                      <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5 font-medium">
+                        {request.verificationMethod === 'school'
+                          ? `Okul Onayı${request.schoolName ? ` (${request.schoolName})` : ''}`
+                          : 'Belge ile'}
+                      </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
                       <div className="flex justify-end items-center space-x-2">
@@ -701,6 +709,24 @@ function InstructorRequests() {
                         >
                           İletişim
                         </button>
+                        {request.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleApproveRequest(request.id, request.userId)}
+                              disabled={processingId === request.id}
+                              className="inline-flex items-center px-2.5 py-1.5 border border-green-300 dark:border-green-700 text-xs font-medium rounded text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/60 focus:outline-none disabled:opacity-50"
+                            >
+                              Onayla
+                            </button>
+                            <button
+                              onClick={() => handleRejectRequest(request.id)}
+                              disabled={processingId === request.id}
+                              className="inline-flex items-center px-2.5 py-1.5 border border-red-300 dark:border-red-700 text-xs font-medium rounded text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/60 focus:outline-none disabled:opacity-50"
+                            >
+                              Reddet
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => setSelectedRequest(request)}
                           className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 dark:border-slate-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none"
@@ -824,7 +850,16 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, onEdit,
 
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-        <div className="inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="relative inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none"
+            title="Kapat"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
           <div className="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div className="sm:flex sm:items-start">
               <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
@@ -898,64 +933,90 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, onEdit,
                     </div>
                   </div>
 
-                  {/* Yüklü Dökümanlar */}
+                  {/* Yüklü Dökümanlar veya Okul Onay Bilgisi */}
                   <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">Yüklü Dökümanlar</h4>
-                    {(request.idDocumentUrl || request.certDocumentUrl || (request.documents && request.documents.length > 0)) ? (
-                      <div className="space-y-2">
-                        {request.idDocumentUrl && (
-                          <a
-                            href={getMinioUrl(request.idDocumentUrl) || ''}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
-                          >
-                            <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900 flex items-center justify-center mr-3">
-                              <svg className="h-4 w-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2" />
-                              </svg>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">Kimlik Belgesi</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Görüntülemek için tıklayın</p>
-                            </div>
-                          </a>
-                        )}
-                        {request.certDocumentUrl && (
-                          <a
-                            href={getMinioUrl(request.certDocumentUrl) || ''}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
-                          >
-                            <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
-                              <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                              </svg>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">Sertifika Belgesi</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Görüntülemek için tıklayın</p>
-                            </div>
-                          </a>
-                        )}
-                        {(request.documents || []).map((docPath, idx) => (
-                          <a
-                            key={idx}
-                            href={getMinioUrl(docPath) || ''}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center p-2 rounded border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
-                          >
-                            <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    {request.verificationMethod === 'school' ? (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">Onay Yöntemi</h4>
+                        <div className="flex items-start p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/60">
+                          <div className="flex-shrink-0 mt-0.5 mr-3">
+                            <svg className="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
-                            <span className="text-sm text-gray-600 dark:text-gray-400 truncate">Döküman {idx + 1}</span>
-                          </a>
-                        ))}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">Okul Onay Başvurusu</p>
+                            <p className="text-xs text-indigo-700 dark:text-indigo-300 mt-1">
+                              Bu eğitmen başvurusu, dans okulu onayı ile doğrulanmaktadır.
+                            </p>
+                            {request.schoolName && (
+                              <p className="text-sm font-medium text-gray-900 dark:text-white mt-2">
+                                Okul: <span className="font-bold text-indigo-600 dark:text-indigo-400">{request.schoolName}</span>
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 italic">Yüklenmiş döküman bulunmamaktadır.</p>
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">Yüklü Dökümanlar</h4>
+                        {(request.idDocumentUrl || request.certDocumentUrl || (request.documents && request.documents.length > 0)) ? (
+                          <div className="space-y-2">
+                            {request.idDocumentUrl && (
+                              <a
+                                href={getMinioUrl(request.idDocumentUrl) || ''}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+                              >
+                                <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900 flex items-center justify-center mr-3">
+                                  <svg className="h-4 w-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2" />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900 dark:text-white">Kimlik Belgesi</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Görüntülemek için tıklayın</p>
+                                </div>
+                              </a>
+                            )}
+                            {request.certDocumentUrl && (
+                              <a
+                                href={getMinioUrl(request.certDocumentUrl) || ''}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+                              >
+                                <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
+                                  <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138z" />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900 dark:text-white">Sertifika Belgesi</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Görüntülemek için tıklayın</p>
+                                </div>
+                              </a>
+                            )}
+                            {(request.documents || []).map((docPath, idx) => (
+                              <a
+                                key={idx}
+                                href={getMinioUrl(docPath) || ''}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center p-2 rounded border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+                              >
+                                <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span className="text-sm text-gray-600 dark:text-gray-400 truncate">Döküman {idx + 1}</span>
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 italic">Yüklenmiş döküman bulunmamaktadır.</p>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -988,13 +1049,6 @@ function InstructorDetailsModal({ request, onClose, onApprove, onReject, onEdit,
               className="w-full inline-flex justify-center rounded-md border border-red-300 dark:border-red-700 shadow-sm px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-base font-medium focus:outline-none sm:w-auto sm:text-sm"
             >
               Sil
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
-            >
-              Kapat
             </button>
           </div>
         </div>
