@@ -529,11 +529,11 @@ const CreateProgressCollectionsButton: React.FC = () => {
       
       <Button 
         onClick={createProgressCollections} 
-        disabled={loading || !user}
+        disabled={true}
         loading={loading}
         variant="primary"
       >
-        {loading ? 'Koleksiyonlar Güncelleniyor...' : 'Platform Rozetleri ve İlerleme Verileri Oluştur'}
+        {loading ? 'Koleksiyonlar Güncelleniyor...' : 'Platform Rozetleri ve İlerleme Verileri Oluştur (Devre Dışı)'}
       </Button>
       
       {success && (

@@ -246,7 +246,7 @@ function DanceStyleManagement(): JSX.Element {
                 required
                 value={formData.label}
                 onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
+                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Örn: Salsa"
               />
             </div>
@@ -261,7 +261,7 @@ function DanceStyleManagement(): JSX.Element {
                 name="value"
                 value={formData.value}
                 onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md"
+                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Örn: salsa"
               />
             </div>
@@ -321,7 +321,7 @@ function DanceStyleManagement(): JSX.Element {
                             type="text"
                             value={formData.label}
                             onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md focus:ring-indigo-500 focus:border-indigo-600"
+                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         ) : (
                           style.label
@@ -333,7 +333,7 @@ function DanceStyleManagement(): JSX.Element {
                             type="text"
                             value={formData.value}
                             onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md focus:ring-indigo-500 focus:border-indigo-600"
+                            className="w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         ) : (
                           style.value

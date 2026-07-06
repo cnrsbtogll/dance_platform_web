@@ -72,3 +72,57 @@ export const getCourseImage = (imageUrl?: string, danceStyle?: string): string =
   // Geçerli string ise döndür, aksi halde salsa varsayılanı
   return (typeof imageUrl === 'string' && imageUrl) ? imageUrl : styleDefaults.salsa;
 };
+
+/**
+ * Resolves a given path to a full MinIO S3 URL if it is a relative path.
+ * @param path The file path or full URL
+ * @returns Full MinIO URL or the original URL
+ */
+export const getMinioUrl = (path: string | null | undefined): string | null => {
+  if (!path) return null;
+  // If it's already a full HTTP/HTTPS URL or base64 data URL, return it as is
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+    return path;
+  }
+  // Remove leading slash if present
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  return `https://minio-sdk.cnrsbtogll.store/feriha-danceapp/${cleanPath}`;
+};
+
+/**
+ * Fetches a presigned GET URL for a private or public object path.
+ * If the path is already a full URL, returns it immediately.
+ * @param path The file path or full URL
+ * @returns Promise resolving to the full URL (presigned if private) or null
+ */
+export const getPresignedUrl = async (path: string | null | undefined): Promise<string | null> => {
+  if (!path) return null;
+  
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+    return path;
+  }
+  
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  
+  if (cleanPath.startsWith('private/')) {
+    try {
+      const res = await fetch('/api/presign-get', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ objectPath: cleanPath }),
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        return data.url;
+      } else {
+        console.error('Failed to get presigned URL:', res.statusText);
+      }
+    } catch (err) {
+      console.error('Error fetching presigned GET URL:', err);
+    }
+  }
+  
+  // For public/ paths or fallbacks, use the standard public URL
+  return `https://minio-sdk.cnrsbtogll.store/feriha-danceapp/${cleanPath}`;
+};
