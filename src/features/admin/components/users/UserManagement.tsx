@@ -299,6 +299,41 @@ export const UserManagement: React.FC = () => {
         }
       });
 
+      try {
+        // Fetch instructors directly from Firestore 'instructors' collection
+        const instructorsSnapshot = await getDocs(collection(db, 'instructors'));
+        instructorsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          const instId = data.userId || doc.id;
+          if (!instructorsData.some(i => i.id === instId)) {
+            instructorsData.push({
+              id: instId,
+              displayName: data.displayName || 'İsimsiz Eğitmen',
+              email: data.email || ''
+            });
+          }
+        });
+      } catch (instErr) {
+        console.error('Error fetching instructors directly:', instErr);
+      }
+
+      try {
+        // Fetch schools directly from Firestore 'schools' collection
+        const schoolsSnapshot = await getDocs(collection(db, 'schools'));
+        schoolsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (!schoolsData.some(s => s.id === doc.id)) {
+            schoolsData.push({
+              id: doc.id,
+              displayName: data.displayName || data.name || 'İsimsiz Okul',
+              email: data.email || ''
+            });
+          }
+        });
+      } catch (schoolErr) {
+        console.error('Error fetching schools directly:', schoolErr);
+      }
+
       console.log('Setting state with:', {
         users: usersData.length,
         instructors: instructorsData.length,
@@ -1043,8 +1078,12 @@ export const UserManagement: React.FC = () => {
         return 'bg-red-100 text-red-800';
       case 'instructor':
         return 'bg-blue-100 text-blue-800';
+      case 'draft-instructor':
+        return 'bg-cyan-100 text-cyan-800';
       case 'school':
         return 'bg-indigo-100 text-indigo-800';
+      case 'draft-school':
+        return 'bg-amber-100 text-amber-800';
       case 'student':
         return 'bg-green-100 text-green-800';
       default:
@@ -1061,9 +1100,11 @@ export const UserManagement: React.FC = () => {
         >
           {role === 'admin' && 'Admin'}
           {role === 'instructor' && 'Eğitmen'}
+          {role === 'draft-instructor' && 'Taslak Eğitmen'}
           {role === 'school' && 'Dans Okulu'}
+          {role === 'draft-school' && 'Taslak Okul'}
           {role === 'student' && 'Öğrenci'}
-          {!['admin', 'instructor', 'school', 'student'].includes(role) && role}
+          {!['admin', 'instructor', 'draft-instructor', 'school', 'draft-school', 'student'].includes(role) && role}
         </span>
       </div>
     );
@@ -1073,8 +1114,10 @@ export const UserManagement: React.FC = () => {
   const getAvatarType = (role: UserRole): "student" | "instructor" | "school" => {
     switch (role) {
       case 'instructor':
+      case 'draft-instructor':
         return 'instructor';
       case 'school':
+      case 'draft-school':
       case 'school_admin':
         return 'school';
       case 'admin':
@@ -1193,12 +1236,19 @@ export const UserManagement: React.FC = () => {
 
   // Handle role filter change
   const handleRoleFilter = (role: string) => {
-    setFilterConfig(prev => ({
-      ...prev,
-      roles: prev.roles.includes(role)
-        ? prev.roles.filter(r => r !== role)
-        : [...prev.roles, role]
-    }));
+    setFilterConfig(prev => {
+      const isAlreadySelected = prev.roles.includes(role);
+      return {
+        ...prev,
+        roles: isAlreadySelected ? [] : [role]
+      };
+    });
+
+    // Clear level filter for any role other than 'student' (e.g. instructor, draft-instructor, school, draft-school)
+    if (role !== 'student') {
+      setLevelFilter('');
+    }
+
     setPage(0); // Reset to first page when filter changes
   };
 
@@ -1467,24 +1517,30 @@ export const UserManagement: React.FC = () => {
                 <option value="advanced">İleri</option>
                 <option value="professional">Profesyonel</option>
               </select>
-              <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden text-sm h-9">
+              <div className="flex flex-wrap gap-1 text-sm">
                 {[
-                  { value: 'student', label: 'Öğrenci', color: 'bg-emerald-600' },
-                  { value: 'instructor', label: 'Eğitmen', color: 'bg-blue-600' },
-                  { value: 'school', label: 'Okul', color: 'bg-indigo-600' },
-                ].map(({ value, label, color }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => handleRoleFilter(value)}
-                    className={`px-3 py-1.5 font-medium transition-colors whitespace-nowrap ${filterConfig.roles.includes(value)
-                      ? `${color} text-white`
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
+                  { value: 'student', label: 'Öğrenci', color: 'bg-emerald-600 text-white border-emerald-600' },
+                  { value: 'instructor', label: 'Eğitmen', color: 'bg-blue-600 text-white border-blue-600' },
+                  { value: 'draft-instructor', label: 'Taslak Eğitmen', color: 'bg-cyan-600 text-white border-cyan-600' },
+                  { value: 'school', label: 'Okul', color: 'bg-indigo-600 text-white border-indigo-600' },
+                  { value: 'draft-school', label: 'Taslak Okul', color: 'bg-amber-600 text-white border-amber-600' },
+                ].map(({ value, label, color }) => {
+                  const isActive = filterConfig.roles.includes(value);
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => handleRoleFilter(value)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all whitespace-nowrap ${
+                        isActive
+                          ? `${color} shadow-sm`
+                          : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700'
                       }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1528,7 +1584,9 @@ export const UserManagement: React.FC = () => {
                     <option value="">Rol Seç...</option>
                     <option value="student">Öğrenci</option>
                     <option value="instructor">Eğitmen</option>
+                    <option value="draft-instructor">Taslak Eğitmen</option>
                     <option value="school">Dans Okulu</option>
+                    <option value="draft-school">Taslak Okul</option>
                   </select>
                   <button
                     onClick={() => bulkRole && handleBulkUpdateRole(bulkRole as UserRole)}
