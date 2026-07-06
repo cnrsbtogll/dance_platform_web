@@ -81,7 +81,19 @@ function InstructorRequests() {
 
       const resolvedRequests = await Promise.all(
         requestsData.map(async (req) => {
-          const resolvedPhoto = await getPresignedUrl(req.photoURL);
+          let userPhoto = null;
+          try {
+            const userSnap = await getDoc(doc(db, 'users', req.userId));
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              userPhoto = userData.photoURL || null;
+            }
+          } catch (e) {
+            console.error('Error fetching user photo for request:', req.id, e);
+          }
+
+          const targetPhoto = userPhoto || req.photoURL || null;
+          const resolvedPhoto = await getPresignedUrl(targetPhoto);
           const resolvedIdDoc = await getPresignedUrl(req.idDocumentUrl);
           const resolvedCertDoc = await getPresignedUrl(req.certDocumentUrl);
           
