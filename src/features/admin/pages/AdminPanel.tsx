@@ -24,7 +24,6 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import {
   InstructorRequests,
   DanceStyleManagement,
-  ContactRequests,
   SchoolRequests,
   UserManagement
 } from '../components';
@@ -38,12 +37,11 @@ import CustomSelect from '../../../common/components/ui/CustomSelect';
 
 
 type TabType = 'kullanicilar' | 'kurslar' | 'ornek-veri' | 'talepler' | 'dashboard';
-type RequestType = 'egitmen-talepleri' | 'okul-basvurulari' | 'iletisim-talepleri';
+type RequestType = 'egitmen-talepleri' | 'okul-basvurulari';
 
 const requestTypeOptions = [
   { label: 'Eğitmenlik Başvuruları', value: 'egitmen-talepleri' },
-  { label: 'Okul Başvuruları', value: 'okul-basvurulari' },
-  { label: 'İletişim Talepleri', value: 'iletisim-talepleri' }
+  { label: 'Okul Başvuruları', value: 'okul-basvurulari' }
 ];
 
 interface AdminPanelProps {
@@ -433,7 +431,6 @@ function AdminPanel({ user }: AdminPanelProps): JSX.Element {
                   </div>
                   {activeRequestType === 'egitmen-talepleri' && <InstructorRequests />}
                   {activeRequestType === 'okul-basvurulari' && <SchoolRequests />}
-                  {activeRequestType === 'iletisim-talepleri' && <ContactRequests />}
                 </div>
               )}
               {activeTab === 'ornek-veri' && isSuperAdmin && (
