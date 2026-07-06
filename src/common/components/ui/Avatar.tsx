@@ -1,5 +1,5 @@
 import React from 'react';
-import { generateInitialsAvatar } from '../../utils/imageUtils';
+import { generateInitialsAvatar, getMinioUrl } from '../../utils/imageUtils';
 
 interface AvatarProps {
   src?: string | null;
@@ -9,8 +9,10 @@ interface AvatarProps {
 }
 
 function Avatar({ src, alt, className = '', userType = 'student' }: AvatarProps) {
+  const resolvedSrc = getMinioUrl(src);
+
   // Check if src is missing or is the default placeholder image
-  const isDefaultImage = !src || src.includes('egitmen_default.jpg') || src === '/assets/placeholders/default-instructor.png';
+  const isDefaultImage = !resolvedSrc || resolvedSrc.includes('egitmen_default.jpg') || resolvedSrc === '/assets/placeholders/default-instructor.png';
 
   if (isDefaultImage) {
     return (
@@ -24,7 +26,7 @@ function Avatar({ src, alt, className = '', userType = 'student' }: AvatarProps)
 
   return (
     <img
-      src={src}
+      src={resolvedSrc}
       alt={alt}
       className={`object-cover rounded-full ${className}`}
       onError={(e) => {

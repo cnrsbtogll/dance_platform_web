@@ -214,10 +214,10 @@ const SeedUsersButton: React.FC = () => {
       
       <Button 
         onClick={seedUsers} 
-        disabled={loading}
+        disabled={true}
         loading={loading}
       >
-        {loading ? 'Kullanıcılar Ekleniyor...' : 'Yeni Örnek Öğrenciler Ekle'}
+        {loading ? 'Kullanıcılar Ekleniyor...' : 'Yeni Örnek Öğrenciler Ekle (Devre Dışı)'}
       </Button>
       
       {success && (

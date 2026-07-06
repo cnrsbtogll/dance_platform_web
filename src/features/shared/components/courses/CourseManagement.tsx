@@ -377,6 +377,13 @@ function CourseManagement({
   const [selectedContactCourse, setSelectedContactCourse] = useState<Course | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'draft'>('active');
   const [instructorSearchTerm, setInstructorSearchTerm] = useState<string>('');
+
+  // New filters, sorting & bulk actions state
+  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
+  const [levelFilter, setLevelFilter] = useState<string>('');
+  const [styleFilter, setStyleFilter] = useState<string>('');
+  const [sortConfig, setSortConfig] = useState<{ field: string; direction: 'asc' | 'desc' }>({ field: 'createdAt', direction: 'desc' });
+  const [bulkStatus, setBulkStatus] = useState<string>('');
   const [students, setStudents] = useState<any[]>([]);
   const [loadingStudents, setLoadingStudents] = useState<boolean>(true);
   const [selectedCourseForStudents, setSelectedCourseForStudents] = useState<Course | null>(null);
@@ -612,6 +619,165 @@ function CourseManagement({
       setLoading(false);
     }
   };
+
+  // Handle sort change
+  const handleSort = (field: string) => {
+    setSortConfig(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Render sort direction arrow
+  const renderSortArrow = (field: string) => {
+    if (sortConfig.field !== field) {
+      return (
+        <span className="ml-1 text-gray-400 dark:text-gray-600 group-hover:text-gray-500">
+          ⇅
+        </span>
+      );
+    }
+    return (
+      <span className="ml-1 text-indigo-600 dark:text-indigo-400 font-bold">
+        {sortConfig.direction === 'asc' ? '▲' : '▼'}
+      </span>
+    );
+  };
+
+  // Bulk delete selected courses
+  const handleBulkDelete = async () => {
+    if (selectedCourseIds.length === 0) return;
+    if (!window.confirm(`Seçili ${selectedCourseIds.length} kursu silmek istediğinizden emin misiniz?`)) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { writeBatch } = await import('firebase/firestore');
+      const batch = writeBatch(db);
+      
+      selectedCourseIds.forEach(id => {
+        const docRef = doc(db, 'courses', id);
+        batch.delete(docRef);
+      });
+      
+      await batch.commit();
+      
+      setCourses(prev => prev.filter(c => !selectedCourseIds.includes(c.id)));
+      setSelectedCourseIds([]);
+      setSuccess('Seçili kurslar başarıyla silindi.');
+    } catch (err) {
+      console.error('Toplu silme hatası:', err);
+      setError('Kurslar silinirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Bulk status update for selected courses
+  const handleBulkUpdateStatus = async (newStatus: 'active' | 'inactive' | 'draft') => {
+    if (selectedCourseIds.length === 0) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { writeBatch } = await import('firebase/firestore');
+      const batch = writeBatch(db);
+      
+      selectedCourseIds.forEach(id => {
+        const docRef = doc(db, 'courses', id);
+        batch.update(docRef, { status: newStatus, updatedAt: serverTimestamp() });
+      });
+      
+      await batch.commit();
+      
+      setCourses(prev => prev.map(c => 
+        selectedCourseIds.includes(c.id) ? { ...c, status: newStatus } : c
+      ));
+      setSelectedCourseIds([]);
+      setSuccess('Seçili kursların durumları güncellendi.');
+    } catch (err) {
+      console.error('Toplu durum güncelleme hatası:', err);
+      setError('Kurs durumları güncellenirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+      setBulkStatus('');
+    }
+  };
+
+  // Filter and sort courses
+  const filteredAndSortedCourses = React.useMemo(() => {
+    let result = [...courses];
+
+    // Apply status filter
+    if (statusFilter && statusFilter !== 'all') {
+      result = result.filter(c => c.status === statusFilter);
+    }
+
+    // Apply search filter (name, style, description, school)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(c =>
+        (c.name || '').toLowerCase().includes(term) ||
+        (c.danceStyle || '').toLowerCase().includes(term) ||
+        (c.description || '').toLowerCase().includes(term) ||
+        (c.schoolName || '').toLowerCase().includes(term)
+      );
+    }
+
+    // Apply style filter
+    if (styleFilter) {
+      result = result.filter(c => c.danceStyle === styleFilter);
+    }
+
+    // Apply level filter
+    if (levelFilter) {
+      result = result.filter(c => c.level === levelFilter);
+    }
+
+    // Apply sorting
+    if (sortConfig.field) {
+      result.sort((a: any, b: any) => {
+        let aValue = a[sortConfig.field];
+        let bValue = b[sortConfig.field];
+
+        if (sortConfig.field === 'createdAt') {
+          const getComparisonValue = (val: any) => {
+            if (!val) return 0;
+            if (typeof val.toDate === 'function') {
+              return val.toDate().getTime();
+            }
+            if (val instanceof Date) {
+              return val.getTime();
+            }
+            if (typeof val === 'string') {
+              const parsed = Date.parse(val);
+              if (!isNaN(parsed)) return parsed;
+            }
+            if (typeof val === 'number') {
+              return val;
+            }
+            return 0;
+          };
+          aValue = getComparisonValue(aValue);
+          bValue = getComparisonValue(bValue);
+        } else if (sortConfig.field === 'price' || sortConfig.field === 'rating' || sortConfig.field === 'maxParticipants') {
+          aValue = Number(aValue) || 0;
+          bValue = Number(bValue) || 0;
+        } else {
+          aValue = (aValue || '').toString().toLowerCase();
+          bValue = (bValue || '').toString().toLowerCase();
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [courses, searchTerm, styleFilter, levelFilter, statusFilter, sortConfig]);
 
   // Lokasyonları getir
   const fetchLocations = async () => {
@@ -2408,14 +2574,14 @@ function CourseManagement({
 
 
       {/* Üst Başlık ve Arama Bölümü */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Kurs Yönetimi</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Kurslarınızı ekleyin, düzenleyin ve yönetin</p>
         </div>
-        <div className="w-full sm:w-auto flex flex-col lg:flex-row gap-3">
-          <div className="flex flex-col sm:flex-row gap-2 flex-grow">
-            <div className="flex-grow sm:max-w-[240px]">
+        <div className="w-full xl:w-auto flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          <div className="flex flex-wrap gap-2 flex-grow">
+            <div className="flex-grow min-w-[200px] sm:max-w-[240px]">
               <CustomInput
                 name="search"
                 label=""
@@ -2431,20 +2597,49 @@ function CourseManagement({
                 }
               />
             </div>
-            <Button
-              onClick={addNewCourse}
-              type="button"
-              variant={isAdmin ? 'indigo' : colorVariant}
-              className="h-10 px-4"
-            >
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span className="whitespace-nowrap">Yeni Kurs</span>
-              </div>
-            </Button>
+
+            {/* Seviye Filtresi */}
+            <div className="flex-grow min-w-[150px] sm:max-w-[180px]">
+              <select
+                value={levelFilter}
+                onChange={(e) => setLevelFilter(e.target.value)}
+                className="w-full h-10 px-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              >
+                <option value="">Tüm Seviyeler</option>
+                {levelOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Stil Filtresi */}
+            <div className="flex-grow min-w-[150px] sm:max-w-[180px]">
+              <select
+                value={styleFilter}
+                onChange={(e) => setStyleFilter(e.target.value)}
+                className="w-full h-10 px-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              >
+                <option value="">Tüm Stiller</option>
+                {danceStyles.map(style => (
+                  <option key={style.value} value={style.value}>{style.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
+
+          <Button
+            onClick={addNewCourse}
+            type="button"
+            variant={isAdmin ? 'indigo' : colorVariant}
+            className="h-10 px-4 whitespace-nowrap self-stretch sm:self-auto flex items-center justify-center"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span>Yeni Kurs</span>
+            </div>
+          </Button>
         </div>
       </div>
 
@@ -2549,6 +2744,52 @@ function CourseManagement({
         </form>
       </SimpleModal>
 
+      {/* Bulk Actions Toolbar */}
+      {selectedCourseIds.length > 0 && (
+        <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 flex flex-col md:flex-row md:items-center justify-between gap-3 animate-fadeIn">
+          <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+            {selectedCourseIds.length} adet kurs seçildi
+          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Durum Güncelle */}
+            <div className="flex items-center gap-1.5">
+              <select
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                className="px-2 py-1 text-xs border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300"
+              >
+                <option value="">Durum Seç...</option>
+                <option value="active">Aktif</option>
+                <option value="inactive">Pasif</option>
+                <option value="draft">Taslak</option>
+              </select>
+              <button
+                onClick={() => bulkStatus && handleBulkUpdateStatus(bulkStatus as 'active' | 'inactive' | 'draft')}
+                disabled={!bulkStatus}
+                className="px-2.5 py-1 bg-indigo-600 text-white text-xs font-semibold rounded hover:bg-indigo-700 transition disabled:opacity-50"
+              >
+                Durum Güncelle
+              </button>
+            </div>
+
+            <div className="h-6 w-[1px] bg-gray-300 dark:bg-slate-700 hidden md:block" />
+
+            <button
+              onClick={handleBulkDelete}
+              className="px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded hover:bg-red-700 transition"
+            >
+              Toplu Sil
+            </button>
+            <button
+              onClick={() => setSelectedCourseIds([])}
+              className="px-2.5 py-1 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 text-xs rounded hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+            >
+              İptal
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Kurs Listesi Sekmeleri */}
       <div className="flex justify-start md:justify-end mb-4 overflow-x-auto scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0">
         <div className={`flex w-full md:w-auto p-1 rounded-xl whitespace-nowrap ${colorVariant === 'school' ? 'bg-school-bg/50 dark:bg-school/5' : 'bg-gray-100 dark:bg-slate-800/50'} border border-gray-200 dark:border-slate-700/50`}>
@@ -2594,12 +2835,64 @@ function CourseManagement({
                 : 'bg-instructor-bg/80 dark:bg-instructor/10'
             }>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kurs</th>
+                <th className="relative w-12 px-6 sm:w-16 sm:px-8">
+                  <input
+                    type="checkbox"
+                    className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    checked={
+                      filteredAndSortedCourses.length > 0 &&
+                      filteredAndSortedCourses.every(course => selectedCourseIds.includes(course.id))
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        const newSelected = [...selectedCourseIds];
+                        filteredAndSortedCourses.forEach(course => {
+                          if (!newSelected.includes(course.id)) {
+                            newSelected.push(course.id);
+                          }
+                        });
+                        setSelectedCourseIds(newSelected);
+                      } else {
+                        const pageIds = filteredAndSortedCourses.map(course => course.id);
+                        setSelectedCourseIds(prev => prev.filter(id => !pageIds.includes(id)));
+                      }
+                    }}
+                  />
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none group"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center">
+                    Kurs {renderSortArrow('name')}
+                  </div>
+                </th>
                 <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Program</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Yönetim</th>
-                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kapasite</th>
-                <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Değerlendirme</th>
-                <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durum</th>
+                <th 
+                  className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none group"
+                  onClick={() => handleSort('maxParticipants')}
+                >
+                  <div className="flex items-center">
+                    Kapasite {renderSortArrow('maxParticipants')}
+                  </div>
+                </th>
+                <th 
+                  className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none group"
+                  onClick={() => handleSort('rating')}
+                >
+                  <div className="flex items-center">
+                    Değerlendirme {renderSortArrow('rating')}
+                  </div>
+                </th>
+                <th 
+                  className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none group"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center">
+                    Durum {renderSortArrow('status')}
+                  </div>
+                </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">İşlemler</th>
               </tr>
             </thead>
@@ -2609,20 +2902,30 @@ function CourseManagement({
                 ? 'bg-school-bg dark:bg-[#1a120b] divide-school/20 dark:divide-[#493322]'
                 : 'bg-instructor-bg/30 dark:bg-slate-900/40 divide-instructor/20 dark:divide-slate-800'
               }`}>
-              {courses.filter(course =>
-                (statusFilter === 'all' || course.status === statusFilter) &&
-                (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase()))
-              ).map((course) => (
+              {filteredAndSortedCourses.map((course) => (
                 <tr
                   key={course.id}
                   onClick={() => navigate(`/courses/${course.id}`)}
-                  className={`transition-colors cursor-pointer ${isAdmin
+                  className={`transition-colors cursor-pointer ${selectedCourseIds.includes(course.id) ? 'bg-indigo-50/40 dark:bg-indigo-900/10' : ''} ${isAdmin
                     ? 'hover:bg-gray-50 dark:hover:bg-slate-800'
                     : colorVariant === 'school'
                       ? 'hover:bg-school/5 dark:hover:bg-school/10'
                       : 'hover:bg-instructor/5 dark:hover:bg-instructor/10'
                     }`}>
+                  <td className="relative w-12 px-6 sm:w-16 sm:px-8" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      checked={selectedCourseIds.includes(course.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCourseIds(prev => [...prev, course.id]);
+                        } else {
+                          setSelectedCourseIds(prev => prev.filter(id => id !== course.id));
+                        }
+                      }}
+                    />
+                  </td>
                   <td className="px-4 py-4 max-w-[180px]">
                     <Link
                       to={`/courses/${course.id}`}
@@ -2749,22 +3052,14 @@ function CourseManagement({
 
       {/* Mobile Card View */}
       <div className="lg:hidden space-y-3 mt-2">
-        {courses.filter(course =>
-          (statusFilter === 'all' || course.status === statusFilter) &&
-          (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase()))
-        ).length === 0 ? (
+        {filteredAndSortedCourses.length === 0 ? (
           <div className={`text-center py-8 text-sm ${colorVariant === 'school' ? 'text-gray-500 dark:text-[#cba990]' : 'text-gray-500 dark:text-gray-400'}`}>
-            {searchTerm ? 'Aramanıza uygun kurs bulunamadı.' : 'Henüz hiç kurs eklenmemiş.'}
+            {searchTerm || levelFilter || styleFilter ? 'Aramanıza uygun kurs bulunamadı.' : 'Henüz hiç kurs eklenmemiş.'}
           </div>
-        ) : courses.filter(course =>
-          (statusFilter === 'all' || course.status === statusFilter) &&
-          (course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            course.danceStyle.toLowerCase().includes(searchTerm.toLowerCase()))
-        ).map((course) => (
+        ) : filteredAndSortedCourses.map((course) => (
           <div
             key={course.id}
-            className={`rounded-xl border shadow-sm overflow-hidden ${isAdmin
+            className={`rounded-xl border shadow-sm overflow-hidden ${selectedCourseIds.includes(course.id) ? 'bg-indigo-50/40 dark:bg-indigo-900/10' : ''} ${isAdmin
               ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
               : colorVariant === 'school'
                 ? 'bg-white dark:bg-[#231810] border-school/20 dark:border-[#493322]'
@@ -2773,13 +3068,26 @@ function CourseManagement({
           >
             {/* Card Header */}
             <div className="flex items-start justify-between p-4 gap-3">
-              <Link to={`/courses/${course.id}`} className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className={`text-sm font-semibold text-gray-900 dark:text-white leading-tight ${colorVariant === 'school' ? 'group-hover:text-school' : 'group-hover:text-instructor'
-                    }`}>{course.name}</h3>
-                  <span className={`px-2 py-0.5 inline-flex text-xs font-semibold rounded-full flex-shrink-0 ${course.status === 'active'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                    : course.status === 'draft'
+              <div className="flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer flex-shrink-0"
+                  checked={selectedCourseIds.includes(course.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedCourseIds(prev => [...prev, course.id]);
+                    } else {
+                      setSelectedCourseIds(prev => prev.filter(id => id !== course.id));
+                    }
+                  }}
+                />
+                <Link to={`/courses/${course.id}`} className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className={`text-sm font-semibold text-gray-900 dark:text-white leading-tight ${colorVariant === 'school' ? 'group-hover:text-school' : 'group-hover:text-instructor'
+                      }`}>{course.name}</h3>
+                    <span className={`px-2 py-0.5 inline-flex text-xs font-semibold rounded-full flex-shrink-0 ${course.status === 'active'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                      : course.status === 'draft'
                       ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
                       : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                     }`}>
@@ -2788,7 +3096,8 @@ function CourseManagement({
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{course.danceStyle}</p>
               </Link>
-              <div className="flex items-center gap-0.5 flex-shrink-0">
+            </div>
+            <div className="flex items-center gap-0.5 flex-shrink-0">
                 <svg className="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
                 <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{course.rating ? course.rating.toFixed(1) : '0.0'}</span>
               </div>
